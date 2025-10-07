@@ -1,0 +1,17 @@
+{
+  "hosting": {
+    "site": "nimasa-app",
+    "public": "dist/nimasa/browser",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

@@ -12,7 +12,7 @@ html {
       primary: mat.$blue-palette,
       tertiary: mat.$green-palette,
     ),
-    typography: Helvetics,
+    typography: Helvetica,
     density: -2,
   ));
 }
@@ -39,9 +39,9 @@ body {
     elevated-container-color: #ffffff,
     elevated-container-elevation: red,
     subtitle-text-size: 10px,
-    filled-container-shape: 2px,
-    elevated-container-shape: 2px,
-    outlined-container-shape: 2px,
+    filled-container-shape: 5px,
+    elevated-container-shape: 5px,
+    outlined-container-shape: 5px,
   ));
 }
 
