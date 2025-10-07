@@ -1,0 +1,166 @@
+<script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Mimicking Material/Flex Layout with Tailwind */
+      
+    </style>
+
+    <div class="p-4 md:p-8 bg-gray-50 min-h-screen font-sans">
+      <h1 class="text-3xl font-bold mb-6 text-gray-800">Performance Monitoring Dashboard</h1>
+
+      <!-- Slicers / Filters (fxLayout="row wrap") -->
+      <div class="flex flex-wrap gap-4 mb-8">
+        <div class="w-full sm:w-1/4">
+          <label for="priorityArea" class="block text-gray-500 mb-1">Filter by Priority Area</label>
+          <select
+            id="priorityArea"
+            [value]="selectedPriorityArea"
+            (change)="selectedPriorityArea = $any($event.target).value; filterData()"
+            class="block w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white"
+          >
+            <option value="All">All Priority Areas</option>
+            @for (area of priorityAreas(); track area) {
+              <option [value]="area">{{ area }}</option>
+            }
+          </select>
+        </div>
+        <div class="w-full sm:w-1/4">
+          <label for="yearFilter" class="block text-gray-500 mb-1">Filter by Year</label>
+          <select
+            id="yearFilter"
+            [value]="selectedYear"
+            (change)="selectedYear = $any($event.target).value; filterData()"
+            class="block w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white"
+          >
+            <option value="2025">2025 (Q2 Focus)</option>
+            <option value="2024">2024 (Annual Review)</option>
+          </select>
+        </div>
+                  class="block w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white">
+            <!-- Removed duplicate/erroneous select and mat-form-field tags -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        @for (kpi of kpis(); track kpi.title) {
+          <div class="mat-card border-l-4 border-{{kpi.color}}-500">
+            <p class="kpi-title">{{ kpi.title }}</p>
+            <div class="kpi-value text-{{kpi.color}}-700">{{ kpi.value }}</div>
+            <p class="text-xs text-gray-400 mt-1">{{ kpi.insight }}</p>
+          </div>
+        }
+      </div>
+
+      <!-- 2. Core Visualizations (fxLayout="row wrap" fxLayoutGap="20px") -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+
+        <!-- A. Target vs. Actual (2024 & 2025) - Grouped Bar Chart -
+        <div class="mat-card lg:col-span-2">
+          <h2 class="text-xl font-semibold mb-4 text-gray-700">Target vs. Actual Performance (2024 & 2025)</h2>
+          <div class="w-full flex flex-col items-center justify-center">
+
+            <canvas
+              baseChart
+              [data]="targetActualChartData()"
+              [options]="chartOptions"
+              [type]="'bar'"
+              aria-label="Target vs. Actual Chart"
+              class="w-full max-w-3xl h-80"
+            ></canvas>
+            <div class="text-center text-gray-400 p-8 border border-dashed rounded-lg mt-4 w-full max-w-3xl">
+              <p>Target vs. Actual Grouped Bar Chart will display here.</p>
+              <p>
+                Labels:
+                <span *ngIf="targetActualChartData()?.labels as labels">
+                  {{ labels.join(', ') }}
+                </span>
+              </p>
+              <p>Datasets: 2024 Actual, 2024 Target, Q2 2025 Actual, 2025 Target</p>
+            </div>
+          </div>
+            </div>
+          </div>
+        </div>-->
+
+        <!-- B. Quarterly Progress & Trend (2025) - Line Chart 
+        <div class="mat-card">
+          <h2 class="text-xl font-semibold mb-4 text-gray-700">Quarterly Progress Trend (2025)</h2>
+          <div class="w-full flex flex-col items-center justify-center">
+
+            <canvas
+              baseChart
+              [data]="quarterlyProgressChartData()"
+              [options]="chartOptions"
+              [type]="'line'"
+              aria-label="Quarterly Progress Chart"
+              class="w-full max-w-3xl h-80"
+            ></canvas>
+            ></canvas>
+            <div class="text-center text-gray-400 p-8 border border-dashed rounded-lg mt-4 w-full max-w-3xl">
+              <p>Quarterly Progress Line Chart (e.g., Seafarers Placed) will display here.</p>
+              <p>Data Trend: Q1 Actual (1500), Q2 Actual (1975)</p>
+            </div>
+          </div>
+          </div>
+        </div>-->
+
+        <!-- C. Performance by Priority Area - Bar Chart 
+        <div class="mat-card">
+          <h2 class="text-xl font-semibold mb-4 text-gray-700">Performance by Priority Area (2024 Ratio)</h2>
+          <div class="chart-container">
+
+            <canvas baseChart [data]="priorityAreaChartData()" [options]="chartOptions" [type]="'bar'" aria-label="Priority Area Performance Chart"></canvas>
+            <div class="text-center text-gray-400 p-8 border border-dashed rounded-lg">
+              <p>Performance Ratio Bar Chart will display here.</p>
+              <p>Enhance Infrastructure: {{ priorityAreaPerformance()['Enhance Infrastructure and Transportation'] | number:'1.0-1' }}%</p>
+            </div>
+          </div>
+        </div>-->
+
+        <!-- D. Outstanding Target Analysis (Focus Area) - Simple Bar Chart
+        <div class="mat-card lg:col-span-2">
+          <h2 class="text-xl font-semibold mb-4 text-red-600">D. Critical Outstanding Target Analysis (2025 Gap)</h2>
+          <div class="chart-container">
+
+            <canvas baseChart [data]="outstandingTargetChartData()" [options]="outstandingChartOptions" [type]="'bar'" aria-label="Outstanding Targets Chart"></canvas>
+            <div class="text-center text-gray-400 p-8 border border-dashed rounded-lg">
+              <p>Outstanding Targets Bar Chart (Negative Values in Red) will display here.</p>
+              <p>Focus: {{ outstandingTargetChartData().labels.join(', ') }}</p>
+            </div>
+          </div>
+        </div>
+
+      </div>-->
+
+      <!-- 3. Detailed Performance Table -->
+      <div class="mat-card mat-elevation-z8 overflow-x-auto">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-semibold text-gray-700">Detailed Performance Table ({{ selectedYear() }} Data)</h2>
+          <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-150">
+            Export to Sheets
+          </button>
+        </div>
+        
+        <table class="w-full data-table">
+          <thead>
+            <tr class="bg-gray-100 uppercase text-xs text-gray-600">
+              <th class="text-left">Priority Area</th>
+              <th class="text-left">Deliverable</th>
+              <th class="text-right">{{ selectedYear() }} Target</th>
+              <th class="text-right">{{ selectedYear() === '2025' ? 'Q2 2025 Actual' : '2024 Annual Actual' }}</th>
+              <th class="text-right">Outstanding (Gap)</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of filteredData(); track item.deliverable) {
+              <tr [class.bg-red-50]="item.outstanding < -1000 && selectedYear() === '2025'" class="hover:bg-gray-50">
+                <td class="whitespace-normal">{{ item.priorityArea }}</td>
+                <td class="font-medium text-gray-900 whitespace-normal">{{ item.deliverable }}</td>
+                <td class="text-right font-mono">{{ selectedYear() === '2025' ? item.target2025 : item.target2024 | number }}</td>
+                <td class="text-right font-mono">{{ selectedYear() === '2025' ? item.actualQ22025 : item.actual2024 | number }}</td>
+                <td class="text-right font-mono font-bold" [class.text-red-600]="item.outstanding < 0" [class.text-green-600]="item.outstanding >= 0">
+                  {{ item.outstanding | number }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+    </div>

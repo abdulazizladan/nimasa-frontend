@@ -1,0 +1,17 @@
+.error-message {
+    margin-top: 8px;
+    
+    mat-error {
+      font-size: 14px;
+      line-height: 1.2;
+    }
+  }
+  
+  mat-card {
+    max-width: 400px;
+    width: 100%;
+    padding: 20px;
+    button {
+        width: 100%;
+      }
+  }
