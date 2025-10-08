@@ -1,0 +1,37 @@
+// dashboard.component.scss
+.dashboard-container {
+  padding: 20px;
+}
+
+.kpi-card {
+  text-align: center;
+  height: 100%;
+  
+  .kpi-value {
+    font-size: 2.5em;
+    font-weight: bold;
+    margin: 10px 0;
+    
+    &.negative {
+      color: #f44336;
+    }
+  }
+  
+  .kpi-subtitle {
+    color: rgba(0, 0, 0, 0.54);
+    font-size: 0.9em;
+  }
+}
+
+.negative-value {
+  color: #f44336;
+  font-weight: bold;
+}
+
+mat-card {
+  margin-bottom: 20px;
+}
+
+table {
+  width: 100%;
+}

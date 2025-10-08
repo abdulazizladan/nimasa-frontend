@@ -2,7 +2,6 @@ firebase deploy --only hosting:nimasa-app
 
 {
   "hosting": {
-    "site": "nimasa-app",
 
     "public": "public",
     ...

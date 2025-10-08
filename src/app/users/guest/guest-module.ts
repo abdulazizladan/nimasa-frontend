@@ -13,13 +13,14 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSelectModule } from '@angular/material/select';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatTableModule } from '@angular/material/table';
 import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
 
+import { Dashboard } from './components/dashboard/dashboard';
 import { GuestRoutingModule } from './guest-routing-module';
 import { Layout } from './components/layout/layout';
-import { Dashboard } from './components/dashboard/dashboard';
 
 
 @NgModule({
@@ -43,6 +44,7 @@ import { Dashboard } from './components/dashboard/dashboard';
     MatToolbarModule,
     MatCardModule,
     MatProgressBarModule,
+    MatSelectModule,
     MatExpansionModule,
     MatTableModule,
     BaseChartDirective,

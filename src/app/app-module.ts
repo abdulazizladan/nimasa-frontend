@@ -4,10 +4,12 @@ import { provideHttpClient } from '@angular/common/http';
 
 import { AppRoutingModule } from './app-routing-module';
 import { App } from './app';
+import { Dashboard } from './admin/components/dashboard/dashboard';
 
 @NgModule({
   declarations: [
-    App
+    App,
+    Dashboard
   ],
   imports: [
     BrowserModule,

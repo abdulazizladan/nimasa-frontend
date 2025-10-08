@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
+import { AuthStore } from '../../../../auth/store/auth.store';
 
 @Component({
   selector: 'app-layout',
@@ -8,4 +9,12 @@ import { Component } from '@angular/core';
 })
 export class Layout {
 
+  public authStore = inject(AuthStore);
+
+  public logout() {
+    this.authStore.logout()
+  }
+
+  ngOnInit() {}
+  
 }

@@ -1,1 +1,130 @@
-<p>layout works!</p>
+<div style="min-height: 100%;" fxLayout="column">
+    
+    <mat-toolbar color="primary" class="mat-elevation-z5" style="position: fixed; top: 0; left: 0; right: 0; z-index: 1000;">
+        <mat-toolbar-row fxLayout="row">
+            <button mat-icon-button color="primary" (click)="drawer.toggle()">
+                <mat-icon>menu</mat-icon>
+            </button>
+            KD-Markets - Admin
+            <span fxFlex="1 1 auto"></span>
+            <button mat-icon-button [matMenuTriggerFor]="menu">
+                <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #menu="matMenu">
+                <button mat-menu-item>
+                    <mat-icon>settings</mat-icon>
+                    Settings
+                </button>
+                <button mat-menu-item (click)="logout()">
+                    <mat-icon>exit_to_app</mat-icon>
+                    Logout
+                </button>
+            </mat-menu>
+        </mat-toolbar-row>
+    </mat-toolbar>
+
+    <!-- Spacer to offset fixed toolbar height (default 64px on desktop, 56px on mobile) -->
+    <div style="height: 64px;"></div>
+
+    <mat-drawer-container class="example-container" autosize fxFlex="1 1 auto" hasBackdrop="false" style="height: calc(100vh - 64px);">
+        <mat-drawer #drawer mode="side" opened class="example-sidenav" fxLayout="column">
+            <div id="profile">
+
+            </div>
+          <button mat-button routerLink="./dashboard" routerLinkActive="active">
+            <mat-icon>
+                dashboard
+            </mat-icon>
+            Dashboard
+          </button>
+          <button mat-button routerLink="users" routerLinkActive="active">
+            <mat-icon>
+                people
+            </mat-icon>
+            Users
+          </button>
+          <button mat-button routerLink="departments" routerLinkActive="active">
+            <mat-icon>
+                business
+            </mat-icon>
+            Departments
+          </button>
+          <button mat-button routerLink="projects" routerLinkActive="active">
+            <mat-icon>
+                schedule
+            </mat-icon>
+            Projects and tasks
+          </button>
+        <!--<button mat-button routerLink="./markets" routerLinkActive="active">
+            <mat-icon>business</mat-icon>
+            Markets
+        </button>
+        <button mat-button routerLink="./users" routerLinkActive="active">
+            <mat-icon>person</mat-icon>
+            Users
+        </button>-->
+        
+        <!--
+        <mat-accordion style="box-shadow: none; border-radius: 0;">
+          <mat-expansion-panel style="box-shadow: none; border-radius: 0;">
+            <mat-expansion-panel-header>
+              <mat-panel-title>
+                <mat-icon>people</mat-icon>
+                Users
+              </mat-panel-title>
+            </mat-expansion-panel-header>
+            <div style="display: flex; flex-direction: column; gap: 8px; padding: 8px 0;">
+              <button mat-button routerLink="./users/admin" routerLinkActive="active">
+                <mat-icon>admin_panel_settings</mat-icon>
+                Admin
+              </button>
+              <button mat-button routerLink="./users/student" routerLinkActive="active">
+                <mat-icon>school</mat-icon>
+                Student
+              </button>
+              <button mat-button routerLink="./users/guardian" routerLinkActive="active">
+                <mat-icon>supervisor_account</mat-icon>
+                Guardian
+              </button>
+              <button mat-button routerLink="./users/staff" routerLinkActive="active">
+                <mat-icon>badge</mat-icon>
+                Staff
+              </button>
+            </div>
+          </mat-expansion-panel>
+        </mat-accordion>-->
+        
+        <!--<mat-accordion style="box-shadow: none; border-radius: 0;">
+          
+          <mat-expansion-panel style="box-shadow: none; border-radius: 0;">
+            <mat-expansion-panel-header style="padding-left: 15px; font-size: medium; color: green">
+              <mat-panel-title>
+                <mat-icon style="margin-right: 6px">payment</mat-icon>
+                Payments
+              </mat-panel-title>
+            </mat-expansion-panel-header>
+            <div style="display: flex; flex-direction: column; gap: 8px; padding: 8px 0;">
+              <button mat-button routerLink="./payments" routerLinkActive="active">
+                <mat-icon>description</mat-icon>
+                Dashboard
+              </button>
+              <button mat-button routerLink="./payments/history" routerLinkActive="active">
+                <mat-icon>history</mat-icon>
+                Payment History
+              </button>
+            </div>
+          </mat-expansion-panel>
+        </mat-accordion> -->
+        </mat-drawer>
+      
+        <div class="example-sidenav-content" style="height: 100%; overflow: auto;">
+            <div fxLayout="row" fxLayoutAlign="center center">
+                <div fxFlex.lt-md=100% fxFlex.gt-md=1024px>
+                    <router-outlet></router-outlet>
+                </div> 
+            </div>
+        </div>
+      
+      </mat-drawer-container>
+    
+</div>

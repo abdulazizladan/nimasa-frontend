@@ -1,18 +1,37 @@
-.mat-card {
-    @apply bg-white p-6 rounded-xl shadow-lg transition duration-300 hover:shadow-xl;
+// dashboard.component.scss
+.dashboard-container {
+    padding: 20px;
   }
-  .kpi-value {
-    @apply text-4xl font-extrabold mt-1;
+  
+  .kpi-card {
+    text-align: center;
+    height: 100%;
+    
+    .kpi-value {
+      font-size: 2.5em;
+      font-weight: bold;
+      margin: 10px 0;
+      
+      &.negative {
+        color: #f44336;
+      }
+    }
+    
+    .kpi-subtitle {
+      color: rgba(0, 0, 0, 0.54);
+      font-size: 0.9em;
+    }
   }
-  .kpi-title {
-    @apply text-sm font-medium text-gray-500 uppercase tracking-wider;
+  
+  .negative-value {
+    color: #f44336;
+    font-weight: bold;
   }
-  .mat-elevation-z8 {
-    @apply shadow-xl; /* Standard Angular Material elevation class */
+  
+  mat-card {
+    margin-bottom: 20px;
   }
-  .chart-container {
-    @apply h-80; /* Fixed height for consistent chart display */
-  }
-  .data-table th, .data-table td {
-    @apply p-4 border-b border-gray-200 text-sm;
+  
+  table {
+    width: 100%;
   }

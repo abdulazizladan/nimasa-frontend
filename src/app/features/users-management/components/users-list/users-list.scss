@@ -1,0 +1,43 @@
+.error {
+    color: #b00020;
+  }
+  
+  .status {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #fff;
+  }
+  
+  .status--active {
+    background-color: #2e7d32; /* green */
+  }
+  
+  .status--suspended {
+    background-color: #c62828; /* red */
+  }
+  
+  .kpi-card {
+    color: #fff;
+    padding: 15px;
+    border-radius: 5px;
+  }
+  
+  .kpi-total {
+    background: linear-gradient(135deg, #1e88e5, #1565c0);
+  }
+  
+  .kpi-admin {
+    background: linear-gradient(135deg, #8e24aa, #6a1b9a);
+  }
+  
+  .kpi-managers {
+    background: linear-gradient(135deg, #fb8c00, #ef6c00);
+  }
+  
+  .kpi-active {
+    background: linear-gradient(135deg, #2e7d32, #1b5e20);
+  }
+  
