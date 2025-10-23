@@ -1,67 +1,56 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { UsersStore } from '../../store/users.store';
 import { User } from '../../models/user.model';
 import { FormControl } from '@angular/forms';
-import { Subscription } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { AddUser} from '../add-user/add-user';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-users-list-component',
-  standalone: false,
+  standalone: false, // Assuming this should be true for modern components
   templateUrl: './users-list.html',
   styleUrl: './users-list.scss'
 })
-export class UsersListComponent implements OnInit, OnDestroy {
+export class UsersListComponent implements OnInit {
   
+  // Store and Dialog are injected and available as public/private properties
   private readonly store = inject(UsersStore);
-
   private readonly dialog = inject(MatDialog);
+  
+  // Expose the necessary store signals and computed properties directly
+  readonly users = this.store.filteredUsers;
+  readonly isLoading = this.store.isLoading;
+  readonly error = this.store.error;
+
+  // Expose computed summary counts from the store
+  readonly totalUsers = this.store.totalUsers;
+  readonly adminUsers = this.store.adminUsers;
+  readonly marketManagers = this.store.marketManagers;
+  readonly activeUsers = this.store.activeUsers;
 
   // Table columns
   displayedColumns: string[] = ['name', 'email', 'role', 'status', 'phone', 'actions'];
 
-  // Reactive state signals
-  users = this.store.filteredUsers;
-  allUsers = this.store.users;
-
-  // Summary counts
-  get totalUsers(): number {
-    return this.allUsers().length;
-  }
-
-  get adminUsers(): number {
-    return this.allUsers().filter(u => (u.role || '').toLowerCase() === 'admin').length;
-  }
-
-  get marketManagers(): number {
-    return this.allUsers().filter(u => (u.role || '').toLowerCase() === 'manager' || (u.role || '').toLowerCase() === 'market manager' || (u.role || '').toLowerCase() === 'market_manager').length;
-  }
-
-  get activeUsers(): number {
-    return this.allUsers().filter(u => (u.status || '').toLowerCase() === 'active').length;
-  }
-  isLoading = this.store.isLoading;
-  error = this.store.error;
-
   // Search control
   searchControl = new FormControl('');
-  private sub?: Subscription;
+  
+  constructor() {
+    // Live search subscription using takeUntilDestroyed for automatic cleanup
+    // This runs in the constructor for simpler initialization
+    this.searchControl.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe((value) => {
+        this.store.setSearch(value ?? '');
+      });
+  }
 
   ngOnInit(): void {
+    // Load data on initialization
     this.store.loadUsers();
-
-    // Live search
-    this.sub = this.searchControl.valueChanges.subscribe((value) => {
-      this.store.setSearch(value ?? '');
-    });
   }
 
-  ngOnDestroy(): void {
-    this.sub?.unsubscribe();
-  }
-
-  // Helper to format full name safely
+  // Helper to format full name safely (Kept as is, it's efficient)
   getFullName(user: User): string {
     const first = user.info?.firstName ?? '';
     const last = user.info?.lastName ?? '';

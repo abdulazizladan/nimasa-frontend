@@ -1,0 +1,57 @@
+/* projects-list.component.css */
+
+/* Define generic styles for the KPI value presentation */
+.kpi-card .mat-card-content {
+    /* Large font size for the value */
+    font-size: 2.2rem; 
+    font-weight: 700;
+    margin-top: 10px; /* Space between title and value */
+}
+
+.kpi-card .mat-card-title {
+    font-size: 0.9rem;
+    color: #555;
+    font-weight: 500;
+}
+
+/* Specific KPI Colors/Borders for visual distinction */
+.kpi-total { 
+    border-left: 5px solid #007bff; /* Blue */
+}
+
+.kpi-ongoing { 
+    border-left: 5px solid #ffc107; /* Yellow/Orange (For "Active" or "Ongoing") */
+}
+
+.kpi-completed { 
+    border-left: 5px solid #28a745; /* Green (For "Completed" or "Targets Set") */
+}
+
+.kpi-rate { 
+    border-left: 5px solid #6f42c1; /* Purple (For "Rate" or "Performance") */
+}
+
+/* Ensure the table card looks separate */
+.projects-table-card {
+    padding: 20px;
+    margin-top: 20px;
+}
+  /* Table Styling */
+  .projects-table-card {
+      padding: 10px;
+  }
+  
+  .full-width-search {
+    width: 100%;
+    max-width: 400px; /* Keeps the search bar from stretching too far */
+  }
+  
+  .full-width-table {
+    width: 100%;
+  }
+  
+  /* Status cell styling (optional) */
+  /* Example: Highlight status text in the table */
+  .mat-cell:nth-child(4) {
+      font-weight: 500;
+  }

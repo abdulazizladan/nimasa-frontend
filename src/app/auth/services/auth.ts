@@ -9,7 +9,7 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  accessToken: string;
+  access_token: string;
 }
 
 @Injectable({
@@ -27,10 +27,12 @@ export class Auth {
    * @returns 
    */
   login(credentials: LoginRequest): Promise<string> {
-    const url = `${this.baseUrl}auth/login`
+    const url = `${this.baseUrl}auth/login`;
     return firstValueFrom( 
       this.http.post<LoginResponse>(`${this.baseUrl}auth/login`, credentials).pipe(
-        map(response => response.accessToken)
+        map(
+          response => response.access_token
+        )
       )
   );
   }

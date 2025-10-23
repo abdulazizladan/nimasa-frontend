@@ -23,41 +23,64 @@ export const UsersStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
   withComputed((state) => ({
-    users: computed(() => state.users()),
-    isLoading: computed(() => state.isLoading()),
-    error: computed(() => state.error()),
-    search: computed(() => state.search()),
+    // Removed redundant computed signals for users, isLoading, error, and search.
+    // They are accessed directly from the store instance (e.g., store.users).
     filteredUsers: computed(() => {
       const term = state.search().trim().toLowerCase();
-      if (!term) return state.users();
+      if (!term) {
+        return state.users();
+      }
+
+      // Reusable function to check if a value is included in the search term
+      const includesTerm = (value: string | number | null | undefined): boolean => 
+        String(value || '').toLowerCase().includes(term);
+
       return state.users().filter(u =>
-        String(u.id).includes(term) ||
-        u.email.toLowerCase().includes(term) ||
-        u.role.toLowerCase().includes(term) ||
-        u.status.toLowerCase().includes(term) ||
-        u.info?.firstName?.toLowerCase().includes(term) ||
-        u.info?.lastName?.toLowerCase().includes(term) ||
-        u.contact?.phone?.toLowerCase().includes(term)
+        includesTerm(u.id) ||
+        includesTerm(u.email) ||
+        includesTerm(u.role) ||
+        includesTerm(u.status) ||
+        includesTerm(u.info?.firstName) ||
+        includesTerm(u.info?.lastName) ||
+        includesTerm(u.contact?.phone)
       );
-    })
+    }),
+
+    // New computed signals for summary counts, moved from the component
+    totalUsers: computed(() => state.users().length),
+    adminUsers: computed(() => state.users().filter(u => (u.role || '').toLowerCase() === 'admin').length),
+    marketManagers: computed(() => state.users().filter(u => 
+      ['manager', 'market manager', 'market_manager'].includes((u.role || '').toLowerCase())
+    ).length),
+    activeUsers: computed(() => state.users().filter(u => (u.status || '').toLowerCase() === 'active').length),
   })),
   withMethods((store, usersService = inject(UsersService)) => ({
     async loadUsers() {
+      // 1. Set loading to true
       patchState(store, { isLoading: true, error: null });
       try {
-        const data = await usersService.findAll();
+        // This line is where the code might be hanging if findAll() doesn't resolve.
+        const data = await usersService.findAll(); 
+        
+        // 2. Success: Update users and set loading to false
         patchState(store, { users: data, isLoading: false });
+        console.log(data)
       } catch (error: any) {
-        patchState(store, { isLoading: false, error: error?.message ?? 'Failed to load users' });
+        console.error('Error loading users:', error); // <-- Add console log for debugging
+        
+        // 3. Failure: Set error and set loading to false
+        patchState(store, { 
+            isLoading: false, 
+            error: error?.message ?? 'Failed to load users' 
+        });
       }
     },
     async addUser(payload: Partial<User>) {
-      //const current = store.users();
-      //patchState(store, { isLoading: true, error: null users: [newUser, ...current] });
       patchState(store, { isLoading: true, error: null});
       try {
         const created = await usersService.createUser(payload);
-        patchState(store, {users: [created, ...store.users()], isLoading: false});
+        // Correctly use store.users() to access the current value of the signal
+        patchState(store, {users: [created, ...store.users()], isLoading: false}); 
         return created;
       } catch (error: any) {
         patchState(store, { isLoading: false, error: error?.message ?? 'Failed to add user'});

@@ -16,8 +16,8 @@ export class Login {
   private fb = inject(FormBuilder);
 
   loginForm: FormGroup = this.fb.group({
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', Validators.required],
+    email: ['iibrahimbuba@gmail.com', [Validators.required, Validators.email]],
+    password: ['password', Validators.required],
   });
 
   // Get reactive state from the store
@@ -25,24 +25,14 @@ export class Login {
   error = this.authStore.error;
 
   async submit() {
-    // Clear previous messages
     //this.authStore.clearError();
-
-    // Check if the form is valid before proceeding
     if (this.loginForm.invalid) {
-      //this.authStore.setError('Please correct the errors in the form.');
       return;
     }
-
     const { email, password } = this.loginForm.value;
-
     try {
-      // Use the auth store to login
       await this.authStore.login({ email, password });
-
-      // Navigation handled by AuthStore based on role
     } catch (error: any) {
-      // Error is automatically handled by the store
       console.error('Login failed:', error);
     }
   }

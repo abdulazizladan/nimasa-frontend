@@ -46,8 +46,8 @@ export const AuthStore = signalStore(
         };
         // Await the Observable<LoginResponse> as a promise
         const response = await authService.login(loginRequest);
+        console.log(`response: ${response}`)
         const decodedToken = jwtDecode(response) as any;
-        
 
         patchState(store, {
           token: response,
@@ -59,26 +59,19 @@ export const AuthStore = signalStore(
         });
 
         // Redirect based on role
-        // Redirect based on role
         switch (decodedToken.role) {
           case 'admin':
             router.navigate(['/admin']);
             break;
-          case 'staff':
-            router.navigate(['/staff']);
-            break;
-          case 'student':
-            router.navigate(['/student']);
-            break;
-          case 'guardian':
-            router.navigate(['/guardian'])
+          case 'guest':
+            router.navigate(['/guest']);
             break;
           default:
             router.navigate(['**']);
         }
       } catch (error) {
         patchState(store, {
-          error: 'Login failed. Please try again.',
+          error: 'Login failed. Check your login details and try again.',
           loading: false
         });
       }

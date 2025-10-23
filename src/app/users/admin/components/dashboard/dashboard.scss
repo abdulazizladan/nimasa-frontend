@@ -35,3 +35,106 @@ mat-card {
 table {
   width: 100%;
 }
+
+/* --- Variables for easy themeing --- */
+$positive-color: #4CAF50; // Green
+$negative-color: #F44336; // Red
+$neutral-color: #2196F3; // Blue (for general progress)
+$warning-color: #FF9800; // Orange
+
+/* --- Base Card Styling --- */
+.kpi-scorecard {
+  // Removes default padding and adds structure
+  padding: 0 !important;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  height: 120px; // Fixed height for uniformity
+  display: flex;
+  flex-direction: column;
+
+  &:hover {
+    transform: translateY(-4px); // Lift on hover
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    cursor: pointer;
+  }
+}
+
+/* --- Content and Typography --- */
+.kpi-content {
+  flex-grow: 1; // Takes up most of the space
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.kpi-main-value {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; // Space out value and icon
+}
+
+.kpi-value-text {
+  font-size: 2.2rem; // Large, bold value
+  font-weight: 700;
+  color: #333;
+
+  &.negative-value {
+    color: $negative-color; // Color for negative values
+  }
+}
+
+.kpi-subtitle-text {
+  font-size: 0.9rem;
+  color: #757575;
+  margin-top: 4px;
+}
+
+/* --- Status Icon Styling --- */
+.status-icon {
+  font-size: 32px;
+  height: 32px;
+  width: 32px;
+  border-radius: 50%;
+  padding: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+// Icon Color Coding
+.positive-icon {
+  color: white;
+  background-color: $positive-color;
+}
+.negative-icon {
+  color: white;
+  background-color: $negative-color;
+}
+.neutral-icon {
+  color: white;
+  background-color: $neutral-color;
+}
+
+/* --- Bottom Status Bar (Visual Indicator) --- */
+.kpi-status-bar {
+  height: 6px; // Thin, solid color bar at the bottom
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+// Status Bar Color Coding
+.positive-bar {
+  background-color: $positive-color;
+}
+
+.negative-bar {
+  background-color: $negative-color;
+}
+
+.neutral-bar {
+  background-color: $neutral-color;
+}
+
+.warning-bar {
+  background-color: $warning-color;
+}
