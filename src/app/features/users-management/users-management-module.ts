@@ -15,12 +15,15 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle'
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 import { UsersManagementRoutingModule } from './users-management-routing-module';
 import { UsersListComponent } from './components/users-list/users-list';
 import { UserDetails } from './components/user-details/user-details';
 import { AddUser } from './components/add-user/add-user';
+import { StatusConfirmDialogComponent } from './components/status-confirm-dialog-component/status-confirm-dialog-component';
+import { StatusConfirmDialog } from './components/status-confirm-dialog/status-confirm-dialog';
 
 
 @NgModule({
@@ -30,7 +33,9 @@ import { AddUser } from './components/add-user/add-user';
   declarations: [
     UsersListComponent,
     UserDetails,
-    AddUser
+    AddUser,
+    StatusConfirmDialogComponent,
+    StatusConfirmDialog
   ],
   imports: [
     CommonModule,
@@ -46,6 +51,7 @@ import { AddUser } from './components/add-user/add-user';
     MatSelectModule,
     MatProgressBarModule,
     MatSnackBarModule,
+    MatSlideToggleModule,
     UsersManagementRoutingModule
   ]
 })

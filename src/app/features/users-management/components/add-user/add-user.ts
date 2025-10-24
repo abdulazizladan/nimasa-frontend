@@ -1,8 +1,21 @@
 import { Component, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialogRef } from '@angular/material/dialog';
-import { UsersService } from '../../services/users';
 import { UsersStore } from '../../store/users.store';
+
+interface NewUserPayload {
+  email: string;
+  password?: string;
+  role: string;
+  info: {
+    firstName: string;
+    lastName: string;
+    image: string;
+  };
+  contact: {
+    phone: string;
+  };
+}
 
 @Component({
   selector: 'app-add-user-component',
@@ -12,59 +25,60 @@ import { UsersStore } from '../../store/users.store';
 })
 export class AddUser {
   private readonly fb = inject(FormBuilder);
-  private readonly usersService = inject(UsersService);
   private readonly usersStore = inject(UsersStore);
-  private readonly dialogRef = inject(MatDialogRef<AddUser>);
+  private readonly dialogRef = inject(MatDialogRef<AddUser>); 
 
   isSubmitting = false;
 
+  // Form definition: default role is 'guest'
   form: FormGroup = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', Validators.required],
-    role: ['manager', Validators.required],
-    status: ['active', Validators.required],
+    role: ['guest', Validators.required], // Default set to 'guest'
     info: this.fb.group({
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
-      age: [0, [Validators.required]],
-      image: ['']
+      image: [''] 
     }),
     contact: this.fb.group({
-      phone: ['']
+      phone: [''] 
     })
   });
 
   async onSubmit() {
+    this.form.markAllAsTouched(); 
     if (this.form.invalid || this.isSubmitting) {
       return;
     }
 
     this.isSubmitting = true;
-    const { email, password, role, info, contact } = this.form.value;
+    const formValue = this.form.value;
 
-    // Prepare payload using requested schema
-    const payload = {
-      email,
-      password,
-      role,
+    // Prepare payload, defensively ensuring all required fields and sub-objects are present.
+    const payload: NewUserPayload = {
+      email: formValue.email || '',
+      password: formValue.password || '',
+      role: formValue.role || 'guest', 
       info: {
-        firstName: info.firstName,
-        lastName: info.lastName,
-        age: Number(info.age) || 0,
-        image: info.image
+        firstName: formValue.info?.firstName || '',
+        lastName: formValue.info?.lastName || '',
+        image: formValue.info?.image || ''
       },
       contact: {
-        phone: contact.phone
+        phone: formValue.contact?.phone || ''
       }
-    } as any;
+    };
 
     try {
-      //const created = await this.usersService.createUser(payload);
+      // 1. Call the store's addUser action
       await this.usersStore.addUser(payload);
-      await this.usersStore.loadUsers();
+      
+      // 2. Reload the list to show the new user
+      await this.usersStore.loadUsers(); 
+      
+      // 3. Close the dialog on success
       this.dialogRef.close(true);
     } catch (e) {
-      // Keep dialog open; in a real app you might show a toast/snackbar
       console.error('Failed to create user', e);
     } finally {
       this.isSubmitting = false;

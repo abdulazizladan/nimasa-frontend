@@ -21,7 +21,7 @@ export interface NimsaDepartment {
 })
 export class DepartmentsList implements OnInit {
 
-  displayedColumns: string[] = ['code', 'name', 'head'];
+  displayedColumns: string[] = ['code', 'name', 'head', 'action'];
 
   // 3. Define the hardcoded data source for the mat-table
   dataSource: NimsaDepartment[] = [

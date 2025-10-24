@@ -34,6 +34,14 @@ export class UsersService {
     )
   }
 
+  findByEmail(email: string): Promise<User> {
+    return firstValueFrom(
+      this.http.get<{data: User, message: string, success: boolean}>(`${this.baseUrl}user/${email}`).pipe(
+        map(response => response.data)
+      )
+    )
+  }
+
   update(id: string, user: Partial<User>): Promise<User> {
     return firstValueFrom(
       this.http.put<User>(`${this.baseUrl}user/${id}`, user)

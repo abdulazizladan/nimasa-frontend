@@ -23,8 +23,6 @@ export const UsersStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
   withComputed((state) => ({
-    // Removed redundant computed signals for users, isLoading, error, and search.
-    // They are accessed directly from the store instance (e.g., store.users).
     filteredUsers: computed(() => {
       const term = state.search().trim().toLowerCase();
       if (!term) {
@@ -55,6 +53,7 @@ export const UsersStore = signalStore(
     activeUsers: computed(() => state.users().filter(u => (u.status || '').toLowerCase() === 'active').length),
   })),
   withMethods((store, usersService = inject(UsersService)) => ({
+    // ... existing methods
     async loadUsers() {
       // 1. Set loading to true
       patchState(store, { isLoading: true, error: null });
@@ -92,6 +91,67 @@ export const UsersStore = signalStore(
     },
     clearError() {
       patchState(store, { error: null });
+    },
+    // --- New Methods Added Below ---
+
+    /**
+     * Fetches a single user by email and sets it as the selectedUser.
+     * @param email The email of the user to fetch.
+     */
+    async fetchUserByEmail(email: string) {
+      patchState(store, { isLoading: true, error: null, selectedUser: null });
+      try {
+        const user = await usersService.findByEmail(email);
+        
+        // Patch the fetched user into selectedUser
+        patchState(store, { selectedUser: user, isLoading: false });
+        return user;
+      } catch (error: any) {
+        console.error('Error fetching user by email:', error);
+        patchState(store, { 
+            isLoading: false, 
+            error: error?.message ?? `Failed to fetch user with email: ${email}` 
+        });
+        throw error; // Re-throw to allow component to handle the failure
+      }
+    },
+
+    /**
+     * Updates an existing user and reflects the change in the 'users' array and 'selectedUser'.
+     * @param id The ID of the user to update.
+     * @param payload The partial user data to update.
+     */
+    async updateUser(id: string, payload: Partial<User>) {
+      patchState(store, { isLoading: true, error: null });
+      try {
+        const updatedUser = await usersService.update(id, payload);
+        
+        // 1. Update the 'users' array: find the user by ID and replace it.
+        const updatedUsers = store.users().map(u => 
+          u.id === updatedUser.id ? updatedUser : u
+        );
+
+        // 2. Update 'selectedUser' if the updated user is the currently selected one.
+        const selectedUser = store.selectedUser();
+        const newSelectedUser = selectedUser && String(selectedUser.id) === String(id)
+            ? updatedUser
+            : selectedUser;
+
+        patchState(store, { 
+            users: updatedUsers, 
+            selectedUser: newSelectedUser, 
+            isLoading: false 
+        });
+        
+        return updatedUser;
+      } catch (error: any) {
+        console.error('Error updating user:', error);
+        patchState(store, { 
+            isLoading: false, 
+            error: error?.message ?? `Failed to update user with ID: ${id}` 
+        });
+        throw error; // Re-throw to allow component to handle the failure
+      }
     }
   }))
 );

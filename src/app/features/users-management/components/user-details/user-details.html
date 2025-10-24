@@ -1,1 +1,48 @@
-<p>user-details works!</p>
+<div class="user-detail-container">
+    <h2>User Profile</h2>
+
+    <div>{{store.error()}}</div>
+    @if (store.isLoading()) {
+      <div class="loader-message">
+        <mat-progress-bar mode="query"></mat-progress-bar>
+      </div>
+    } 
+    
+    @else if (store.error(); as error) {
+      <div class="error-message">
+        Error fetching data: {{ error }}
+        <p>Please check the email parameter and your network connection.</p>
+      </div>
+    }
+
+    @else if (user(); as selectedUser) {
+      <h3>{{ selectedUser.info.firstName }} {{ selectedUser.info.lastName }}</h3> 
+      
+      <div class="user-info-grid">
+        <p><strong>ID:</strong> {{ selectedUser.id }}</p>
+        <p><strong>Email:</strong> {{ selectedUser.email }}</p>
+        <p class="status-row">
+            <mat-slide-toggle
+                [checked]="selectedUser.status === 'active'"
+                (toggleChange)="onStatusToggle(selectedUser.status === 'active', selectedUser.email)"
+                color="primary">
+                <span [class]="selectedUser.status">{{ selectedUser.status | uppercase }}</span>
+            </mat-slide-toggle>
+        </p>
+        <p><strong>Role:</strong> {{ selectedUser.role }}</p>
+        
+        
+        <p><strong>Phone:</strong> {{ selectedUser.contact.phone || 'N/A' }}</p>
+        <p>
+          <strong>Created At:</strong> 
+          {{ selectedUser.createdAt | date: 'medium' }}
+        </p>
+      </div>
+    }
+    
+    @else {
+      <div class="not-found-message">
+        User Not Found. <p>No data could be retrieved for this user email.</p>
+      </div>
+    }
+  </div>
