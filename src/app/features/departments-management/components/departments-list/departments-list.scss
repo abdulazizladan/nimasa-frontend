@@ -158,3 +158,16 @@
       }
     }
   }
+
+  :host {
+    display: block;
+    /* Include Inter font */
+    font-family: 'Inter', sans-serif;
+  }
+  .mat-toolbar.mat-primary {
+    background-color: #1e3a8a; /* Dark Blue */
+    color: white;
+  }
+  .mat-card-header {
+    background-color: #f3f4f6; /* Light gray for card header */
+  }

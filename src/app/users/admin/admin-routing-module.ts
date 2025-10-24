@@ -22,6 +22,10 @@ const routes: Routes = [
         loadChildren: () => import('../../features/users-management/users-management-module').then(module => module.UsersManagementModule)
       },
       {
+        path: 'organization',
+        loadChildren: () => import('../../features/organization-management/organization-management-module').then(module => module.OrganizationManagementModule)
+      },
+      {
         path: 'departments',
         loadChildren: () => import('../../features/departments-management/departments-management-module').then(module => module.DepartmentsManagementModule)
       },

@@ -1,0 +1,102 @@
+/* --- Main Container Styling for the Summary --- */
+.organization-header-summary {
+    display: flex;
+    justify-content: space-between; /* Pushes main info to the left, metrics to the right */
+    align-items: center;
+    padding: 20px;
+    margin-bottom: 25px;
+    border-radius: 8px;
+    background-color: #f7f7f7; /* Light background for contrast */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-left: 5px solid #007bff; /* A little branding color */
+    flex-wrap: wrap; /* Allows wrapping on smaller screens */
+}
+
+/* --- Left Section: Logo and Text Details --- */
+.header-main-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.logo-container {
+    width: 100px;
+    height: 100px;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0; /* Prevents the image from shrinking */
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.organization-logo-small {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Ensures the full logo is visible within the square */
+    padding: 5px;
+}
+
+.organization-name {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 5px 0;
+    color: #333;
+}
+
+.organization-motto {
+    font-style: italic;
+    color: #666;
+    margin: 0 0 10px 0;
+    font-size: 0.9rem;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    background-color: #ccc;
+    color: #333;
+    &.active {
+        background-color: #28a745; /* Green for active */
+        color: white;
+    }
+}
+
+
+/* --- Right Section: Key Metrics --- */
+.header-key-metrics {
+    display: flex;
+    gap: 30px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.metric-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #555;
+    
+    .mat-icon {
+        font-size: 32px;
+        height: 32px;
+        width: 32px;
+        margin-bottom: 5px;
+        color: #007bff; /* Primary color for icons */
+    }
+
+    .metric-value {
+        font-size: 1.4rem;
+        font-weight: 700;
+        line-height: 1.1;
+        color: #333;
+    }
+    
+    .metric-label {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+}

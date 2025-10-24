@@ -63,7 +63,6 @@ export const UsersStore = signalStore(
         
         // 2. Success: Update users and set loading to false
         patchState(store, { users: data, isLoading: false });
-        console.log(data)
       } catch (error: any) {
         console.error('Error loading users:', error); // <-- Add console log for debugging
         

@@ -1,0 +1,87 @@
+<div class="organization-summary-container">
+
+    <div *ngIf="store.organization() as organization" class="organization-header-summary">
+    
+        <div class="header-main-info">
+            <div class="logo-container">
+                <img [src]="organization.logo" alt="Organization Logo" class="organization-logo-small">
+            </div>
+            
+            <div class="text-details">
+                <h1 class="organization-name">{{ organization.name }}</h1>
+                <p class="organization-motto">"{{ organization.motto || 'Motto not available' }}"</p>
+                <div class="status-badge" [class.active]="organization.isActive">
+                    Status: {{ organization.isActive ? 'Active' : 'Inactive' }}
+                </div>
+            </div>
+        </div>
+    
+        <div class="header-key-metrics">
+            <div class="metric-item">
+                <mat-icon color="primary">corporate_fare</mat-icon>
+                <div class="metric-value">{{ organization.departments?.length || 0 }}</div>
+                <div class="metric-label">Departments</div>
+            </div>
+            <div class="metric-item">
+                <mat-icon>vpn_key</mat-icon>
+                <div class="metric-value">{{ organization.code }}</div>
+                <div class="metric-label">Code</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-section">
+        <div *ngIf="store.isLoading()" class="loading-indicator">
+            <mat-progress-bar mode="indeterminate" diameter="20"></mat-progress-bar> Loading data...
+        </div>
+        <div *ngIf="store.error()" class="error-message">
+            <mat-icon color="warn">error</mat-icon> {{ store.error() }}
+        </div>
+
+        <mat-form-field appearance="outline" class="search-field">
+            <mat-label>Search Departments</mat-label>
+            <input matInput 
+                   (input)="onSearchChange($event)" 
+                   [value]="store.search()"
+                   placeholder="e.g., Marine, Mr. A, MSR">
+            <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+    </div>
+
+    <div *ngIf="store.organization()">
+        <h2>Departments Overview</h2>
+
+        <table mat-table [dataSource]="store.filteredDepartments()" class="mat-elevation-z8">
+            
+            <ng-container matColumnDef="code">
+                <th mat-header-cell *matHeaderCellDef> Code </th>
+                <td mat-cell *matCellDef="let department"> {{department.code}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="name">
+                <th mat-header-cell *matHeaderCellDef> Name </th>
+                <td mat-cell *matCellDef="let department"> {{department.name}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="head">
+                <th mat-header-cell *matHeaderCellDef> Head </th>
+                <td mat-cell *matCellDef="let department"> {{department.head}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="description">
+                <th mat-header-cell *matHeaderCellDef> Description </th>
+                <td mat-cell *matCellDef="let department"> {{department.description || 'N/A'}} </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns; trackBy: trackDepartment"></tr>
+
+            <tr class="mat-row" *matNoDataRow>
+                <td class="mat-cell" [attr.colspan]="displayedColumns.length">
+                    No departments matching "{{store.search()}}"
+                </td>
+            </tr>
+        </table>
+    </div>
+
+</div>

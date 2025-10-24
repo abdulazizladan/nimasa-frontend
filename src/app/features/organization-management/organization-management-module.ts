@@ -18,11 +18,9 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 
-import { DepartmentsManagementRoutingModule } from './departments-management-routing-module';
-import { DepartmentsList } from './components/departments-list/departments-list';
+import { OrganizationManagementRoutingModule } from './organization-management-routing-module';
+import { OrganizationSummary } from './components/organization-summary/organization-summary';
 import { DepartmentDetails } from './components/department-details/department-details';
-import { AddDepartment } from './components/add-department/add-department';
-import { MatDividerModule } from '@angular/material/divider';
 import { MatToolbarModule } from '@angular/material/toolbar';
 
 
@@ -31,9 +29,8 @@ import { MatToolbarModule } from '@angular/material/toolbar';
     provideHttpClient()
   ],
   declarations: [
-    DepartmentsList,
-    DepartmentDetails,
-    AddDepartment
+    OrganizationSummary,
+    DepartmentDetails
   ],
   imports: [
     CommonModule,
@@ -47,12 +44,11 @@ import { MatToolbarModule } from '@angular/material/toolbar';
     MatButtonModule,
     MatIconModule,
     MatSelectModule,
-    MatDividerModule,
-    MatChipsModule,
     MatProgressBarModule,
+    MatChipsModule,
     MatSnackBarModule,
     MatToolbarModule,
-    DepartmentsManagementRoutingModule
+    OrganizationManagementRoutingModule
   ]
 })
-export class DepartmentsManagementModule { }
+export class OrganizationManagementModule { }
