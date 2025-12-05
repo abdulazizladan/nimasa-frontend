@@ -14,8 +14,9 @@ export class OrganizationService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = env.baseUrl;
 
+  //Get information about the organization
   getOrganization(): Promise<Organization> {
-    return firstValueFrom (
+    return firstValueFrom(
       this.http.get<Organization>(`${this.baseUrl}organization/NIMASA`).pipe(
         // Add a basic error handler to the pipe for robustness
         catchError(error => {
@@ -28,7 +29,7 @@ export class OrganizationService {
 
   // Placeholder method to get a single department by code
   getDepartmentByCode(code: string): Promise<Department> {
-    return firstValueFrom (
+    return firstValueFrom(
       this.http.get<Department>(`${this.baseUrl}department/code/${code}`).pipe(
         catchError(error => {
           console.error(`Error fetching department ${code}:`, error);
@@ -43,7 +44,7 @@ export class OrganizationService {
     // Note: Department model likely needs an 'id' or is generated on the backend
     // Assuming a POST request for creation
     return firstValueFrom(
-      this.http.post<Department>(`${this.baseUrl}departments`, department).pipe(
+      this.http.post<Department>(`${this.baseUrl}department`, department).pipe(
         catchError(error => {
           console.error('Error adding department:', error);
           return throwError(() => new Error('Failed to add department'));

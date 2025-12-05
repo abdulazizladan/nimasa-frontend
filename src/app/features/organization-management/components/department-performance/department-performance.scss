@@ -1,0 +1,53 @@
+.performance-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 16px;
+  gap: 24px;
+
+  .content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+
+    .metric-card {
+      padding: 16px;
+
+      .value {
+        font-size: 3rem;
+        font-weight: 500;
+        margin: 16px 0;
+      }
+
+      .comparison {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        color: #757575;
+        font-size: 0.9rem;
+
+        &.positive {
+          color: #4caf50; // Green
+        }
+        // You might want a negative class red as well
+      }
+    }
+  }
+
+  .chart-card {
+      padding: 16px;
+      .chart-wrapper {
+          display: block;
+          max-height: 400px;
+      }
+  }
+}

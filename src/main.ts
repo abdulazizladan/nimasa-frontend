@@ -5,7 +5,7 @@ import { AppModule } from './app/app-module';
 platformBrowser().bootstrapModule(AppModule, {
   ngZoneEventCoalescing: true,
   providers: [
-    provideNativeDateAdapter()
+    provideNativeDateAdapter(),
   ]
 })
   .catch(err => console.error(err));

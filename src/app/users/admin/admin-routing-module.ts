@@ -25,10 +25,10 @@ const routes: Routes = [
         path: 'organization',
         loadChildren: () => import('../../features/organization-management/organization-management-module').then(module => module.OrganizationManagementModule)
       },
-      {
+      /**{
         path: 'departments',
         loadChildren: () => import('../../features/departments-management/departments-management-module').then(module => module.DepartmentsManagementModule)
-      },
+      },**/
       {
         path: 'projects',
         loadChildren: () => import('../../features/projects-management/projects-management-module').then(module => module.ProjectstsManagementModule)

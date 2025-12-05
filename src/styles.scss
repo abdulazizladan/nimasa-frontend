@@ -70,6 +70,14 @@ body {
     container-background-color: white,
   ));
 }
+
+:root {
+  @include mat.dialog-overrides((
+    container-shape: 5px,
+    content-padding: 8px
+  ));
+}
+
 /* You can add global styles to this file, and also import other style files */
 
 html, body { height: 100%; }

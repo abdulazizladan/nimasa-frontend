@@ -46,7 +46,6 @@ export const AuthStore = signalStore(
         };
         // Await the Observable<LoginResponse> as a promise
         const response = await authService.login(loginRequest);
-        console.log(`response: ${response}`)
         const decodedToken = jwtDecode(response) as any;
 
         patchState(store, {

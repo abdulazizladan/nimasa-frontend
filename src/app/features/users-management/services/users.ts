@@ -8,13 +8,13 @@ import { firstValueFrom, map } from 'rxjs';
   providedIn: 'root'
 })
 export class UsersService {
-  
+
   private readonly http = inject(HttpClient);
   private readonly baseUrl = env.baseUrl;
 
   createUser(userDetails: Partial<User>): Promise<User> {
     return firstValueFrom(
-      this.http.post<{data: User}>(`${this.baseUrl}user`, userDetails).pipe(
+      this.http.post<{ data: User }>(`${this.baseUrl}user`, userDetails).pipe(
         map(response => response.data)
       )
     );
@@ -22,7 +22,7 @@ export class UsersService {
 
   findAll(): Promise<User[]> {
     return firstValueFrom(
-      this.http.get<{data: User[], message: string, success: boolean}>(`${this.baseUrl}user`).pipe(
+      this.http.get<{ data: User[], message: string, success: boolean }>(`${this.baseUrl}user`).pipe(
         map(response => response.data)
       )
     )
@@ -30,13 +30,15 @@ export class UsersService {
 
   findByID(id: string): Promise<User> {
     return firstValueFrom(
-      this.http.get<User>(`${this.baseUrl}user/${id}`)
+      this.http.get<{ data: User }>(`${this.baseUrl}user/${id}`).pipe(
+        map(response => response.data)
+      )
     )
   }
 
   findByEmail(email: string): Promise<User> {
     return firstValueFrom(
-      this.http.get<{data: User, message: string, success: boolean}>(`${this.baseUrl}user/${email}`).pipe(
+      this.http.get<{ data: User, message: string, success: boolean }>(`${this.baseUrl}user/${email}`).pipe(
         map(response => response.data)
       )
     )
@@ -44,7 +46,9 @@ export class UsersService {
 
   update(id: string, user: Partial<User>): Promise<User> {
     return firstValueFrom(
-      this.http.put<User>(`${this.baseUrl}user/${id}`, user)
+      this.http.put<{ data: User }>(`${this.baseUrl}user/${id}`, user).pipe(
+        map(response => response.data)
+      )
     );
   }
 

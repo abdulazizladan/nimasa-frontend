@@ -1,6 +1,8 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { OrganizationSummary } from './components/organization-summary/organization-summary';
+import { DepartmentDetails } from './components/department-details/department-details';
+import { DepartmentPerformance } from './components/department-performance/department-performance';
 
 const routes: Routes = [
   {
@@ -11,6 +13,14 @@ const routes: Routes = [
   {
     path: 'summary',
     component: OrganizationSummary
+  },
+  {
+    path: 'department/:code',
+    component: DepartmentDetails
+  },
+  {
+    path: 'department/:code/performance',
+    component: DepartmentPerformance
   },
   {
     path: '**',

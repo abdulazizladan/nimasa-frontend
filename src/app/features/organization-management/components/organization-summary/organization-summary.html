@@ -1,87 +1,150 @@
-<div class="organization-summary-container">
+<div class="app-container">
+    <!-- Main container now uses flex-col for vertical stacking -->
+    <div class="content-wrapper">
 
-    <div *ngIf="store.organization() as organization" class="organization-header-summary">
-    
-        <div class="header-main-info">
-            <div class="logo-container">
-                <img [src]="organization.logo" alt="Organization Logo" class="organization-logo-small">
-            </div>
+        <!-- Loading and Error States 
+        <mat-card *ngIf="store.isLoading()" class="loading-card">
+            <mat-card-content class="loading-content">
+                <p>Loading organization data...</p>
+            </mat-card-content>
+        </mat-card>-->
+
+        @if(store.isLoading()) {
+            <mat-progress-bar mode="query"></mat-progress-bar>
+        }
+        <mat-card *ngIf="store.error()" class="error-card">
+            <mat-card-content class="error-content">
+                <p>Error: {{ store.error() }}</p>
+                <button mat-raised-button color="primary" (click)="store.loadOrganization()">Retry Load</button>
+            </mat-card-content>
+        </mat-card>
+
+        <ng-container *ngIf="store.organization(); let org">
             
-            <div class="text-details">
-                <h1 class="organization-name">{{ organization.name }}</h1>
-                <p class="organization-motto">"{{ organization.motto || 'Motto not available' }}"</p>
-                <div class="status-badge" [class.active]="organization.isActive">
-                    Status: {{ organization.isActive ? 'Active' : 'Inactive' }}
-                </div>
-            </div>
-        </div>
-    
-        <div class="header-key-metrics">
-            <div class="metric-item">
-                <mat-icon color="primary">corporate_fare</mat-icon>
-                <div class="metric-value">{{ organization.departments?.length || 0 }}</div>
-                <div class="metric-label">Departments</div>
-            </div>
-            <div class="metric-item">
-                <mat-icon>vpn_key</mat-icon>
-                <div class="metric-value">{{ organization.code }}</div>
-                <div class="metric-label">Code</div>
-            </div>
-        </div>
+            <!-- 1. General Organization Details Card (Full Width) -->
+            <mat-card class="org-details-card">
+                <mat-card-header>
+                    <div mat-card-avatar class="org-logo" [ngStyle]="{'background-image': 'url(' + org.logo + ')', 'background-size': 'cover', 'background-position': 'center'}"></div>
+                    <div>
+                        <mat-card-title>{{ org.name }}</mat-card-title>
+                        <mat-card-subtitle>{{ org.motto || 'No Motto Provided' }}</mat-card-subtitle>
+                    </div>
+                </mat-card-header>
+                <mat-card-content>
+                    <div class="info-row">
+                        <p><strong>Code:</strong> {{ org.code }}</p>
+                        <p><strong>Status:</strong> <span [class.active-status]="org.isActive" [class.inactive-status]="!org.isActive">{{ org.isActive ? 'Active' : 'Inactive' }}</span></p>
+                    </div>
+                </mat-card-content>
+            </mat-card>
+
+            <!-- 2. Departments Search and List Card (Full Width in vertical layout) -->
+            <mat-card class="departments-card">
+                <mat-card-title class="card-header-title">
+                    Departments ({{ store.filteredDepartments().length }})
+                </mat-card-title>
+                <mat-card-content>
+                    <mat-form-field appearance="outline" class="full-width-input">
+                        <mat-label>Search Departments (Name, Code, or Head)</mat-label>
+                        <input matInput [formControl]="searchControl" placeholder="E.g., Marine, F&A, Olumide">
+                        <mat-icon matSuffix>search</mat-icon>
+                    </mat-form-field>
+
+                    <mat-accordion multi class="department-accordion">
+                        <mat-expansion-panel *ngFor="let dept of store.filteredDepartments()" class="dept-panel">
+                            <mat-expansion-panel-header>
+                                <mat-panel-title class="dept-title">
+                                    [{{ dept.code }}] - {{ dept.name }}
+                                </mat-panel-title>
+                                <mat-panel-description class="dept-head">
+                                    Head: {{ dept.head }}
+                                </mat-panel-description>
+                            </mat-expansion-panel-header>
+                            <p class="dept-description">{{ dept.description }}</p>
+                            <p class="dept-id">
+                                <button mat-flat-button [routerLink]="['../department', dept.code]" aria-label="View department">
+                                    View department
+                                </button>
+                            </p>
+                        </mat-expansion-panel>
+                        <p *ngIf="store.filteredDepartments().length === 0" class="no-results">
+                            No departments found matching the search term '{{ store.search() }}'.
+                        </p>
+                    </mat-accordion>
+                </mat-card-content>
+            </mat-card>
+
+            <!-- 3. Priority Areas Expansible Mat-Table (Full Width in vertical layout) -->
+            <mat-card class="priority-areas-card">
+                <mat-card-title class="card-header-title">
+                    Priority Areas and Deliverables
+                </mat-card-title>
+                <mat-card-content>
+                    <!-- FIX: Added multiTemplateDataRows to resolve the MatTable row definition error -->
+                    <table mat-table [dataSource]="org.priorityAreas" class="full-width-table" multiTemplateDataRows>
+                        <!-- Area Column -->
+                        <ng-container matColumnDef="area">
+                            <th mat-header-cell *matHeaderCellDef> Priority Area </th>
+                            <td mat-cell *matCellDef="let element"> {{ element.area }} </td>
+                        </ng-container>
+
+                        <!-- Expand Column -->
+                        <ng-container matColumnDef="expand">
+                            <th mat-header-cell *matHeaderCellDef></th>
+                            <td mat-cell *matCellDef="let element" class="mat-column-expand">
+                                <button mat-icon-button (click)="toggleAreaExpansion(element)">
+                                    <mat-icon>{{ expandedArea() === element ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
+                                </button>
+                            </td>
+                        </ng-container>
+
+                        <!-- Expanded Row Definition -->
+                        <ng-container matColumnDef="expandedDetail">
+                            <td mat-cell *matCellDef="let element" [attr.colspan]="priorityAreaColumns.length" class="expanded-detail-cell">
+                                <div class="detail-row" [@detailExpand]="element === expandedArea() ? 'expanded' : 'collapsed'">
+                                    <div *ngIf="element === expandedArea()" class="detail-content">
+                                        <h4 class="deliverables-header">Deliverables:</h4>
+                                        <table mat-table [dataSource]="element.deliverables" class="deliverables-table">
+                                            <!-- Description Column -->
+                                            <ng-container matColumnDef="description">
+                                                <th mat-header-cell *matHeaderCellDef> Deliverable </th>
+                                                <td mat-cell *matCellDef="let deliverable"> {{ deliverable.description }} </td>
+                                            </ng-container>
+
+                                            <!-- Output Indicators Column (nested list) -->
+                                            <ng-container matColumnDef="outputIndicators">
+                                                <th mat-header-cell *matHeaderCellDef class="indicator-header"> Output Indicators </th>
+                                                <td mat-cell *matCellDef="let deliverable">
+                                                    <ul class="indicator-list">
+                                                        <li *ngFor="let indicator of deliverable.outputIndicators">
+                                                            {{ indicator.description }}
+                                                        </li>
+                                                    </ul>
+                                                </td>
+                                            </ng-container>
+
+                                            <tr mat-header-row *matHeaderRowDef="deliverableColumns"></tr>
+                                            <tr mat-row *matRowDef="let row; columns: deliverableColumns;" class="deliverable-row"></tr>
+                                            <tr class="mat-row" *matNoDataRow>
+                                                <td class="mat-cell no-deliverables" [attr.colspan]="deliverableColumns.length">No deliverables found for this area.</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </td>
+                        </ng-container>
+
+                        <tr mat-header-row *matHeaderRowDef="priorityAreaColumns" class="priority-area-header"></tr>
+                        <tr mat-row *matRowDef="let row; columns: priorityAreaColumns;" (click)="toggleAreaExpansion(row)" class="priority-area-row"></tr>
+
+                        <!-- The row to display the expanded content -->
+                        <tr mat-row *matRowDef="let row; columns: ['expandedDetail']" class="detail-row-container"></tr>
+                    </table>
+                    <div *ngIf="org.priorityAreas.length === 0" class="no-results-table">
+                        No priority areas defined for this organization.
+                    </div>
+                </mat-card-content>
+            </mat-card>
+        </ng-container>
     </div>
-
-    <div class="status-section">
-        <div *ngIf="store.isLoading()" class="loading-indicator">
-            <mat-progress-bar mode="indeterminate" diameter="20"></mat-progress-bar> Loading data...
-        </div>
-        <div *ngIf="store.error()" class="error-message">
-            <mat-icon color="warn">error</mat-icon> {{ store.error() }}
-        </div>
-
-        <mat-form-field appearance="outline" class="search-field">
-            <mat-label>Search Departments</mat-label>
-            <input matInput 
-                   (input)="onSearchChange($event)" 
-                   [value]="store.search()"
-                   placeholder="e.g., Marine, Mr. A, MSR">
-            <mat-icon matSuffix>search</mat-icon>
-        </mat-form-field>
-    </div>
-
-    <div *ngIf="store.organization()">
-        <h2>Departments Overview</h2>
-
-        <table mat-table [dataSource]="store.filteredDepartments()" class="mat-elevation-z8">
-            
-            <ng-container matColumnDef="code">
-                <th mat-header-cell *matHeaderCellDef> Code </th>
-                <td mat-cell *matCellDef="let department"> {{department.code}} </td>
-            </ng-container>
-
-            <ng-container matColumnDef="name">
-                <th mat-header-cell *matHeaderCellDef> Name </th>
-                <td mat-cell *matCellDef="let department"> {{department.name}} </td>
-            </ng-container>
-
-            <ng-container matColumnDef="head">
-                <th mat-header-cell *matHeaderCellDef> Head </th>
-                <td mat-cell *matCellDef="let department"> {{department.head}} </td>
-            </ng-container>
-
-            <ng-container matColumnDef="description">
-                <th mat-header-cell *matHeaderCellDef> Description </th>
-                <td mat-cell *matCellDef="let department"> {{department.description || 'N/A'}} </td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns; trackBy: trackDepartment"></tr>
-
-            <tr class="mat-row" *matNoDataRow>
-                <td class="mat-cell" [attr.colspan]="displayedColumns.length">
-                    No departments matching "{{store.search()}}"
-                </td>
-            </tr>
-        </table>
-    </div>
-
 </div>

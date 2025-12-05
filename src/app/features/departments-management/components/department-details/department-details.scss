@@ -1,0 +1,158 @@
+@use 'sass:color';
+
+:host {
+  display: block;
+  padding: 1.5rem;
+  background: #f8fafc;
+  min-height: 100%;
+}
+
+.department-performance {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  &__header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  &__eyebrow {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
+    color: #64748b;
+    margin: 0;
+  }
+
+  &__period {
+    margin: 0;
+    color: #475569;
+  }
+}
+
+.performance-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1rem;
+}
+
+.performance-card {
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 15px 35px rgba(15, 23, 42, 0.08);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  background: #ffffff;
+
+  &__label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+
+    span {
+      display: block;
+      font-weight: 500;
+      color: #94a3b8;
+      margin-top: 0.15rem;
+    }
+  }
+
+  &__value {
+    font-size: 2.1rem;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  &__meta {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin: 0;
+  }
+
+  &--score {
+    background: linear-gradient(135deg, #0ea5e9, #2563eb);
+    color: #e0f2fe;
+    border: none;
+
+    .performance-card__value {
+      color: #fff;
+    }
+
+    .performance-card__label,
+    .performance-card__meta {
+      color: color.scale(#e0f2fe, $lightness: -15%);
+    }
+
+    mat-progress-bar {
+      --mdc-linear-progress-active-indicator-color: #facc15;
+      --mdc-linear-progress-track-color: rgba(255, 255, 255, 0.2);
+    }
+  }
+
+  &--alert {
+    background: #fef2f2;
+    border-color: #fecaca;
+
+    .performance-card__value {
+      color: #dc2626;
+    }
+  }
+}
+
+.notes-card {
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+
+  mat-card-title {
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  p {
+    margin: 0;
+    color: #475569;
+    line-height: 1.6;
+  }
+}
+
+.state-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px dashed #cbd5f5;
+  background: #f1f5f9;
+
+  mat-icon {
+    color: #0ea5e9;
+  }
+
+  &--error {
+    border-color: #fecaca;
+    background: #fef2f2;
+
+    mat-icon {
+      color: #dc2626;
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  :host {
+    padding: 1rem;
+  }
+
+  .performance-card {
+    padding: 1.25rem;
+  }
+}
+

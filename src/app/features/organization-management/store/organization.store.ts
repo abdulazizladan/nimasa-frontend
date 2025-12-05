@@ -63,6 +63,16 @@ export const OrganizationStore = signalStore(
         // Potential method to select a department (optional for this task, but good practice)
         selectDepartment(department: Department | null) {
             patchState(store, { selectedDepartment: department });
+        },
+        selectDepartmentByCode(departmentCode: string) {
+            // Get the current organization's departments
+            const departments = store.organization()?.departments;
+
+            // Find the department whose code matches the input
+            const selected = departments?.find(dept => dept.code === departmentCode) ?? null;
+
+            // Update the state with the found department (or null if not found)
+            patchState(store, { selectedDepartment: selected });
         }
     }))
 )

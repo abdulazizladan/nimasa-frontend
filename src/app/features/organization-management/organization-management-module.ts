@@ -17,20 +17,25 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatExpansionModule } from '@angular/material/expansion';
 
 import { OrganizationManagementRoutingModule } from './organization-management-routing-module';
 import { OrganizationSummary } from './components/organization-summary/organization-summary';
 import { DepartmentDetails } from './components/department-details/department-details';
+import { DepartmentPerformance } from './components/department-performance/department-performance';
 import { MatToolbarModule } from '@angular/material/toolbar';
+import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
 
 
 @NgModule({
   providers: [
-    provideHttpClient()
+    provideHttpClient(),
+    provideCharts(withDefaultRegisterables())
   ],
   declarations: [
     OrganizationSummary,
-    DepartmentDetails
+    DepartmentDetails,
+    DepartmentPerformance
   ],
   imports: [
     CommonModule,
@@ -48,7 +53,10 @@ import { MatToolbarModule } from '@angular/material/toolbar';
     MatChipsModule,
     MatSnackBarModule,
     MatToolbarModule,
-    OrganizationManagementRoutingModule
+    MatExpansionModule,
+    MatExpansionModule,
+    OrganizationManagementRoutingModule,
+    BaseChartDirective
   ]
 })
 export class OrganizationManagementModule { }

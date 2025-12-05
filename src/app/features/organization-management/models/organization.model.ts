@@ -1,4 +1,5 @@
 import { Department } from "./department.model";
+import { PriorityArea } from "./priorityArea.model";
 
 export class Organization {
     "code": string;
@@ -7,4 +8,5 @@ export class Organization {
     "logo": string;
     "isActive": boolean;
     "departments": Array<Department>;
+    "priorityAreas": Array<PriorityArea>
 }

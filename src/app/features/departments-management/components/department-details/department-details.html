@@ -1,1 +1,86 @@
-<p>department-details works!</p>
+<section class="department-performance">
+  <header class="department-performance__header">
+    <div>
+      <p class="department-performance__eyebrow">Performance Overview</p>
+      <h1>Department KPI snapshot</h1>
+      <p class="department-performance__period">
+        FY {{ selectedYear }} · {{ monthNames[selectedMonth - 1] }}
+      </p>
+    </div>
+    @if (departmentId()) {
+    <button mat-raised-button color="primary"
+      [routerLink]="['/organization/department', departmentId(), 'performance']">
+      View Detailed Performance
+    </button>
+    }
+  </header>
+
+  @if (isLoading()) {
+  <mat-progress-bar color="primary" mode="indeterminate"></mat-progress-bar>
+  }
+
+  @if (loadError()) {
+  <mat-card class="state-card state-card--error">
+    <mat-icon>error_outline</mat-icon>
+    <span>{{ loadError() }}</span>
+  </mat-card>
+  }
+  <ng-container *ngIf="performance() as perf">
+    <div class="performance-row">
+      <mat-card class="performance-card performance-card--score">
+        <div class="performance-card__label">
+          Performance Score
+          <span>{{ monthNames[perf.month - 1] }} {{ perf.year }}</span>
+        </div>
+        <div class="performance-card__value">
+          {{ perf.performanceScore | number:'1.0-1' }}%
+        </div>
+        <mat-progress-bar color="accent" mode="determinate" [value]="perf.performanceScore"></mat-progress-bar>
+        <div class="performance-card__meta">
+          Department ID · {{ perf.departmentId }}
+        </div>
+      </mat-card>
+
+      <mat-card class="performance-card">
+        <div class="performance-card__label">Targets Completed</div>
+        <div class="performance-card__value">
+          {{ perf.completedTargets }}/{{ perf.totalTargets }}
+        </div>
+        <p class="performance-card__meta">
+          {{ completionRate() }}% of the monthly targets completed
+        </p>
+      </mat-card>
+
+      <mat-card class="performance-card">
+        <div class="performance-card__label">Pending Targets</div>
+        <div class="performance-card__value">
+          {{ perf.pendingTargets }}
+        </div>
+        <p class="performance-card__meta">
+          {{ pendingRatio() }}% of the workload
+        </p>
+      </mat-card>
+
+      <mat-card class="performance-card performance-card--alert">
+        <div class="performance-card__label">Overdue Targets</div>
+        <div class="performance-card__value">
+          {{ perf.overdueTargets }}
+        </div>
+        <p class="performance-card__meta">
+          Requires immediate follow-up
+        </p>
+      </mat-card>
+    </div>
+
+    <mat-card class="notes-card">
+      <mat-card-title>Performance Notes</mat-card-title>
+      <mat-card-content>
+        <p>{{ perf.notes || 'No notes were provided for this period.' }}</p>
+      </mat-card-content>
+    </mat-card>
+    <ng-container *ngIf="!isLoading()">
+      <mat-card class="state-card">
+        <mat-icon>info</mat-icon>
+        <span>No performance data available for this department.</span>
+      </mat-card>
+    </ng-container>

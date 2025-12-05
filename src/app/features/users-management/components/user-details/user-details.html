@@ -22,12 +22,15 @@
         <p><strong>ID:</strong> {{ selectedUser.id }}</p>
         <p><strong>Email:</strong> {{ selectedUser.email }}</p>
         <p class="status-row">
-            <mat-slide-toggle
-                [checked]="selectedUser.status === 'active'"
-                (toggleChange)="onStatusToggle(selectedUser.status === 'active', selectedUser.email)"
-                color="primary">
-                <span [class]="selectedUser.status">{{ selectedUser.status | uppercase }}</span>
-            </mat-slide-toggle>
+          <mat-slide-toggle
+            [checked]="selectedUser.status === 'active'"
+            (change)="onStatusToggle($event.checked, selectedUser.email)"
+            color="primary">
+            <span [class.active]="selectedUser.status === 'active'" 
+                  [class.suspended]="selectedUser.status !== 'active'">
+              {{ selectedUser.status === 'active' ? 'ACTIVE' : 'SUSPENDED' }}
+          </span>
+      </mat-slide-toggle>
         </p>
         <p><strong>Role:</strong> {{ selectedUser.role }}</p>
         

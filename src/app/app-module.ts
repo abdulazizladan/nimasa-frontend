@@ -1,6 +1,7 @@
 import { NgModule, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { BrowserModule, provideClientHydration, withEventReplay } from '@angular/platform-browser';
 import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { AuthInterceptor } from './auth/interceptors/auth.interceptor';
 
 import { AppRoutingModule } from './app-routing-module';
@@ -16,7 +17,8 @@ import { AuthModule } from './auth/auth-module';
   imports: [
     BrowserModule,
     AuthModule,
-    AppRoutingModule
+    AppRoutingModule,
+    MatExpansionModule
   ],
   providers: [
     provideBrowserGlobalErrorListeners(),
