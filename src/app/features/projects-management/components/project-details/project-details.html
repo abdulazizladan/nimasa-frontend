@@ -1,1 +1,219 @@
-<p>project-details works!</p>
+<div class="project-details-container page-container" *ngIf="project">
+
+    <!-- Header Section -->
+    <div class="header-section mb-xl">
+        <button mat-icon-button routerLink="../" class="back-button">
+            <mat-icon>arrow_back</mat-icon>
+        </button>
+        <div class="header-content">
+            <h1 class="project-title">{{ project.name }}</h1>
+            <div class="header-meta">
+                <span class="status-badge" [ngClass]="getStatusClass(project.status)">
+                    {{ project.status }}
+                </span>
+                <span class="priority-badge" [ngClass]="getPriorityClass(project.priority || '')"
+                    *ngIf="project.priority">
+                    {{ project.priority }} Priority
+                </span>
+                <span class="department-badge">
+                    <mat-icon>business</mat-icon>
+                    {{ project.departmentName || project.departmentCode }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overview Cards -->
+    <div fxLayout="row" fxLayout.lt-md="column" class="card-gap mb-2xl">
+        <mat-card fxFlex class="info-card">
+            <mat-card-header>
+                <mat-icon mat-card-avatar>event</mat-icon>
+                <mat-card-title>Timeline</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <div class="info-item" *ngIf="project.startDate">
+                    <span class="label">Start Date:</span>
+                    <span class="value">{{ project.startDate | date:'mediumDate' }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Due Date:</span>
+                    <span class="value">{{ project.dueDate | date:'mediumDate' }}</span>
+                </div>
+                <div class="info-item" *ngIf="project.completionDate">
+                    <span class="label">Completed:</span>
+                    <span class="value">{{ project.completionDate | date:'mediumDate' }}</span>
+                </div>
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card fxFlex class="info-card">
+            <mat-card-header>
+                <mat-icon mat-card-avatar>account_balance_wallet</mat-icon>
+                <mat-card-title>Budget</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <div class="info-item" *ngIf="project.budget">
+                    <span class="label">Allocated:</span>
+                    <span class="value">₦{{ project.budget | number:'1.0-0' }}</span>
+                </div>
+                <div class="info-item" *ngIf="project.actualSpent">
+                    <span class="label">Spent:</span>
+                    <span class="value">₦{{ project.actualSpent | number:'1.0-0' }}</span>
+                </div>
+                <div class="info-item" *ngIf="project.budget && project.actualSpent">
+                    <span class="label">Remaining:</span>
+                    <span class="value">₦{{ (project.budget - project.actualSpent) | number:'1.0-0' }}</span>
+                </div>
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card fxFlex class="info-card">
+            <mat-card-header>
+                <mat-icon mat-card-avatar>trending_up</mat-icon>
+                <mat-card-title>Progress</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <div class="progress-display">
+                    <div class="progress-value">{{ project.progress || 0 }}%</div>
+                    <mat-progress-bar mode="determinate" [value]="project.progress || 0" class="progress-bar">
+                    </mat-progress-bar>
+                </div>
+            </mat-card-content>
+        </mat-card>
+    </div>
+
+    <!-- Description -->
+    <mat-card class="section-spacing" *ngIf="project.description">
+        <mat-card-header>
+            <mat-card-title>Project Description</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <p class="description-text">{{ project.description }}</p>
+        </mat-card-content>
+    </mat-card>
+
+    <!-- Team Section -->
+    <mat-card class="section-spacing" *ngIf="project.projectManager || project.teamMembers">
+        <mat-card-header>
+            <mat-card-title>Project Team</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <div class="team-section">
+                <div class="team-item" *ngIf="project.projectManager">
+                    <mat-icon>person</mat-icon>
+                    <div>
+                        <div class="team-role">Project Manager</div>
+                        <div class="team-name">{{ project.projectManager }}</div>
+                    </div>
+                </div>
+                <div class="team-members" *ngIf="project.teamMembers && project.teamMembers.length > 0">
+                    <div class="team-role mb-sm">Team Members</div>
+                    <div class="members-grid">
+                        <div class="member-chip" *ngFor="let member of project.teamMembers">
+                            <mat-icon>person_outline</mat-icon>
+                            {{ member }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </mat-card-content>
+    </mat-card>
+
+    <!-- Milestones -->
+    <mat-card class="section-spacing" *ngIf="project.milestones && project.milestones.length > 0">
+        <mat-card-header>
+            <mat-card-title>Milestones</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <div class="milestones-timeline">
+                <div class="milestone-item" *ngFor="let milestone of project.milestones">
+                    <div class="milestone-marker" [ngClass]="getStatusClass(milestone.status)"></div>
+                    <div class="milestone-content">
+                        <div class="milestone-header">
+                            <h4 class="milestone-name">{{ milestone.name }}</h4>
+                            <span class="milestone-status" [ngClass]="getStatusClass(milestone.status)">
+                                {{ milestone.status }}
+                            </span>
+                        </div>
+                        <p class="milestone-description" *ngIf="milestone.description">
+                            {{ milestone.description }}
+                        </p>
+                        <div class="milestone-date">
+                            <mat-icon>event</mat-icon>
+                            Due: {{ milestone.dueDate | date:'mediumDate' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </mat-card-content>
+    </mat-card>
+
+    <!-- Tasks -->
+    <mat-card class="section-spacing" *ngIf="project.tasks && project.tasks.length > 0">
+        <mat-card-header>
+            <mat-card-title>Active Tasks</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <table mat-table [dataSource]="project.tasks" class="tasks-table">
+
+                <ng-container matColumnDef="name">
+                    <th mat-header-cell *matHeaderCellDef>Task</th>
+                    <td mat-cell *matCellDef="let task">{{ task.name }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="assignedTo">
+                    <th mat-header-cell *matHeaderCellDef>Assigned To</th>
+                    <td mat-cell *matCellDef="let task">
+                        <div class="assigned-to">
+                            <mat-icon>person</mat-icon>
+                            {{ task.assignedTo }}
+                        </div>
+                    </td>
+                </ng-container>
+
+                <ng-container matColumnDef="status">
+                    <th mat-header-cell *matHeaderCellDef>Status</th>
+                    <td mat-cell *matCellDef="let task">
+                        <span class="task-status" [ngClass]="getStatusClass(task.status)">
+                            {{ task.status }}
+                        </span>
+                    </td>
+                </ng-container>
+
+                <ng-container matColumnDef="priority">
+                    <th mat-header-cell *matHeaderCellDef>Priority</th>
+                    <td mat-cell *matCellDef="let task">
+                        <span class="task-priority" [ngClass]="getPriorityClass(task.priority)">
+                            {{ task.priority }}
+                        </span>
+                    </td>
+                </ng-container>
+
+                <ng-container matColumnDef="dueDate">
+                    <th mat-header-cell *matHeaderCellDef>Due Date</th>
+                    <td mat-cell *matCellDef="let task">{{ task.dueDate | date:'mediumDate' }}</td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="['name', 'assignedTo', 'status', 'priority', 'dueDate']"></tr>
+                <tr mat-row *matRowDef="let row; columns: ['name', 'assignedTo', 'status', 'priority', 'dueDate'];">
+                </tr>
+            </table>
+        </mat-card-content>
+    </mat-card>
+
+</div>
+
+<!-- Not Found State -->
+<div class="not-found-container page-container" *ngIf="!project && projectId">
+    <mat-card>
+        <mat-card-content class="not-found-content">
+            <mat-icon class="not-found-icon">error_outline</mat-icon>
+            <h2>Project Not Found</h2>
+            <p>The project with ID {{ projectId }} could not be found.</p>
+            <button mat-raised-button color="primary" routerLink="../">
+                <mat-icon>arrow_back</mat-icon>
+                Back to Projects List
+            </button>
+        </mat-card-content>
+    </mat-card>
+</div>

@@ -1,7 +1,7 @@
-<div class="department-details-container" *ngIf="department">
+<div class="department-details-container page-container" *ngIf="department">
 
     @if (departmentDetails(); as department) {
-    <div fxLayout.xs="column" fxLayout.gt-xs="row" fxLayoutGap="15px">
+    <div fxLayout.xs="column" fxLayout.gt-xs="row" class="card-gap">
 
         <mat-card class="section-card overview-card" fxFlex.gt-xs="320px">
             <mat-card-header>
@@ -14,7 +14,7 @@
             </mat-card-content>
         </mat-card>
 
-        <mat-card class="section-card contact-card" fxFlex.gt-xs fxLayout="column" fxLayoutGap="15px">
+        <mat-card class="section-card contact-card" fxFlex.gt-xs fxLayout="column" class="card-gap">
             <mat-card-header>
                 <mat-card-title>Department Head: {{ department.head }}</mat-card-title>
             </mat-card-header>
@@ -46,9 +46,9 @@
     </mat-card>
     }
 
-    <hr>
+    <hr class="section-spacing">
 
-    <div style="padding: 10px 0px">
+    <div class="section-header mb-lg">
         <h2>Department Goal Summary</h2>
         <div fxLayout="row">
             <span fxFlex="1 1 auto"></span>
@@ -57,40 +57,40 @@
             </button>
         </div>
     </div>
-    <div class="metrics-grid">
+    <div class="metrics-grid mb-2xl">
 
         <mat-card class="metric-card achieved">
-            <mat-card-content fxLayout="column" fxLayoutGap="15px">
+            <mat-card-content fxLayout="column" class="card-gap">
                 <div class="metric-value">{{ department.metrics.achievedGoals }}</div>
                 <div class="metric-label">Achieved Goals</div>
             </mat-card-content>
         </mat-card>
 
         <mat-card class="metric-card not-achieved">
-            <mat-card-content fxLayout="column" fxLayoutGap="15px">
+            <mat-card-content fxLayout="column" class="card-gap">
                 <div class="metric-value">{{ department.metrics.notAchievedGoals }}</div>
                 <div class="metric-label">Not Achieved</div>
             </mat-card-content>
         </mat-card>
 
         <mat-card class="metric-card in-progress">
-            <mat-card-content fxLayout="column" fxLayoutGap="15px">
+            <mat-card-content fxLayout="column" class="card-gap">
                 <div class="metric-value">{{ department.metrics.inProgressGoals }}</div>
                 <div class="metric-label">In Progress</div>
             </mat-card-content>
         </mat-card>
 
         <mat-card class="metric-card not-done">
-            <mat-card-content fxLayout="column" fxLayoutGap="15px">
+            <mat-card-content fxLayout="column" class="card-gap">
                 <div class="metric-value">{{ department.metrics.notDoneGoals }}</div>
                 <div class="metric-label">Not Done</div>
             </mat-card-content>
         </mat-card>
     </div>
 
-    <hr>
+    <hr class="section-spacing">
 
-    <h2>Assigned Tasks</h2>
+    <h2 class="mb-lg">Assigned Tasks</h2>
     <table mat-table [dataSource]="tasks" class="mat-elevation-z4 tasks-table">
 
         <ng-container matColumnDef="taskName">

@@ -24,16 +24,17 @@ export const UsersStore = signalStore(
   withState(initialState),
   withComputed((state) => ({
     filteredUsers: computed(() => {
+      const users = state.users() || [];
       const term = state.search().trim().toLowerCase();
       if (!term) {
-        return state.users();
+        return users;
       }
 
       // Reusable function to check if a value is included in the search term
-      const includesTerm = (value: string | number | null | undefined): boolean => 
+      const includesTerm = (value: string | number | null | undefined): boolean =>
         String(value || '').toLowerCase().includes(term);
 
-      return state.users().filter(u =>
+      return users.filter(u =>
         includesTerm(u.id) ||
         includesTerm(u.email) ||
         includesTerm(u.role) ||
@@ -45,12 +46,13 @@ export const UsersStore = signalStore(
     }),
 
     // New computed signals for summary counts, moved from the component
-    totalUsers: computed(() => state.users().length),
-    adminUsers: computed(() => state.users().filter(u => (u.role || '').toLowerCase() === 'admin').length),
-    marketManagers: computed(() => state.users().filter(u => 
+    // Added safety checks to prevent "Cannot read properties of undefined" errors
+    totalUsers: computed(() => (state.users() || []).length),
+    adminUsers: computed(() => (state.users() || []).filter(u => (u.role || '').toLowerCase() === 'admin').length),
+    marketManagers: computed(() => (state.users() || []).filter(u =>
       ['manager', 'market manager', 'market_manager'].includes((u.role || '').toLowerCase())
     ).length),
-    activeUsers: computed(() => state.users().filter(u => (u.status || '').toLowerCase() === 'active').length),
+    activeUsers: computed(() => (state.users() || []).filter(u => (u.status || '').toLowerCase() === 'active').length),
   })),
   withMethods((store, usersService = inject(UsersService)) => ({
     // ... existing methods
@@ -59,29 +61,29 @@ export const UsersStore = signalStore(
       patchState(store, { isLoading: true, error: null });
       try {
         // This line is where the code might be hanging if findAll() doesn't resolve.
-        const data = await usersService.findAll(); 
-        
+        const data = await usersService.findAll();
+
         // 2. Success: Update users and set loading to false
         patchState(store, { users: data, isLoading: false });
       } catch (error: any) {
         //console.error('Error loading users:', error); // <-- Add console log for debugging
-        
+
         // 3. Failure: Set error and set loading to false
-        patchState(store, { 
-            isLoading: false, 
-            error: error?.message ?? 'Failed to load users' 
+        patchState(store, {
+          isLoading: false,
+          error: error?.message ?? 'Failed to load users'
         });
       }
     },
     async addUser(payload: Partial<User>) {
-      patchState(store, { isLoading: true, error: null});
+      patchState(store, { isLoading: true, error: null });
       try {
         const created = await usersService.createUser(payload);
         // Correctly use store.users() to access the current value of the signal
-        patchState(store, {users: [created, ...store.users()], isLoading: false}); 
+        patchState(store, { users: [created, ...store.users()], isLoading: false });
         return created;
       } catch (error: any) {
-        patchState(store, { isLoading: false, error: error?.message ?? 'Failed to add user'});
+        patchState(store, { isLoading: false, error: error?.message ?? 'Failed to add user' });
         throw error
       }
     },
@@ -101,15 +103,15 @@ export const UsersStore = signalStore(
       patchState(store, { isLoading: true, error: null, selectedUser: null });
       try {
         const user = await usersService.findByEmail(email);
-        
+
         // Patch the fetched user into selectedUser
         patchState(store, { selectedUser: user, isLoading: false });
         return user;
       } catch (error: any) {
         console.error('Error fetching user by email:', error);
-        patchState(store, { 
-            isLoading: false, 
-            error: error?.message ?? `Failed to fetch user with email: ${email}` 
+        patchState(store, {
+          isLoading: false,
+          error: error?.message ?? `Failed to fetch user with email: ${email}`
         });
         throw error; // Re-throw to allow component to handle the failure
       }
@@ -124,30 +126,30 @@ export const UsersStore = signalStore(
       patchState(store, { isLoading: true, error: null });
       try {
         const updatedUser = await usersService.update(id, payload);
-        
+
         // 1. Update the 'users' array: find the user by ID and replace it.
-        const updatedUsers = store.users().map(u => 
+        const updatedUsers = store.users().map(u =>
           u.id === updatedUser.id ? updatedUser : u
         );
 
         // 2. Update 'selectedUser' if the updated user is the currently selected one.
         const selectedUser = store.selectedUser();
         const newSelectedUser = selectedUser && String(selectedUser.id) === String(id)
-            ? updatedUser
-            : selectedUser;
+          ? updatedUser
+          : selectedUser;
 
-        patchState(store, { 
-            users: updatedUsers, 
-            selectedUser: newSelectedUser, 
-            isLoading: false 
+        patchState(store, {
+          users: updatedUsers,
+          selectedUser: newSelectedUser,
+          isLoading: false
         });
-        
+
         return updatedUser;
       } catch (error: any) {
         console.error('Error updating user:', error);
-        patchState(store, { 
-            isLoading: false, 
-            error: error?.message ?? `Failed to update user with ID: ${id}` 
+        patchState(store, {
+          isLoading: false,
+          error: error?.message ?? `Failed to update user with ID: ${id}`
         });
         throw error; // Re-throw to allow component to handle the failure
       }

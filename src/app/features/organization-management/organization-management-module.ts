@@ -26,7 +26,6 @@ import { DepartmentPerformance } from './components/department-performance/depar
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
 
-
 @NgModule({
   providers: [
     provideHttpClient(),

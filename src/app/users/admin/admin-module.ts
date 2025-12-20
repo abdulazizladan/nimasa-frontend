@@ -21,6 +21,7 @@ import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2
 import { Dashboard } from './components/dashboard/dashboard';
 import { AdminRoutingModule } from './admin-routing-module';
 import { Layout } from './components/layout/layout';
+import { Settings } from './components/settings/settings';
 
 
 @NgModule({
@@ -30,7 +31,8 @@ import { Layout } from './components/layout/layout';
   ],
   declarations: [
     Layout,
-    Dashboard
+    Dashboard,
+    Settings
   ],
   imports: [
     CommonModule,

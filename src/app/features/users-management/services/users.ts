@@ -22,9 +22,7 @@ export class UsersService {
 
   findAll(): Promise<User[]> {
     return firstValueFrom(
-      this.http.get<{ data: User[], message: string, success: boolean }>(`${this.baseUrl}user`).pipe(
-        map(response => response.data)
-      )
+      this.http.get<User[]>(`${this.baseUrl}user`)
     )
   }
 

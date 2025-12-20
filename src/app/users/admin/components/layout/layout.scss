@@ -1,90 +1,69 @@
-.example-container {
-    width: full;
-    height: 100%;
-    background-color: #dedede;
+// layout.component.scss
+
+.layout-container {
+  min-height: 100%;
+}
+
+.fixed-toolbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+.toolbar-spacer {
+  height: 64px; // Default toolbar height on desktop
+
+  @media (max-width: 600px) {
+    height: 56px; // Mobile toolbar height
   }
-  
-  .example-sidenav-content {
-    height: 100%;
+}
+
+.drawer-container {
+  height: calc(100vh - 64px);
+
+  @media (max-width: 600px) {
+    height: calc(100vh - 56px);
   }
-  
-  .example-sidenav {
-    padding: 10px;
-    height: 100%;
-    width: 240px;
-    display: flex;
-    flex-direction: column;
-    border-radius: 0 !important;
-    #profile{
-        width: 100%;
-        aspect-ratio: 1;
-        background-color: white;
-        background-image: url('../../../../../../public/logo.png');
-        background-size: contain;
-        margin: 0px;
+}
+
+.sidenav-vertical {
+  display: flex;
+  flex-direction: column;
+  width: 320px;
+  max-width: 320px;
+
+  button {
+    width: 100%;
+    justify-content: flex-start;
+    text-align: left;
+    padding: var(--spacing-md) var(--spacing-base);
+    border-left: 3px solid transparent;
+    transition: all 0.2s ease;
+
+    mat-icon {
+      margin-right: var(--spacing-sm);
     }
-    button {
-        width: 100%;
-        border-radius: 0;
-        margin: 0;
-        padding: 12px 20px;
-        text-align: left;
-        justify-content: flex-start;
-        
-        mat-icon {
-          margin-right: 12px;
-        }
-        
-        &.active {
-          background-color:  rgb(42, 81, 187);
-          color: #ffffff;
-        }
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.04);
+    }
+
+    &.active {
+      background-color: #1565c0; // Dark blue
+      border-left-color: #0d47a1; // Darker blue for border
+      color: white;
+      font-weight: var(--font-weight-semibold);
+
+      mat-icon {
+        color: white;
+      }
     }
   }
-  
-  /* Remove rounded corners from Material Design sidenav */
-  .mat-mdc-drawer {
-    border-radius: 0 !important;
-  }
-  
-  .mat-mdc-drawer-container {
-    border-radius: 0 !important;
-  }
-  
-  .mat-mdc-drawer-side {
-    border-radius: 0 !important;
-  }
-  
-  /* Ensure no rounded corners on the drawer surface */
-  .mat-mdc-drawer .mat-mdc-drawer-container {
-    border-radius: 0 !important;
-  }
-  
-  /* Override any Material Design default border radius */
-  .mat-mdc-drawer,
-  .mat-mdc-drawer-container,
-  .mat-mdc-drawer-side,
-  .mat-mdc-drawer .mat-mdc-drawer-container {
-    border-top-right-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
-    border-top-left-radius: 0 !important;
-    border-bottom-left-radius: 0 !important;
-  }
-  
-  /* Remove padding from drawer content */
-  .mat-mdc-drawer-content {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-  }
-  
-  /* Ensure buttons extend to full width */
-  .example-sidenav button {
-    width: 100% !important;
-    border-radius: 0 !important;
-    margin: 0 !important;
-  }
-  
-  .active {
-    background-color: rgb(42, 81, 187);
-    color: white;
- }
+}
+
+.sidenav-content {
+  height: 100%;
+  overflow: auto;
+}

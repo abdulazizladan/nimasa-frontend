@@ -1,53 +1,262 @@
-.performance-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  padding: 16px;
-  gap: 24px;
+// department-performance.component.scss
 
-  .content {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    max-width: 1200px;
-    margin: 0 auto;
-    width: 100%;
+.performance-container {
+  /* Padding handled by .page-container */
+}
+
+.header-section {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-base);
+
+  .back-button {
+    margin-top: var(--spacing-xs);
   }
 
-  .metrics-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 16px;
+  .header-content {
+    flex: 1;
+  }
 
-    .metric-card {
-      padding: 16px;
+  .page-title {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    margin: 0 0 var(--spacing-xs) 0;
+    color: #1a1a1a;
+  }
 
-      .value {
-        font-size: 3rem;
-        font-weight: 500;
-        margin: 16px 0;
+  .department-name {
+    font-size: var(--font-size-base);
+    color: #666;
+    margin: 0;
+  }
+}
+
+/* Score Cards Grid */
+.score-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--card-gap);
+
+  .score-card {
+    mat-card-header {
+      .score-icon {
+        color: var(--mat-sys-primary);
+
+        &.overall {
+          color: #1976d2;
+        }
+      }
+    }
+
+    .score-value {
+      font-size: var(--font-size-4xl);
+      font-weight: var(--font-weight-bold);
+      color: #1976d2;
+      margin-bottom: var(--spacing-sm);
+    }
+
+    .score-bar {
+      height: 8px;
+      border-radius: var(--radius-sm);
+    }
+  }
+}
+
+/* Chart Card */
+.chart-card {
+  .chart-wrapper {
+    height: 400px;
+    padding: var(--spacing-base);
+
+    @media (max-width: 768px) {
+      height: 300px;
+    }
+  }
+}
+
+/* Targets List */
+.targets-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+
+  .target-item {
+    padding: var(--spacing-lg);
+    background-color: #fafafa;
+    border-radius: var(--radius-md);
+    border-left: 4px solid #e0e0e0;
+    transition: all 0.2s ease;
+
+    &:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    .target-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: var(--spacing-base);
+      gap: var(--spacing-base);
+
+      .target-info {
+        flex: 1;
+
+        .target-name {
+          font-size: var(--font-size-lg);
+          font-weight: var(--font-weight-semibold);
+          margin: 0 0 var(--spacing-xs) 0;
+          color: #1a1a1a;
+        }
+
+        .target-description {
+          font-size: var(--font-size-sm);
+          color: #666;
+          margin: 0;
+          line-height: var(--line-height-normal);
+        }
       }
 
-      .comparison {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        color: #757575;
-        font-size: 0.9rem;
+      .target-status {
+        padding: var(--spacing-xs) var(--spacing-md);
+        border-radius: var(--radius-sm);
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        white-space: nowrap;
 
-        &.positive {
-          color: #4caf50; // Green
+        &.status-achieved {
+          background-color: #e8f5e9;
+          color: #2e7d32;
         }
-        // You might want a negative class red as well
+
+        &.status-on-track {
+          background-color: #e3f2fd;
+          color: #1976d2;
+        }
+
+        &.status-at-risk {
+          background-color: #fff3e0;
+          color: #ef6c00;
+        }
+
+        &.status-behind {
+          background-color: #ffebee;
+          color: #c62828;
+        }
+      }
+    }
+
+    .target-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-xl);
+      margin-bottom: var(--spacing-base);
+
+      .metric-item {
+        display: flex;
+        gap: var(--spacing-xs);
+
+        .metric-label {
+          font-size: var(--font-size-sm);
+          color: #666;
+          font-weight: var(--font-weight-medium);
+        }
+
+        .metric-value {
+          font-size: var(--font-size-sm);
+          color: #1a1a1a;
+          font-weight: var(--font-weight-semibold);
+        }
+      }
+    }
+
+    .target-progress {
+      position: relative;
+
+      mat-progress-bar {
+        height: 10px;
+        border-radius: var(--radius-sm);
+
+        &.status-achieved ::ng-deep .mdc-linear-progress__bar-inner {
+          border-color: #4caf50 !important;
+        }
+
+        &.status-on-track ::ng-deep .mdc-linear-progress__bar-inner {
+          border-color: #2196f3 !important;
+        }
+
+        &.status-at-risk ::ng-deep .mdc-linear-progress__bar-inner {
+          border-color: #ff9800 !important;
+        }
+
+        &.status-behind ::ng-deep .mdc-linear-progress__bar-inner {
+          border-color: #f44336 !important;
+        }
+      }
+
+      .progress-percentage {
+        position: absolute;
+        right: 0;
+        top: -24px;
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-semibold);
+        color: #1976d2;
       }
     }
   }
+}
 
-  .chart-card {
-      padding: 16px;
-      .chart-wrapper {
-          display: block;
-          max-height: 400px;
+/* Quick Metrics Grid */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--card-gap);
+
+  .metric-card {
+    padding: var(--spacing-lg);
+    background-color: #fafafa;
+    border-radius: var(--radius-md);
+
+    .metric-header {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      margin-bottom: var(--spacing-base);
+
+      mat-icon {
+        color: var(--mat-sys-primary);
       }
+
+      h4 {
+        margin: 0;
+        font-size: var(--font-size-base);
+        font-weight: var(--font-weight-medium);
+        color: #666;
+      }
+    }
+
+    .metric-value {
+      font-size: var(--font-size-3xl);
+      font-weight: var(--font-weight-bold);
+      color: #1a1a1a;
+      margin-bottom: var(--spacing-sm);
+    }
+
+    .metric-comparison {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      font-size: var(--font-size-sm);
+      color: #f44336;
+
+      &.positive {
+        color: #4caf50;
+      }
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+    }
   }
 }

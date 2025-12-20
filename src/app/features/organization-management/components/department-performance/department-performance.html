@@ -1,68 +1,184 @@
-<div class="performance-container">
-  <mat-toolbar>
-    <button mat-icon-button (click)="goBack()">
+<div class="performance-container page-container">
+
+  <!-- Header -->
+  <div class="header-section mb-xl">
+    <button mat-icon-button (click)="goBack()" class="back-button">
       <mat-icon>arrow_back</mat-icon>
     </button>
-    <span>Department Performance</span>
-  </mat-toolbar>
+    <div class="header-content">
+      <h1 class="page-title">Department Performance</h1>
+      <p class="department-name">{{ departmentName }} ({{ departmentCode }})</p>
+    </div>
+  </div>
 
-  <div class="content">
-    <div class="metrics-grid">
-      <!-- Ongoing Tasks -->
-      <mat-card class="metric-card">
-        <mat-card-header>
-          <mat-card-title>Ongoing Tasks</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="value">{{ metrics.ongoingTasks.value }}</div>
-          <div class="comparison" [class.positive]="metrics.ongoingTasks.trend === 'up'">
+  <!-- Performance Score Cards -->
+  <div class="score-cards-grid mb-2xl">
+    <mat-card class="score-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="score-icon overall">assessment</mat-icon>
+        <mat-card-title>Overall Score</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="score-value">{{ performanceScores.overall }}%</div>
+        <mat-progress-bar mode="determinate" [value]="performanceScores.overall" class="score-bar"></mat-progress-bar>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="score-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="score-icon">check_circle</mat-icon>
+        <mat-card-title>Target Completion</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="score-value">{{ performanceScores.targetCompletion }}%</div>
+        <mat-progress-bar mode="determinate" [value]="performanceScores.targetCompletion"
+          class="score-bar"></mat-progress-bar>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="score-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="score-icon">speed</mat-icon>
+        <mat-card-title>Efficiency</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="score-value">{{ performanceScores.efficiency }}%</div>
+        <mat-progress-bar mode="determinate" [value]="performanceScores.efficiency"
+          class="score-bar"></mat-progress-bar>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="score-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="score-icon">star</mat-icon>
+        <mat-card-title>Quality</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="score-value">{{ performanceScores.quality }}%</div>
+        <mat-progress-bar mode="determinate" [value]="performanceScores.quality" class="score-bar"></mat-progress-bar>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="score-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="score-icon">schedule</mat-icon>
+        <mat-card-title>Timeliness</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="score-value">{{ performanceScores.timeliness }}%</div>
+        <mat-progress-bar mode="determinate" [value]="performanceScores.timeliness"
+          class="score-bar"></mat-progress-bar>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Overall Growth Chart -->
+  <mat-card class="chart-card section-spacing">
+    <mat-card-header>
+      <mat-card-title>Overall Performance Growth</mat-card-title>
+      <mat-card-subtitle>Monthly performance trend over the year</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="chart-wrapper">
+        <canvas baseChart [data]="lineChartData" [options]="lineChartOptions" [legend]="lineChartLegend"
+          [type]="'line'">
+        </canvas>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Department Targets -->
+  <mat-card class="section-spacing">
+    <mat-card-header>
+      <mat-card-title>Department Targets (2025)</mat-card-title>
+      <mat-card-subtitle>Key performance indicators and goals</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="targets-list">
+        <div class="target-item" *ngFor="let target of targets">
+          <div class="target-header">
+            <div class="target-info">
+              <h3 class="target-name">{{ target.name }}</h3>
+              <p class="target-description">{{ target.description }}</p>
+            </div>
+            <span class="target-status" [ngClass]="getStatusClass(target.status)">
+              {{ target.status }}
+            </span>
+          </div>
+
+          <div class="target-metrics">
+            <div class="metric-item">
+              <span class="metric-label">Progress:</span>
+              <span class="metric-value">{{ target.currentValue }} / {{ target.targetValue }} {{ target.unit }}</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Completion:</span>
+              <span class="metric-value">{{ getTargetProgress(target) }}%</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Deadline:</span>
+              <span class="metric-value">{{ target.deadline | date:'mediumDate' }}</span>
+            </div>
+          </div>
+
+          <div class="target-progress">
+            <mat-progress-bar mode="determinate" [value]="getTargetProgress(target)"
+              [ngClass]="getStatusClass(target.status)">
+            </mat-progress-bar>
+            <span class="progress-percentage">{{ getTargetProgress(target) }}%</span>
+          </div>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Quick Metrics (existing) -->
+  <mat-card class="section-spacing">
+    <mat-card-header>
+      <mat-card-title>Quick Metrics</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="metrics-grid">
+        <!-- Ongoing Tasks -->
+        <div class="metric-card">
+          <div class="metric-header">
+            <mat-icon>pending_actions</mat-icon>
+            <h4>Ongoing Tasks</h4>
+          </div>
+          <div class="metric-value">{{ metrics.ongoingTasks.value }}</div>
+          <div class="metric-comparison" [class.positive]="metrics.ongoingTasks.trend === 'up'">
             <mat-icon>{{ metrics.ongoingTasks.trend === 'up' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
             {{ metrics.ongoingTasks.change }}% vs last month
           </div>
-        </mat-card-content>
-      </mat-card>
+        </div>
 
-      <!-- Performance Rating -->
-      <mat-card class="metric-card">
-        <mat-card-header>
-          <mat-card-title>Performance Rating</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="value">{{ metrics.performanceRating.value }}</div>
-          <div class="comparison" [class.positive]="metrics.performanceRating.trend === 'up'">
-              <mat-icon>{{ metrics.performanceRating.trend === 'up' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+        <!-- Performance Rating -->
+        <div class="metric-card">
+          <div class="metric-header">
+            <mat-icon>star_rate</mat-icon>
+            <h4>Performance Rating</h4>
+          </div>
+          <div class="metric-value">{{ metrics.performanceRating.value }}</div>
+          <div class="metric-comparison" [class.positive]="metrics.performanceRating.trend === 'up'">
+            <mat-icon>{{ metrics.performanceRating.trend === 'up' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
             {{ metrics.performanceRating.change }}% vs last month
           </div>
-        </mat-card-content>
-      </mat-card>
+        </div>
 
-      <!-- Outstanding Tasks -->
-      <mat-card class="metric-card">
-        <mat-card-header>
-          <mat-card-title>Outstanding Tasks</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="value">{{ metrics.outstandingTasks.value }}</div>
-          <div class="comparison" [class.positive]="metrics.outstandingTasks.trend === 'down'"> <!-- Down is good here -->
-              <mat-icon>{{ metrics.outstandingTasks.trend === 'up' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+        <!-- Outstanding Tasks -->
+        <div class="metric-card">
+          <div class="metric-header">
+            <mat-icon>warning</mat-icon>
+            <h4>Outstanding Tasks</h4>
+          </div>
+          <div class="metric-value">{{ metrics.outstandingTasks.value }}</div>
+          <div class="metric-comparison" [class.positive]="metrics.outstandingTasks.trend === 'down'">
+            <mat-icon>{{ metrics.outstandingTasks.trend === 'up' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
             {{ Math.abs(metrics.outstandingTasks.change) }}% vs last month
           </div>
-        </mat-card-content>
-      </mat-card>
-    </div>
-
-    <mat-card class="chart-card">
-        <mat-card-header>
-            <mat-card-title>Performance Trend</mat-card-title>
-        </mat-card-header>
-        <div class="chart-wrapper">
-            <canvas baseChart
-                    [data]="lineChartData"
-                    [options]="lineChartOptions"
-                    [legend]="lineChartLegend"
-                    [type]="'line'">
-            </canvas>
         </div>
-    </mat-card>
-  </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
 </div>

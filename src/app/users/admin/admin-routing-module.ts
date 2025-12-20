@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { Layout } from './components/layout/layout';
 import { Dashboard } from './components/dashboard/dashboard';
+import { Settings } from './components/settings/settings';
 
 const routes: Routes = [
   {
@@ -32,6 +33,10 @@ const routes: Routes = [
       {
         path: 'projects',
         loadChildren: () => import('../../features/projects-management/projects-management-module').then(module => module.ProjectstsManagementModule)
+      },
+      {
+        path: 'settings',
+        component: Settings
       },
       {
         path: '**',

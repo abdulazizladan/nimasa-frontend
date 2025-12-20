@@ -1,7 +1,7 @@
 <!-- dashboard.component.html -->
-<div fxLayout="column" fxLayoutGap="20px" class="dashboard-container">
-  
-  <div fxLayout="row" fxLayout.lt-md="column" fxLayoutGap="32px">
+<div fxLayout="column" class="dashboard-container page-container">
+
+  <div fxLayout="row" fxLayout.lt-md="column" class="kpi-cards-row card-gap mb-2xl">
 
     <div fxFlex>
       <mat-card class="kpi-scorecard">
@@ -15,7 +15,7 @@
         <div class="kpi-status-bar neutral-bar"></div>
       </mat-card>
     </div>
-  
+
     <div fxFlex>
       <mat-card class="kpi-scorecard">
         <div class="kpi-content">
@@ -28,7 +28,7 @@
         <div class="kpi-status-bar neutral-bar"></div>
       </mat-card>
     </div>
-  
+
     <div fxFlex>
       <mat-card class="kpi-scorecard">
         <div class="kpi-content">
@@ -41,7 +41,7 @@
         <div class="kpi-status-bar positive-bar"></div>
       </mat-card>
     </div>
-  
+
     <div fxFlex>
       <mat-card class="kpi-scorecard">
         <div class="kpi-content">
@@ -55,205 +55,141 @@
       </mat-card>
     </div>
   </div>
-    <!-- KPI Scorecards
-    <div fxLayout="row" fxLayout.lt-md="column" fxLayoutGap="20px">
-      
-      <div fxFlex>
-        <mat-card class="kpi-card">
-          <mat-card-header>
-            <mat-card-title>Overall Goal Attainment (2024)</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <div class="kpi-value">78%</div>
-            <div class="kpi-subtitle">High-level success rate</div>
-          </mat-card-content>
-        </mat-card>
+
+  <!-- Filters -->
+  <mat-card class="section-spacing">
+    <mat-card-header>
+      <mat-card-title>Filters</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div fxLayout="row" fxLayout.lt-sm="column" class="card-gap">
+        <mat-form-field fxFlex appearance="outline">
+          <mat-label>Priority Area</mat-label>
+          <mat-select multiple appearance="outline">
+            <mat-option value="infrastructure">Enhance Infrastructure</mat-option>
+            <mat-option value="governance">Improve Governance</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field fxFlex appearance="outline">
+          <mat-label>Deliverable</mat-label>
+          <mat-select>
+            <mat-option value="all">All Deliverables</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field fxFlex appearance="outline">
+          <mat-label>Year</mat-label>
+          <mat-select>
+            <mat-option value="2024">2024</mat-option>
+            <mat-option value="2025">2025</mat-option>
+          </mat-select>
+        </mat-form-field>
       </div>
-      
-      <div fxFlex>
-        <mat-card class="kpi-card">
-          <mat-card-header>
-            <mat-card-title>Current Progress (2025 Q2)</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <div class="kpi-value">45%</div>
-            <div class="kpi-subtitle">Current standing</div>
-          </mat-card-content>
-        </mat-card>
-      </div>
-      
-      <div fxFlex>
-        <mat-card class="kpi-card">
-          <mat-card-header>
-            <mat-card-title>Top Performing Deliverable</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <div class="kpi-value">100%</div>
-            <div class="kpi-subtitle">ISPS Code Compliance</div>
-          </mat-card-content>
-        </mat-card>
-      </div>
-      
-      <div fxFlex>
-        <mat-card class="kpi-card">
-          <mat-card-header>
-            <mat-card-title>Most Outstanding Target</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <div class="kpi-value negative">-1,940</div>
-            <div class="kpi-subtitle">Seafarers Placement</div>
-          </mat-card-content>
-        </mat-card>
-      </div>
-    </div>-->
-  
-    <!-- Filters -->
-    <mat-card>
-      <mat-card-header>
-        <mat-card-title>Filters</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <div fxLayout="row" fxLayoutGap="20px" fxLayout.lt-sm="column">
-          <mat-form-field fxFlex appearance="outline">
-            <mat-label>Priority Area</mat-label>
-            <mat-select multiple appearance="outline">
-              <mat-option value="infrastructure">Enhance Infrastructure</mat-option>
-              <mat-option value="governance">Improve Governance</mat-option>
-            </mat-select>
-          </mat-form-field>
-          
-          <mat-form-field fxFlex appearance="outline">
-            <mat-label>Deliverable</mat-label>
-            <mat-select>
-              <mat-option value="all">All Deliverables</mat-option>
-            </mat-select>
-          </mat-form-field>
-          
-          <mat-form-field fxFlex appearance="outline">
-            <mat-label>Year</mat-label>
-            <mat-select>
-              <mat-option value="2024">2024</mat-option>
-              <mat-option value="2025">2025</mat-option>
-            </mat-select>
-          </mat-form-field>
-        </div>
-      </mat-card-content>
-    </mat-card>
-  
-    <!-- Charts Row 1 -->
-    <div fxLayout="row" fxLayout.lt-lg="column" fxLayoutGap="20px">
-      <!-- Target vs Actual Chart -->
-      <div fxFlex="50">
-        <mat-card>
-          <mat-card-header>
-            <mat-card-title>Target vs Actual (2024 & 2025)</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <canvas baseChart
-              [data]="barChartData"
-              [options]="barChartOptions"
-              [type]="'bar'">
-            </canvas>
-          </mat-card-content>
-        </mat-card>
-      </div>
-  
-      <!-- Quarterly Progress Chart -->
-      <div fxFlex="50">
-        <mat-card>
-          <mat-card-header>
-            <mat-card-title>Quarterly Progress & Trend (2025)</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <canvas baseChart
-              [data]="lineChartData"
-              [options]="lineChartOptions"
-              [type]="'line'">
-            </canvas>
-          </mat-card-content>
-        </mat-card>
-      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Charts Row 1 -->
+  <div fxLayout="row" fxLayout.lt-lg="column" class="card-gap section-spacing">
+    <!-- Target vs Actual Chart -->
+    <div fxFlex="50">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Target vs Actual (2024 & 2025)</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <canvas baseChart [data]="barChartData" [options]="barChartOptions" [type]="'bar'">
+          </canvas>
+        </mat-card-content>
+      </mat-card>
     </div>
-  
-    <!-- Charts Row 2 -->
-    <div fxLayout="row" fxLayout.lt-lg="column" fxLayoutGap="20px">
-      <!-- Performance by Priority Area -->
-      <div fxFlex="50">
-        <mat-card>
-          <mat-card-header>
-            <mat-card-title>Performance by Priority Area</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <canvas baseChart
-              [data]="doughnutChartData"
-              [options]="doughnutChartOptions"
-              [type]="'doughnut'">
-            </canvas>
-          </mat-card-content>
-        </mat-card>
-      </div>
-  
-      <!-- Outstanding Target Analysis -->
-      <div fxFlex="50">
-        <mat-card>
-          <mat-card-header>
-            <mat-card-title>Outstanding Target Analysis</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <canvas baseChart
-              [data]="horizontalBarChartData"
-              [options]="horizontalBarChartOptions"
-              [type]="'bar'">
-            </canvas>
-          </mat-card-content>
-        </mat-card>
-      </div>
+
+    <!-- Quarterly Progress Chart -->
+    <div fxFlex="50">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Quarterly Progress & Trend (2025)</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <canvas baseChart [data]="lineChartData" [options]="lineChartOptions" [type]="'line'">
+          </canvas>
+        </mat-card-content>
+      </mat-card>
     </div>
-  
-    <!-- Data Table -->
-    <mat-card>
-      <mat-card-header>
-        <mat-card-title>Detailed Performance Table</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <table mat-table [dataSource]="dataSource" class="mat-elevation-z8">
-          
-          <!-- Priority Area Column -->
-          <ng-container matColumnDef="priorityArea">
-            <th mat-header-cell *matHeaderCellDef>Priority Area</th>
-            <td mat-cell *matCellDef="let element">{{element.priorityArea}}</td>
-          </ng-container>
-  
-          <!-- Deliverable Column -->
-          <ng-container matColumnDef="deliverable">
-            <th mat-header-cell *matHeaderCellDef>Deliverable</th>
-            <td mat-cell *matCellDef="let element">{{element.deliverable}}</td>
-          </ng-container>
-  
-          <!-- 2025 Target Column -->
-          <ng-container matColumnDef="target2025">
-            <th mat-header-cell *matHeaderCellDef>2025 Target</th>
-            <td mat-cell *matCellDef="let element">{{element.target2025 | number}}</td>
-          </ng-container>
-  
-          <!-- Q2 2025 Actual Column -->
-          <ng-container matColumnDef="actualQ22025">
-            <th mat-header-cell *matHeaderCellDef>Q2 2025 Actual</th>
-            <td mat-cell *matCellDef="let element">{{element.actualQ22025 | number}}</td>
-          </ng-container>
-  
-          <!-- Outstanding Column -->
-          <ng-container matColumnDef="outstanding">
-            <th mat-header-cell *matHeaderCellDef>Outstanding</th>
-            <td mat-cell *matCellDef="let element" 
-                [class.negative-value]="element.outstanding < 0">
-              {{element.outstanding | number}}
-            </td>
-          </ng-container>
-  
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-        </table>
-      </mat-card-content>
-    </mat-card>
   </div>
+
+  <!-- Charts Row 2 -->
+  <div fxLayout="row" fxLayout.lt-lg="column" class="card-gap section-spacing">
+    <!-- Performance by Priority Area -->
+    <div fxFlex="50">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Performance by Priority Area</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <canvas baseChart [data]="doughnutChartData" [options]="doughnutChartOptions" [type]="'doughnut'">
+          </canvas>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Outstanding Target Analysis -->
+    <div fxFlex="50">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Outstanding Target Analysis</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <canvas baseChart [data]="horizontalBarChartData" [options]="horizontalBarChartOptions" [type]="'bar'">
+          </canvas>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+
+  <!-- Data Table -->
+  <mat-card class="section-spacing">
+    <mat-card-header>
+      <mat-card-title>Detailed Performance Table</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <table mat-table [dataSource]="dataSource" class="mat-elevation-z8">
+
+        <!-- Priority Area Column -->
+        <ng-container matColumnDef="priorityArea">
+          <th mat-header-cell *matHeaderCellDef>Priority Area</th>
+          <td mat-cell *matCellDef="let element">{{element.priorityArea}}</td>
+        </ng-container>
+
+        <!-- Deliverable Column -->
+        <ng-container matColumnDef="deliverable">
+          <th mat-header-cell *matHeaderCellDef>Deliverable</th>
+          <td mat-cell *matCellDef="let element">{{element.deliverable}}</td>
+        </ng-container>
+
+        <!-- 2025 Target Column -->
+        <ng-container matColumnDef="target2025">
+          <th mat-header-cell *matHeaderCellDef>2025 Target</th>
+          <td mat-cell *matCellDef="let element">{{element.target2025 | number}}</td>
+        </ng-container>
+
+        <!-- Q2 2025 Actual Column -->
+        <ng-container matColumnDef="actualQ22025">
+          <th mat-header-cell *matHeaderCellDef>Q2 2025 Actual</th>
+          <td mat-cell *matCellDef="let element">{{element.actualQ22025 | number}}</td>
+        </ng-container>
+
+        <!-- Outstanding Column -->
+        <ng-container matColumnDef="outstanding">
+          <th mat-header-cell *matHeaderCellDef>Outstanding</th>
+          <td mat-cell *matCellDef="let element" [class.negative-value]="element.outstanding < 0">
+            {{element.outstanding | number}}
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+    </mat-card-content>
+  </mat-card>
+</div>

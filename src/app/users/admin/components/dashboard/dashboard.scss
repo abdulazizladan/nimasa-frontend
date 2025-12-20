@@ -1,42 +1,48 @@
 // dashboard.component.scss
+
+/* Use global design tokens for consistency */
 .dashboard-container {
-  padding: 20px;
+  /* Padding handled by .page-container utility class */
+}
+
+.kpi-cards-row {
+  display: flex;
+
+  @media (max-width: 960px) {
+    flex-direction: column;
+  }
 }
 
 .kpi-card {
   text-align: center;
   height: 100%;
-  
+
   .kpi-value {
-    font-size: 2.5em;
-    font-weight: bold;
-    margin: 10px 0;
-    
+    font-size: var(--font-size-4xl);
+    font-weight: var(--font-weight-bold);
+    margin: var(--spacing-md) 0;
+
     &.negative {
       color: #f44336;
     }
   }
-  
+
   .kpi-subtitle {
     color: rgba(0, 0, 0, 0.54);
-    font-size: 0.9em;
+    font-size: var(--font-size-sm);
   }
 }
 
 .negative-value {
   color: #f44336;
-  font-weight: bold;
-}
-
-mat-card {
-  margin-bottom: 20px;
+  font-weight: var(--font-weight-bold);
 }
 
 table {
   width: 100%;
 }
 
-/* --- Variables for easy themeing --- */
+/* --- Variables for easy theming --- */
 $positive-color: #4CAF50; // Green
 $negative-color: #F44336; // Red
 $neutral-color: #2196F3; // Blue (for general progress)
@@ -46,8 +52,8 @@ $warning-color: #FF9800; // Orange
 .kpi-scorecard {
   // Removes default padding and adds structure
   padding: 0 !important;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   height: 120px; // Fixed height for uniformity
   display: flex;
@@ -55,7 +61,7 @@ $warning-color: #FF9800; // Orange
 
   &:hover {
     transform: translateY(-4px); // Lift on hover
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--shadow-lg);
     cursor: pointer;
   }
 }
@@ -63,7 +69,7 @@ $warning-color: #FF9800; // Orange
 /* --- Content and Typography --- */
 .kpi-content {
   flex-grow: 1; // Takes up most of the space
-  padding: 16px 20px;
+  padding: var(--spacing-base) var(--spacing-lg);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -76,8 +82,8 @@ $warning-color: #FF9800; // Orange
 }
 
 .kpi-value-text {
-  font-size: 2.2rem; // Large, bold value
-  font-weight: 700;
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
   color: #333;
 
   &.negative-value {
@@ -86,9 +92,9 @@ $warning-color: #FF9800; // Orange
 }
 
 .kpi-subtitle-text {
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   color: #757575;
-  margin-top: 4px;
+  margin-top: var(--spacing-xs);
 }
 
 /* --- Status Icon Styling --- */
@@ -97,8 +103,8 @@ $warning-color: #FF9800; // Orange
   height: 32px;
   width: 32px;
   border-radius: 50%;
-  padding: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: var(--spacing-xs);
+  box-shadow: var(--shadow-base);
 }
 
 // Icon Color Coding
@@ -106,10 +112,12 @@ $warning-color: #FF9800; // Orange
   color: white;
   background-color: $positive-color;
 }
+
 .negative-icon {
   color: white;
   background-color: $negative-color;
 }
+
 .neutral-icon {
   color: white;
   background-color: $neutral-color;
@@ -118,8 +126,8 @@ $warning-color: #FF9800; // Orange
 /* --- Bottom Status Bar (Visual Indicator) --- */
 .kpi-status-bar {
   height: 6px; // Thin, solid color bar at the bottom
-  border-bottom-left-radius: 8px;
-  border-bottom-right-radius: 8px;
+  border-bottom-left-radius: var(--radius-md);
+  border-bottom-right-radius: var(--radius-md);
 }
 
 // Status Bar Color Coding
