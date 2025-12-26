@@ -1,0 +1,224 @@
+<div class="deliverable-details">
+    @if (isLoading) {
+    <div class="loading-container">
+        <mat-spinner></mat-spinner>
+        <p>Loading deliverable details...</p>
+    </div>
+    }
+
+    @if (error) {
+    <mat-card class="error-card">
+        <mat-icon>error_outline</mat-icon>
+        <div class="error-content">
+            <h3>Error</h3>
+            <p>{{ error }}</p>
+            <button mat-raised-button color="primary" (click)="goBack()">
+                Back to Dashboard
+            </button>
+        </div>
+    </mat-card>
+    }
+
+    @if (deliverable && !isLoading) {
+    <!-- Header -->
+    <div class="details-header">
+        <button mat-icon-button (click)="goBack()" class="back-btn">
+            <mat-icon>arrow_back</mat-icon>
+        </button>
+        <div class="header-info">
+            <h1 class="header-title">Deliverable #{{ deliverable.serialNumber }}</h1>
+            <p class="header-subtitle">{{ deliverable.deliverable }}</p>
+        </div>
+        <div class="header-actions">
+            <button mat-raised-button color="primary" (click)="editDeliverable()">
+                <mat-icon>edit</mat-icon>
+                Edit
+            </button>
+            <button mat-raised-button color="warn" (click)="deleteDeliverable()">
+                <mat-icon>delete</mat-icon>
+                Delete
+            </button>
+        </div>
+    </div>
+
+    <!-- Progress Card -->
+    <mat-card class="progress-card">
+        <div class="progress-header">
+            <h2>2024 Annual Progress</h2>
+            <div class="progress-value">{{ calculateProgress() }}%</div>
+        </div>
+        <div class="progress-bar-container">
+            <div class="progress-bar-fill" [style.width.%]="calculateProgress()"></div>
+        </div>
+        <div class="progress-stats">
+            <div class="stat">
+                <span class="stat-label">Target</span>
+                <span class="stat-value">{{ deliverable.annual_2024_target || 'N/A' }}</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Actual</span>
+                <span class="stat-value">{{ deliverable.annual_2024_actual || 'N/A' }}</span>
+            </div>
+        </div>
+    </mat-card>
+
+    <!-- Information Grid -->
+    <div class="info-grid">
+        <mat-card class="info-card">
+            <h3>General Information</h3>
+            <div class="info-row">
+                <span class="info-label">Ministry</span>
+                <span class="info-value">{{ deliverable.ministry }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Priority Area</span>
+                <span class="info-value">{{ deliverable.priorityArea }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Outcome</span>
+                <span class="info-value">{{ deliverable.outcome }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Responsible Department</span>
+                <span class="info-value">{{ deliverable.responsibleDepartment }}</span>
+            </div>
+        </mat-card>
+
+        <mat-card class="info-card">
+            <h3>Baseline Information</h3>
+            <div class="info-row">
+                <span class="info-label">Baseline Type</span>
+                <span class="info-value">{{ deliverable.baselineType }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Indicator</span>
+                <span class="info-value">{{ deliverable.indicator }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Baseline 2023</span>
+                <span class="info-value">{{ deliverable.baseline2023 || 'N/A' }}</span>
+            </div>
+        </mat-card>
+    </div>
+
+    <!-- Quarterly Data -->
+    <mat-card class="quarterly-card">
+        <h2>Quarterly Performance 2024</h2>
+        <div class="quarters-grid">
+            <div class="quarter-item">
+                <h4>Q1 2024</h4>
+                <div class="quarter-stat">
+                    <span class="label">Target:</span>
+                    <span class="value">{{ deliverable.q1_2024_target || 'N/A' }}</span>
+                </div>
+                <div class="quarter-stat">
+                    <span class="label">Actual:</span>
+                    <span class="value">{{ deliverable.q1_2024_actual || 'N/A' }}</span>
+                </div>
+            </div>
+
+            <div class="quarter-item">
+                <h4>Q2 2024</h4>
+                <div class="quarter-stat">
+                    <span class="label">Target:</span>
+                    <span class="value">{{ deliverable.q2_2024_target || 'N/A' }}</span>
+                </div>
+                <div class="quarter-stat">
+                    <span class="label">Actual:</span>
+                    <span class="value">{{ deliverable.q2_2024_actual || 'N/A' }}</span>
+                </div>
+                <div class="quarter-stat">
+                    <span class="label">Cumulative:</span>
+                    <span class="value">{{ deliverable.q2_2024_cumulative_actual || 'N/A' }}</span>
+                </div>
+            </div>
+
+            <div class="quarter-item">
+                <h4>Q3 2024</h4>
+                <div class="quarter-stat">
+                    <span class="label">Target:</span>
+                    <span class="value">{{ deliverable.q3_2024_target || 'N/A' }}</span>
+                </div>
+                <div class="quarter-stat">
+                    <span class="label">Actual:</span>
+                    <span class="value">{{ deliverable.q3_2024_actual || 'N/A' }}</span>
+                </div>
+                <div class="quarter-stat">
+                    <span class="label">Cumulative:</span>
+                    <span class="value">{{ deliverable.q3_2024_cumulative_actual || 'N/A' }}</span>
+                </div>
+            </div>
+
+            <div class="quarter-item">
+                <h4>Q4 2024</h4>
+                <div class="quarter-stat">
+                    <span class="label">Target:</span>
+                    <span class="value">{{ deliverable.q4_2024_target || 'N/A' }}</span>
+                </div>
+                <div class="quarter-stat">
+                    <span class="label">Actual:</span>
+                    <span class="value">{{ deliverable.q4_2024_actual || 'N/A' }}</span>
+                </div>
+            </div>
+        </div>
+    </mat-card>
+
+    <!-- Charts -->
+    <div class="charts-grid">
+        <mat-card class="chart-card">
+            <h3>Quarterly Progress Chart</h3>
+            <div class="chart-container">
+                <canvas baseChart [data]="quarterlyChartData" [options]="quarterlyChartOptions"
+                    [type]="quarterlyChartType">
+                </canvas>
+            </div>
+        </mat-card>
+
+        <mat-card class="chart-card">
+            <h3>Multi-Year Targets Projection</h3>
+            <div class="chart-container">
+                <canvas baseChart [data]="multiYearChartData" [options]="multiYearChartOptions"
+                    [type]="multiYearChartType">
+                </canvas>
+            </div>
+        </mat-card>
+    </div>
+
+    <!-- Future Targets -->
+    <mat-card class="future-targets-card">
+        <h2>Future Targets</h2>
+        <div class="targets-grid">
+            <div class="target-item">
+                <span class="target-year">2025</span>
+                <span class="target-value">{{ deliverable.target_2025 || 'Not Set' }}</span>
+            </div>
+            <div class="target-item">
+                <span class="target-year">2026</span>
+                <span class="target-value">{{ deliverable.target_2026 || 'Not Set' }}</span>
+            </div>
+            <div class="target-item">
+                <span class="target-year">2027</span>
+                <span class="target-value">{{ deliverable.target_2027 || 'Not Set' }}</span>
+            </div>
+        </div>
+    </mat-card>
+
+    <!-- Supporting Evidence -->
+    <mat-card class="evidence-card">
+        <h2>Supporting Evidence</h2>
+        <p>{{ deliverable.supportingEvidence || 'No supporting evidence provided.' }}</p>
+    </mat-card>
+
+    <!-- Metadata -->
+    <mat-card class="metadata-card">
+        <div class="metadata-row">
+            <span class="label">Created:</span>
+            <span class="value">{{ deliverable.createdAt | date:'medium' }}</span>
+        </div>
+        <div class="metadata-row">
+            <span class="label">Last Updated:</span>
+            <span class="value">{{ deliverable.updatedAt | date:'medium' }}</span>
+        </div>
+    </mat-card>
+    }
+</div>

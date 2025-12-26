@@ -1,0 +1,224 @@
+<div class="deliverable-form-container">
+    <mat-card class="form-card">
+        <mat-card-header>
+            <mat-card-title>
+                {{ isEditMode ? 'Edit Deliverable' : 'Create New Deliverable' }}
+            </mat-card-title>
+            <mat-card-subtitle>{{ steps[currentStep] }}</mat-card-subtitle>
+        </mat-card-header>
+
+        <!-- Stepper -->
+        <mat-stepper [linear]="false" [selectedIndex]="currentStep" class="custom-stepper">
+            <mat-step *ngFor="let step of steps; let i = index" [label]="step"></mat-step>
+        </mat-stepper>
+
+        @if (error) {
+        <mat-card class="error-banner">
+            <mat-icon>error_outline</mat-icon>
+            <span>{{ error }}</span>
+        </mat-card>
+        }
+
+        <form [formGroup]="deliverableForm" (ngSubmit)="onSubmit()">
+            <!-- Step 0: Identification -->
+            @if (currentStep === 0) {
+            <div class="form-step">
+                <h3>Identification</h3>
+                <div class="form-grid">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Serial Number</mat-label>
+                        <input matInput type="number" formControlName="serialNumber" required>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                        <mat-label>Ministry</mat-label>
+                        <input matInput formControlName="ministry" required>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                        <mat-label>Priority Area</mat-label>
+                        <input matInput formControlName="priorityArea" required>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                        <mat-label>Responsible Department</mat-label>
+                        <input matInput formControlName="responsibleDepartment" required>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Outcome</mat-label>
+                        <textarea matInput formControlName="outcome" rows="3" required></textarea>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Deliverable</mat-label>
+                        <textarea matInput formControlName="deliverable" rows="3" required></textarea>
+                    </mat-form-field>
+                </div>
+            </div>
+            }
+
+            <!-- Step 1: Baseline -->
+            @if (currentStep === 1) {
+            <div class="form-step">
+                <h3>Baseline Information</h3>
+                <div class="form-grid">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Baseline Type</mat-label>
+                        <input matInput formControlName="baselineType" required>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                        <mat-label>Indicator</mat-label>
+                        <input matInput formControlName="indicator" required>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                        <mat-label>Baseline 2023</mat-label>
+                        <input matInput type="number" formControlName="baseline2023">
+                    </mat-form-field>
+                </div>
+            </div>
+            }
+
+            <!-- Step 2: Quarterly Data -->
+            @if (currentStep === 2) {
+            <div class="form-step">
+                <h3>2024 Quarterly Data</h3>
+
+                <div class="quarter-section">
+                    <h4>Q1 2024</h4>
+                    <div class="form-grid-small">
+                        <mat-form-field appearance="outline">
+                            <mat-label>Target</mat-label>
+                            <input matInput type="number" formControlName="q1_2024_target">
+                        </mat-form-field>
+                        <mat-form-field appearance="outline">
+                            <mat-label>Actual</mat-label>
+                            <input matInput type="number" formControlName="q1_2024_actual">
+                        </mat-form-field>
+                    </div>
+                </div>
+
+                <div class="quarter-section">
+                    <h4>Q2 2024</h4>
+                    <div class="form-grid-small">
+                        <mat-form-field appearance="outline">
+                            <mat-label>Target</mat-label>
+                            <input matInput type="number" formControlName="q2_2024_target">
+                        </mat-form-field>
+                        <mat-form-field appearance="outline">
+                            <mat-label>Actual</mat-label>
+                            <input matInput type="number" formControlName="q2_2024_actual"
+                                (change)="calculateCumulativeQ2()">
+                        </mat-form-field>
+                        <mat-form-field appearance="outline">
+                            <mat-label>Cumulative</mat-label>
+                            <input matInput type="number" formControlName="q2_2024_cumulative_actual" readonly>
+                        </mat-form-field>
+                    </div>
+                </div>
+
+                <div class="quarter-section">
+                    <h4>Q3 2024</h4>
+                    <div class="form-grid-small">
+                        <mat-form-field appearance="outline">
+                            <mat-label>Target</mat-label>
+                            <input matInput type="number" formControlName="q3_2024_target">
+                        </mat-form-field>
+                        <mat-form-field appearance="outline">
+                            <mat-label>Actual</mat-label>
+                            <input matInput type="number" formControlName="q3_2024_actual"
+                                (change)="calculateCumulativeQ3()">
+                        </mat-form-field>
+                        <mat-form-field appearance="outline">
+                            <mat-label>Cumulative</mat-label>
+                            <input matInput type="number" formControlName="q3_2024_cumulative_actual" readonly>
+                        </mat-form-field>
+                    </div>
+                </div>
+
+                <div class="quarter-section">
+                    <h4>Q4 2024</h4>
+                    <div class="form-grid-small">
+                        <mat-form-field appearance="outline">
+                            <mat-label>Target</mat-label>
+                            <input matInput type="number" formControlName="q4_2024_target">
+                        </mat-form-field>
+                        <mat-form-field appearance="outline">
+                            <mat-label>Actual</mat-label>
+                            <input matInput type="number" formControlName="q4_2024_actual">
+                        </mat-form-field>
+                    </div>
+                </div>
+
+                <div class="quarter-section annual-section">
+                    <h4>Annual 2024</h4>
+                    <div class="form-grid-small">
+                        <mat-form-field appearance="outline">
+                            <mat-label>Annual Target</mat-label>
+                            <input matInput type="number" formControlName="annual_2024_target">
+                        </mat-form-field>
+                        <mat-form-field appearance="outline">
+                            <mat-label>Annual Actual</mat-label>
+                            <input matInput type="number" formControlName="annual_2024_actual">
+                        </mat-form-field>
+                    </div>
+                </div>
+            </div>
+            }
+
+            <!-- Step 3: Future Targets -->
+            @if (currentStep === 3) {
+            <div class="form-step">
+                <h3>Future Targets & Evidence</h3>
+                <div class="form-grid">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Target 2025</mat-label>
+                        <input matInput type="number" formControlName="target_2025">
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                        <mat-label>Target 2026</mat-label>
+                        <input matInput type="number" formControlName="target_2026">
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                        <mat-label>Target 2027</mat-label>
+                        <input matInput type="number" formControlName="target_2027">
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Supporting Evidence</mat-label>
+                        <textarea matInput formControlName="supportingEvidence" rows="4"></textarea>
+                    </mat-form-field>
+                </div>
+            </div>
+            }
+
+            <!-- Navigation Buttons -->
+            <div class="form-actions">
+                <button mat-stroked-button type="button" (click)="cancel()">Cancel</button>
+
+                <div class="nav-buttons">
+                    <button mat-stroked-button type="button" (click)="previousStep()" [disabled]="isFirstStep">
+                        <mat-icon>chevron_left</mat-icon>
+                        Previous
+                    </button>
+
+                    @if (!isLastStep) {
+                    <button mat-raised-button color="primary" type="button" (click)="nextStep()">
+                        Next
+                        <mat-icon>chevron_right</mat-icon>
+                    </button>
+                    } @else {
+                    <button mat-raised-button color="primary" type="submit" [disabled]="isLoading">
+                        <mat-icon>save</mat-icon>
+                        {{ isEditMode ? 'Update' : 'Create' }}
+                    </button>
+                    }
+                </div>
+            </div>
+        </form>
+    </mat-card>
+</div>

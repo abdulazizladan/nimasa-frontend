@@ -1,86 +1,138 @@
-<section class="department-performance">
-  <header class="department-performance__header">
-    <div>
-      <p class="department-performance__eyebrow">Performance Overview</p>
-      <h1>Department KPI snapshot</h1>
-      <p class="department-performance__period">
-        FY {{ selectedYear }} · {{ monthNames[selectedMonth - 1] }}
+<div class="department-details">
+  <header class="details-header">
+    <div class="header-info">
+      <p class="header-eyebrow">Performance Overview</p>
+      <h1 class="header-title">Department KPI Snapshot</h1>
+      <p class="header-period">
+        <mat-icon>calendar_today</mat-icon>
+        <span>FY {{ selectedYear }} · {{ monthNames[selectedMonth - 1] }}</span>
       </p>
     </div>
     @if (departmentId()) {
-    <button mat-raised-button color="primary"
+    <button mat-raised-button color="primary" class="view-details-btn"
       [routerLink]="['/organization/department', departmentId(), 'performance']">
-      View Detailed Performance
+      <mat-icon>trending_up</mat-icon>
+      <span>View Detailed Performance</span>
     </button>
     }
   </header>
 
   @if (isLoading()) {
-  <mat-progress-bar color="primary" mode="indeterminate"></mat-progress-bar>
+  <div class="loading-container">
+    <mat-progress-bar color="primary" mode="indeterminate"></mat-progress-bar>
+  </div>
   }
 
   @if (loadError()) {
-  <mat-card class="state-card state-card--error">
+  <mat-card class="error-card">
     <mat-icon>error_outline</mat-icon>
-    <span>{{ loadError() }}</span>
+    <div class="error-content">
+      <h3>Error Loading Data</h3>
+      <p>{{ loadError() }}</p>
+    </div>
   </mat-card>
   }
+
   <ng-container *ngIf="performance() as perf">
-    <div class="performance-row">
-      <mat-card class="performance-card performance-card--score">
-        <div class="performance-card__label">
-          Performance Score
-          <span>{{ monthNames[perf.month - 1] }} {{ perf.year }}</span>
+    <div class="metrics-grid">
+      <!-- Performance Score Card -->
+      <mat-card class="metric-card metric-card--primary">
+        <div class="metric-header">
+          <mat-icon>insights</mat-icon>
+          <div class="metric-label">
+            <span class="label-text">Performance Score</span>
+            <span class="label-subtitle">{{ monthNames[perf.month - 1] }} {{ perf.year }}</span>
+          </div>
         </div>
-        <div class="performance-card__value">
-          {{ perf.performanceScore | number:'1.0-1' }}%
+        <div class="metric-value">
+          {{ perf.performanceScore | number:'1.0-1' }}<span class="metric-unit">%</span>
         </div>
         <mat-progress-bar color="accent" mode="determinate" [value]="perf.performanceScore"></mat-progress-bar>
-        <div class="performance-card__meta">
-          Department ID · {{ perf.departmentId }}
+        <div class="metric-footer">
+          <mat-icon>apartment</mat-icon>
+          <span>Department ID · {{ perf.departmentId }}</span>
         </div>
       </mat-card>
 
-      <mat-card class="performance-card">
-        <div class="performance-card__label">Targets Completed</div>
-        <div class="performance-card__value">
-          {{ perf.completedTargets }}/{{ perf.totalTargets }}
+      <!-- Completed Targets Card -->
+      <mat-card class="metric-card metric-card--success">
+        <div class="metric-header">
+          <mat-icon>check_circle</mat-icon>
+          <div class="metric-label">
+            <span class="label-text">Targets Completed</span>
+          </div>
         </div>
-        <p class="performance-card__meta">
-          {{ completionRate() }}% of the monthly targets completed
+        <div class="metric-value">
+          {{ perf.completedTargets }}<span class="metric-separator">/</span>{{ perf.totalTargets }}
+        </div>
+        <div class="completion-bar">
+          <div class="completion-fill" [style.width.%]="completionRate()"></div>
+        </div>
+        <p class="metric-footer">
+          {{ completionRate() }}% completion rate
         </p>
       </mat-card>
 
-      <mat-card class="performance-card">
-        <div class="performance-card__label">Pending Targets</div>
-        <div class="performance-card__value">
+      <!-- Pending Targets Card -->
+      <mat-card class="metric-card metric-card--warning">
+        <div class="metric-header">
+          <mat-icon>schedule</mat-icon>
+          <div class="metric-label">
+            <span class="label-text">Pending Targets</span>
+          </div>
+        </div>
+        <div class="metric-value">
           {{ perf.pendingTargets }}
         </div>
-        <p class="performance-card__meta">
-          {{ pendingRatio() }}% of the workload
+        <div class="pending-indicator">
+          <div class="indicator-bar" [style.width.%]="pendingRatio()"></div>
+        </div>
+        <p class="metric-footer">
+          {{ pendingRatio() }}% of total workload
         </p>
       </mat-card>
 
-      <mat-card class="performance-card performance-card--alert">
-        <div class="performance-card__label">Overdue Targets</div>
-        <div class="performance-card__value">
+      <!-- Overdue Targets Card -->
+      <mat-card class="metric-card metric-card--danger">
+        <div class="metric-header">
+          <mat-icon>warning</mat-icon>
+          <div class="metric-label">
+            <span class="label-text">Overdue Targets</span>
+          </div>
+        </div>
+        <div class="metric-value">
           {{ perf.overdueTargets }}
         </div>
-        <p class="performance-card__meta">
-          Requires immediate follow-up
+        <div class="overdue-indicator">
+          <mat-icon>priority_high</mat-icon>
+          <span>Requires attention</span>
+        </div>
+        <p class="metric-footer">
+          Immediate follow-up needed
         </p>
       </mat-card>
     </div>
 
+    <!-- Notes Card -->
     <mat-card class="notes-card">
-      <mat-card-title>Performance Notes</mat-card-title>
-      <mat-card-content>
+      <div class="notes-header">
+        <mat-icon>notes</mat-icon>
+        <h2>Performance Notes</h2>
+      </div>
+      <mat-divider></mat-divider>
+      <div class="notes-content">
         <p>{{ perf.notes || 'No notes were provided for this period.' }}</p>
-      </mat-card-content>
+      </div>
     </mat-card>
-    <ng-container *ngIf="!isLoading()">
-      <mat-card class="state-card">
-        <mat-icon>info</mat-icon>
-        <span>No performance data available for this department.</span>
-      </mat-card>
-    </ng-container>
+  </ng-container>
+
+  <ng-container *ngIf="!isLoading() && !performance()">
+    <mat-card class="info-card">
+      <mat-icon>info_outline</mat-icon>
+      <div class="info-content">
+        <h3>No Data Available</h3>
+        <p>No performance data available for this department.</p>
+      </div>
+    </mat-card>
+  </ng-container>
+</div>

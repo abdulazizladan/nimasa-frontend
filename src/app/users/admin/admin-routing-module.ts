@@ -35,6 +35,10 @@ const routes: Routes = [
         loadChildren: () => import('../../features/projects-management/projects-management-module').then(module => module.ProjectstsManagementModule)
       },
       {
+        path: 'deliverables',
+        loadChildren: () => import('../../features/deliverables/deliverables-module').then(module => module.DeliverablesModule)
+      },
+      {
         path: 'settings',
         component: Settings
       },

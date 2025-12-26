@@ -1,0 +1,206 @@
+<div class="deliverables-dashboard">
+    <!-- Header -->
+    <header class="dashboard-header">
+        <div class="header-content">
+            <h1 class="header-title">Deliverables Dashboard</h1>
+            <p class="header-subtitle">Track and manage ministerial commitments and targets</p>
+        </div>
+        <button mat-raised-button color="primary" (click)="createNew()" class="create-btn">
+            <mat-icon>add</mat-icon>
+            <span>New Deliverable</span>
+        </button>
+    </header>
+
+    <!-- Summary Cards -->
+    @if (summary) {
+    <div class="summary-cards">
+        <mat-card class="summary-card summary-card--primary">
+            <div class="card-icon">
+                <mat-icon>assessment</mat-icon>
+            </div>
+            <div class="card-content">
+                <span class="card-label">Total Deliverables</span>
+                <span class="card-value">{{ summary.totalDeliverables }}</span>
+            </div>
+        </mat-card>
+
+        <mat-card class="summary-card summary-card--success">
+            <div class="card-icon">
+                <mat-icon>account_balance</mat-icon>
+            </div>
+            <div class="card-content">
+                <span class="card-label">Ministries</span>
+                <span class="card-value">{{ summary.totalMinistries }}</span>
+            </div>
+        </mat-card>
+
+        <mat-card class="summary-card summary-card--warning">
+            <div class="card-icon">
+                <mat-icon>trending_up</mat-icon>
+            </div>
+            <div class="card-content">
+                <span class="card-label">Average Progress</span>
+                <span class="card-value">{{ summary.averageProgress | number:'1.0-0' }}%</span>
+            </div>
+        </mat-card>
+    </div>
+    }
+
+    <!-- Filters -->
+    <mat-card class="filters-card">
+        <div class="filters-header">
+            <h3>Filters</h3>
+            <button mat-stroked-button (click)="clearFilters()">
+                <mat-icon>clear</mat-icon>
+                Clear All
+            </button>
+        </div>
+
+        <form [formGroup]="filterForm" class="filters-form">
+            <mat-form-field appearance="outline">
+                <mat-label>Ministry</mat-label>
+                <mat-select formControlName="ministry">
+                    <mat-option value="">All</mat-option>
+                    <mat-option *ngFor="let ministry of ministries" [value]="ministry">
+                        {{ ministry }}
+                    </mat-option>
+                </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+                <mat-label>Priority Area</mat-label>
+                <mat-select formControlName="priorityArea">
+                    <mat-option value="">All</mat-option>
+                    <mat-option *ngFor="let area of priorityAreas" [value]="area">
+                        {{ area }}
+                    </mat-option>
+                </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+                <mat-label>Responsible Department</mat-label>
+                <mat-select formControlName="responsibleDepartment">
+                    <mat-option value="">All</mat-option>
+                    <mat-option *ngFor="let dept of departments" [value]="dept">
+                        {{ dept }}
+                    </mat-option>
+                </mat-select>
+            </mat-form-field>
+        </form>
+    </mat-card>
+
+    <!-- Data Table -->
+    <mat-card class="table-card">
+        <div class="table-header">
+            <h3>Deliverables List</h3>
+            <button mat-stroked-button (click)="exportToCsv()" [disabled]="dataSource.data.length === 0">
+                <mat-icon>download</mat-icon>
+                Export to CSV
+            </button>
+        </div>
+
+        @if (isLoading) {
+        <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+        }
+
+        @if (error) {
+        <div class="error-message">
+            <mat-icon>error_outline</mat-icon>
+            <span>{{ error }}</span>
+        </div>
+        }
+
+        <div class="table-wrapper">
+            <table mat-table [dataSource]="dataSource" matSort class="deliverables-table">
+
+                <!-- Serial Number Column -->
+                <ng-container matColumnDef="serialNumber">
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header>S/N</th>
+                    <td mat-cell *matCellDef="let element">{{ element.serialNumber }}</td>
+                </ng-container>
+
+                <!-- Ministry Column -->
+                <ng-container matColumnDef="ministry">
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header>Ministry</th>
+                    <td mat-cell *matCellDef="let element">{{ element.ministry }}</td>
+                </ng-container>
+
+                <!-- Priority Area Column -->
+                <ng-container matColumnDef="priorityArea">
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header>Priority Area</th>
+                    <td mat-cell *matCellDef="let element">{{ element.priorityArea }}</td>
+                </ng-container>
+
+                <!-- Deliverable Column -->
+                <ng-container matColumnDef="deliverable">
+                    <th mat-header-cell *matHeaderCellDef>Deliverable</th>
+                    <td mat-cell *matCellDef="let element" class="deliverable-cell">
+                        {{ element.deliverable }}
+                    </td>
+                </ng-container>
+
+                <!-- Department Column -->
+                <ng-container matColumnDef="responsibleDepartment">
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header>Responsible Dept.</th>
+                    <td mat-cell *matCellDef="let element">{{ element.responsibleDepartment }}</td>
+                </ng-container>
+
+                <!-- Annual Target Column -->
+                <ng-container matColumnDef="annual_2024_target">
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header>2024 Target</th>
+                    <td mat-cell *matCellDef="let element">{{ element.annual_2024_target || 'N/A' }}</td>
+                </ng-container>
+
+                <!-- Annual Actual Column -->
+                <ng-container matColumnDef="annual_2024_actual">
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header>2024 Actual</th>
+                    <td mat-cell *matCellDef="let element">{{ element.annual_2024_actual || 'N/A' }}</td>
+                </ng-container>
+
+                <!-- Progress Column -->
+                <ng-container matColumnDef="progress">
+                    <th mat-header-cell *matHeaderCellDef>Progress</th>
+                    <td mat-cell *matCellDef="let element">
+                        <div class="progress-cell">
+                            <div class="progress-bar">
+                                <div class="progress-fill" [style.width.%]="calculateProgress(element)"></div>
+                            </div>
+                            <span class="progress-text">{{ calculateProgress(element) }}%</span>
+                        </div>
+                    </td>
+                </ng-container>
+
+                <!-- Actions Column -->
+                <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef>Actions</th>
+                    <td mat-cell *matCellDef="let element" class="actions-cell">
+                        <button mat-icon-button color="accent" (click)="viewDetails(element.id)"
+                            matTooltip="View Details">
+                            <mat-icon>visibility</mat-icon>
+                        </button>
+                        <button mat-icon-button color="primary" (click)="editDeliverable(element.id)" matTooltip="Edit">
+                            <mat-icon>edit</mat-icon>
+                        </button>
+                        <button mat-icon-button color="warn" (click)="deleteDeliverable(element.id)"
+                            matTooltip="Delete">
+                            <mat-icon>delete</mat-icon>
+                        </button>
+                    </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
+
+                <tr class="mat-row" *matNoDataRow>
+                    <td class="mat-cell no-data-cell" [attr.colspan]="displayedColumns.length">
+                        <mat-icon>info_outline</mat-icon>
+                        <span>No deliverables found</span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <mat-paginator [pageSizeOptions]="[10, 25, 50, 100]" [pageSize]="10" showFirstLastButtons>
+        </mat-paginator>
+    </mat-card>
+</div>
