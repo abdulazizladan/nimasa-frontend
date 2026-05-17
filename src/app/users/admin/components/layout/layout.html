@@ -1,76 +1,60 @@
-<div class="layout-container" fxLayout="column">
-
-  <mat-toolbar color="primary" class="mat-elevation-z5 fixed-toolbar">
-    <mat-toolbar-row fxLayout="row">
-      <button mat-icon-button color="primary" (click)="drawer.toggle()">
-        <mat-icon>menu</mat-icon>
-      </button>
-      NIMASA - CDCU
-      <span fxFlex="1 1 auto"></span>
-      <button mat-icon-button [matMenuTriggerFor]="menu">
-        <mat-icon>more_vert</mat-icon>
-      </button>
-      <mat-menu #menu="matMenu">
-        <button mat-menu-item routerLink="./settings">
-          <mat-icon>settings</mat-icon>
-          Settings
-        </button>
-        <button mat-menu-item (click)="logout()">
-          <mat-icon>exit_to_app</mat-icon>
-          Logout
-        </button>
-      </mat-menu>
-    </mat-toolbar-row>
-  </mat-toolbar>
-
-  <!-- Spacer to offset fixed toolbar height -->
-  <div class="toolbar-spacer"></div>
-
-  <mat-drawer-container class="drawer-container" autosize fxFlex="1 1 auto" hasBackdrop="false">
-    <mat-drawer #drawer mode="side" opened class="sidenav sidenav-vertical">
-      <div id="profile">
-
-      </div>
-      <button mat-button routerLink="./dashboard" routerLinkActive="active">
-        <mat-icon>
-          dashboard
-        </mat-icon>
-        Dashboard
-      </button>
-      <button mat-button routerLink="users" routerLinkActive="active">
-        <mat-icon>
-          people
-        </mat-icon>
-        Users
-      </button>
-      <button mat-button routerLink="organization" routerLinkActive="active">
-        <mat-icon>
-          business
-        </mat-icon>
-        Organization
-      </button>
-      <button mat-button routerLink="projects" routerLinkActive="active">
-        <mat-icon>
-          schedule
-        </mat-icon>
-        Projects and tasks
-      </button>
-      <button mat-button routerLink="deliverables" routerLinkActive="active">
-        <mat-icon>
-          assignment
-        </mat-icon>
-        Deliverables
-      </button>
-    </mat-drawer>
-
-    <div class="sidenav-content">
-      <div fxLayout="row" fxLayoutAlign="center center">
-        <div fxFlex.lt-md=100% fxFlex.gt-md=1024px>
-          <router-outlet></router-outlet>
-        </div>
-      </div>
+<div class="layout-wrapper">
+  <!-- Top Navbar -->
+  <header class="top-navbar">
+    <div class="navbar-brand">
+      <img src="/logo.webp" alt="NIMASA Logo" class="brand-logo" />
+      <span class="brand-text">Admin Portal</span>
     </div>
+    <div class="navbar-profile">
+      <div class="profile-icon">A</div>
+    </div>
+  </header>
 
-  </mat-drawer-container>
+  <div class="layout-body">
+    <!-- Side Navigation -->
+    <aside class="sidenav">
+      <nav class="sidenav-menu">
+        <a routerLink="/admin/dashboard" routerLinkActive="active" class="sidenav-item">
+          <span class="icon">📊</span>
+          <span class="text">Dashboard</span>
+        </a>
+        <a routerLink="/admin/users" routerLinkActive="active" class="sidenav-item">
+          <span class="icon">👥</span>
+          <span class="text">Users</span>
+        </a>
+        <a routerLink="/admin/organization" routerLinkActive="active" class="sidenav-item">
+          <span class="icon">🏢</span>
+          <span class="text">Organization</span>
+        </a>
+        <a routerLink="/admin/priorities" routerLinkActive="active" class="sidenav-item">
+          <span class="icon">⭐</span>
+          <span class="text">Presidential Priorities</span>
+        </a>
+        <a routerLink="/admin/deliverables" routerLinkActive="active" class="sidenav-item">
+          <span class="icon">📦</span>
+          <span class="text">Ministerial Deliverables</span>
+        </a>
+        <a routerLink="/admin/agency-deliverables" routerLinkActive="active" class="sidenav-item">
+          <span class="icon">📦</span>
+          <span class="text">Agency Deliverables</span>
+        </a>
+        <a routerLink="/admin/settings" routerLinkActive="active" class="sidenav-item">
+          <span class="icon">⚙️</span>
+          <span class="text">Settings</span>
+        </a>
+        
+        <div class="sidenav-divider"></div>
+        
+        <a href="javascript:void(0)" (click)="logout()" class="sidenav-item logout-btn">
+          <span class="icon">🚪</span>
+          <span class="text">Logout</span>
+        </a>
+      </nav>
+    </aside>
 
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
 </div>

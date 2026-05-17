@@ -1,39 +1,32 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { AuthGuard } from './auth/guard/auth.guard';
-import { RoleGuard } from './auth/guard/role.guard';
+import { Homepage } from './pages/homepage/homepage';
+import { adminGuard } from './auth/guards/admin.guard';
+import { guestGuard } from './auth/guards/guest.guard';
 
 const routes: Routes = [
   {
     path: '',
-    redirectTo: 'auth',
-    pathMatch: 'full'
+    component: Homepage
   },
   {
     path: 'auth',
-    loadChildren: () => import('./auth/auth-module').then(module => module.AuthModule)
-  },
-  {
-    path: 'guest',
-    loadChildren: () => import('./users/guest/guest-module').then(module => module.GuestModule),
-    canActivate: [AuthGuard, RoleGuard],
-    data: {role: 'guest'}
+    loadChildren: () => import('./auth/auth-module').then(m => m.AuthModule)
   },
   {
     path: 'admin',
-    loadChildren: () => import('./users/admin/admin-module').then(module => module.AdminModule),
-    canActivate: [AuthGuard, RoleGuard],
-    data: { role: 'admin' }
+    loadChildren: () => import('./users/admin/admin-module').then(m => m.AdminModule),
+    canActivate: [adminGuard]
   },
   {
-    path: '**',
-    redirectTo: 'auth',
-    pathMatch: 'full'
+    path: 'guest',
+    loadChildren: () => import('./users/guest/guest-module').then(m => m.GuestModule),
+    canActivate: [guestGuard]
   }
 ];
 
 @NgModule({
   imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule],
 })
-export class AppRoutingModule { } 
+export class AppRoutingModule { }

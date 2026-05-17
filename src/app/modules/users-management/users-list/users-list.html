@@ -1,0 +1,49 @@
+<div class="page-container">
+  <div class="page-header">
+    <h2>Users Management</h2>
+    <button class="btn-primary" routerLink="add">+ Add User</button>
+  </div>
+
+  <div *ngIf="userStore.error()" class="error-message">{{ userStore.error() }}</div>
+
+  <div class="card">
+    <div *ngIf="userStore.loading()" class="loading-state">Loading users...</div>
+    <table class="data-table" *ngIf="!userStore.loading()">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of userStore.users()">
+          <td>
+            <div class="user-info">
+              <img *ngIf="user.info?.image" [src]="user.info?.image" alt="Avatar" class="avatar" />
+              <div *ngIf="!user.info?.image" class="avatar-placeholder">{{ user.info?.firstName?.charAt(0) ||
+                user.email.charAt(0) || 'U' | uppercase }}</div>
+              <div>
+                <strong>{{ user.info?.firstName }} {{ user.info?.lastName }}</strong>
+              </div>
+            </div>
+          </td>
+          <td>{{ user.email }}</td>
+          <td>{{ user.contact?.phone || 'N/A' }}</td>
+          <td><span class="badge role-badge">{{ user.role }}</span></td>
+          <td><span class="badge status-badge" [ngClass]="user.status">{{ user.status || 'active' }}</span></td>
+          <td class="actions">
+            <button class="btn-ghost" (click)="viewDetails(user.email)">View/Edit</button>
+            <button class="btn-danger" (click)="deleteUser(user.email)">Delete</button>
+          </td>
+        </tr>
+        <tr *ngIf="userStore.users().length === 0">
+          <td colspan="6" class="empty-state">No users found.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,132 +1,114 @@
-<div class="settings-container" fxLayout="column" fxLayoutGap="24px">
+<div class="page-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <div class="header-badge">Preferences</div>
+      <h2>System Settings</h2>
+      <p class="subtitle">Personalize your admin dashboard display and settings</p>
+    </div>
+  </div>
 
-    <h1>Settings</h1>
+  <div class="settings-grid">
+    <!-- Theme Selection Card -->
+    <div class="settings-card">
+      <div class="card-header">
+        <span class="card-icon">🎨</span>
+        <div class="card-info">
+          <h3>Display Customization</h3>
+          <p>Choose your preferred interface theme style for daily operational tasks</p>
+        </div>
+      </div>
 
-    <!-- Profile Section -->
-    <mat-card class="settings-card">
-        <mat-card-header>
-            <mat-card-title>
-                <mat-icon>person</mat-icon>
-                Profile Information
-            </mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-            <form [formGroup]="profileForm" (ngSubmit)="onUpdateProfile()" fxLayout="column" fxLayoutGap="16px">
-                <mat-form-field appearance="outline">
-                    <mat-label>Email</mat-label>
-                    <input matInput formControlName="email" type="email">
-                    <mat-icon matPrefix>email</mat-icon>
-                </mat-form-field>
-
-                <div fxLayout="row" fxLayoutGap="16px" fxLayout.lt-md="column">
-                    <mat-form-field appearance="outline" fxFlex>
-                        <mat-label>First Name</mat-label>
-                        <input matInput formControlName="firstName">
-                        <mat-icon matPrefix>badge</mat-icon>
-                    </mat-form-field>
-
-                    <mat-form-field appearance="outline" fxFlex>
-                        <mat-label>Last Name</mat-label>
-                        <input matInput formControlName="lastName">
-                        <mat-icon matPrefix>badge</mat-icon>
-                    </mat-form-field>
-                </div>
-
-                <mat-form-field appearance="outline">
-                    <mat-label>Phone Number</mat-label>
-                    <input matInput formControlName="phone" type="tel">
-                    <mat-icon matPrefix>phone</mat-icon>
-                </mat-form-field>
-
-                <div fxLayout="row" fxLayoutAlign="end center">
-                    <button mat-raised-button color="primary" type="submit" [disabled]="!profileForm.valid">
-                        <mat-icon>save</mat-icon>
-                        Update Profile
-                    </button>
-                </div>
-            </form>
-        </mat-card-content>
-    </mat-card>
-
-    <!-- Change Password Section -->
-    <mat-card class="settings-card">
-        <mat-card-header>
-            <mat-card-title>
-                <mat-icon>lock</mat-icon>
-                Change Password
-            </mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-            <form [formGroup]="changePasswordForm" (ngSubmit)="onChangePassword()" fxLayout="column" fxLayoutGap="16px">
-                <mat-form-field appearance="outline">
-                    <mat-label>Current Password</mat-label>
-                    <input matInput formControlName="currentPassword" type="password">
-                    <mat-icon matPrefix>lock_outline</mat-icon>
-                    <mat-error *ngIf="changePasswordForm.get('currentPassword')?.hasError('required')">
-                        Current password is required
-                    </mat-error>
-                    <mat-error *ngIf="changePasswordForm.get('currentPassword')?.hasError('minlength')">
-                        Password must be at least 6 characters
-                    </mat-error>
-                </mat-form-field>
-
-                <mat-form-field appearance="outline">
-                    <mat-label>New Password</mat-label>
-                    <input matInput formControlName="newPassword" type="password">
-                    <mat-icon matPrefix>lock</mat-icon>
-                    <mat-error *ngIf="changePasswordForm.get('newPassword')?.hasError('required')">
-                        New password is required
-                    </mat-error>
-                    <mat-error *ngIf="changePasswordForm.get('newPassword')?.hasError('minlength')">
-                        Password must be at least 6 characters
-                    </mat-error>
-                </mat-form-field>
-
-                <mat-form-field appearance="outline">
-                    <mat-label>Confirm New Password</mat-label>
-                    <input matInput formControlName="confirmPassword" type="password">
-                    <mat-icon matPrefix>lock</mat-icon>
-                    <mat-error *ngIf="changePasswordForm.get('confirmPassword')?.hasError('required')">
-                        Please confirm your password
-                    </mat-error>
-                    <mat-error
-                        *ngIf="changePasswordForm.hasError('passwordMismatch') && changePasswordForm.get('confirmPassword')?.touched">
-                        Passwords do not match
-                    </mat-error>
-                </mat-form-field>
-
-                <div fxLayout="row" fxLayoutAlign="end center">
-                    <button mat-raised-button color="primary" type="submit" [disabled]="!changePasswordForm.valid">
-                        <mat-icon>vpn_key</mat-icon>
-                        Change Password
-                    </button>
-                </div>
-            </form>
-        </mat-card-content>
-    </mat-card>
-
-    <!-- Theme Toggle Section -->
-    <mat-card class="settings-card">
-        <mat-card-header>
-            <mat-card-title>
-                <mat-icon>palette</mat-icon>
-                Appearance
-            </mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-            <div fxLayout="row" fxLayoutAlign="space-between center">
-                <div fxLayout="column">
-                    <h3>Theme</h3>
-                    <p class="theme-description">
-                        {{ isDarkTheme ? 'Dark theme is enabled' : 'Light theme is enabled' }}
-                    </p>
-                </div>
-                <button mat-raised-button [color]="isDarkTheme ? 'accent' : 'primary'" (click)="toggleTheme()">
-                    <mat-icon>{{ isDarkTheme ? 'light_mode' : 'dark_mode' }}</mat-icon>
-                    {{ isDarkTheme ? 'Switch to Light' : 'Switch to Dark' }}
-                </button>
+      <div class="theme-options">
+        <!-- Light Theme Option -->
+        <div
+          class="theme-card"
+          [class.selected]="!themeService.isDark()"
+          (click)="themeService.setDarkTheme(false)"
+        >
+          <div class="theme-preview light-preview">
+            <div class="preview-header"></div>
+            <div class="preview-body">
+              <div class="preview-sidebar"></div>
+              <div class="preview-content">
+                <div class="preview-line"></div>
+                <div class="preview-line short"></div>
+              </div>
             </div>
-        </mat-card-content>
-    </mat-card>
+          </div>
+          <div class="theme-details">
+            <span class="theme-icon">☀️</span>
+            <div class="theme-text">
+              <h4>Bright Day Theme</h4>
+              <p>Clean light background with high contrast dark text</p>
+            </div>
+            <div class="radio-indicator"></div>
+          </div>
+        </div>
 
+        <!-- Dark Theme Option -->
+        <div
+          class="theme-card"
+          [class.selected]="themeService.isDark()"
+          (click)="themeService.setDarkTheme(true)"
+        >
+          <div class="theme-preview dark-preview">
+            <div class="preview-header"></div>
+            <div class="preview-body">
+              <div class="preview-sidebar"></div>
+              <div class="preview-content">
+                <div class="preview-line"></div>
+                <div class="preview-line short"></div>
+              </div>
+            </div>
+          </div>
+          <div class="theme-details">
+            <span class="theme-icon">🌙</span>
+            <div class="theme-text">
+              <h4>Deep Midnight Theme</h4>
+              <p>Soothing dark gray background with clear white text</p>
+            </div>
+            <div class="radio-indicator"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Toggle Action -->
+      <div class="toggle-action-row">
+        <span class="toggle-label">Quick Switch Mode</span>
+        <button
+          class="btn-toggle"
+          [class.active]="themeService.isDark()"
+          (click)="themeService.toggleTheme()"
+        >
+          <span class="toggle-knob"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Administrative Preferences Placeholder Card -->
+    <div class="settings-card info-card">
+      <div class="card-header">
+        <span class="card-icon">⚙️</span>
+        <div class="card-info">
+          <h3>Administrative Profile</h3>
+          <p>Global system notifications and account configurations</p>
+        </div>
+      </div>
+      <div class="info-body">
+        <div class="info-row">
+          <span class="info-label">Current Role:</span>
+          <span class="info-badge">Super Admin</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Portal Version:</span>
+          <span class="info-value">v2.4.0 (Stable)</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Last Checked:</span>
+          <span class="info-value">Today at 09:48 AM</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

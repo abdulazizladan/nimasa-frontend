@@ -1,85 +1,50 @@
-import { computed, inject, NgZone } from '@angular/core';
-import { signalStore, withState, withComputed, withMethods, patchState } from '@ngrx/signals';
-import { Auth, LoginRequest } from '../services/auth';
-import { firstValueFrom } from 'rxjs';
+import { signalStore, withState, withMethods, patchState } from '@ngrx/signals';
+import { rxMethod } from '@ngrx/signals/rxjs-interop';
+import { inject } from '@angular/core';
+import { pipe, tap, switchMap, catchError, of } from 'rxjs';
 import { Router } from '@angular/router';
-import { jwtDecode } from 'jwt-decode';
-import { LoginData } from '../models/loginData.model';
-
-interface AuthState {
-  token: string | null;
-  isAuthenticated: boolean;
-  userRole: string | null;
-  userEmail: string| null;
-  error: string | null;
-  loading: boolean;
-}
-
-const initialState: AuthState = {
-  token: localStorage.getItem('auth_token'),
-  isAuthenticated: !!localStorage.getItem('auth_token'),
-  userRole: null,
-  userEmail: null,
-  loading: false,
-  error: null
-};
-
+import { Auth } from '../services/auth';
 
 export const AuthStore = signalStore(
   { providedIn: 'root' },
-  withState(initialState),
-  withMethods((store, authService = inject(Auth), router = inject(Router), zone = inject(NgZone)) => ({
-    async login(data: LoginData) {
-      patchState(store, { 
-        loading: true, 
-        error: null 
-      });
-      try {
-        // Ensure data matches LoginRequest type (email: string, password: string)
-        if (!data.email || !data.password) {
-          throw new Error('Email and password are required.');
-        }
-        // Cast data to LoginRequest to satisfy type checker
-        const loginRequest: LoginRequest = {
-          email: data.email,
-          password: data.password
-        };
-        // Await the Observable<LoginResponse> as a promise
-        const response = await authService.login(loginRequest);
-        const decodedToken = jwtDecode(response) as any;
-
-        patchState(store, {
-          token: response,
-          isAuthenticated: true,
-          userRole: decodedToken.role,
-          userEmail: decodedToken.email,
-          error: null,
-          loading: false
-        });
-
-        // Redirect based on role
-        switch (decodedToken.role) {
-          case 'admin':
-            router.navigate(['/admin']);
-            break;
-          case 'guest':
-            router.navigate(['/guest']);
-            break;
-          default:
-            router.navigate(['**']);
-        }
-      } catch (error) {
-        patchState(store, {
-          error: 'Login failed. Check your login details and try again.',
-          loading: false
-        });
+  withState({
+    user: null as any,
+    token: null as string | null,
+    loading: false,
+    error: null as string | null,
+  }),
+  withMethods((store, authService = inject(Auth), router = inject(Router)) => ({
+    initFromStorage() {
+      const user = authService.getUser();
+      const token = localStorage.getItem('access_token');
+      if (user && token) {
+        patchState(store, { user, token });
       }
     },
-
+    login: rxMethod<any>(
+      pipe(
+        tap(() => patchState(store, { loading: true, error: null })),
+        switchMap((credentials) => authService.login(credentials).pipe(
+          tap((res: any) => {
+            patchState(store, { user: res.user, token: res.access_token, loading: false });
+            
+            if (res.user && res.user.role === 'admin') {
+              router.navigate(['/admin/dashboard']);
+            } else {
+              router.navigate(['/guest/dashboard']);
+            }
+          }),
+          catchError((err) => {
+            patchState(store, { error: err.error?.message || 'Login failed.', loading: false });
+            return of(null);
+          })
+        ))
+      )
+    ),
     logout() {
-      localStorage.removeItem('auth_token');
-      patchState(store, {loading: false, error: null, isAuthenticated: false, token: null, userRole: null, userEmail: null});
-      router.navigate(['/auth/login']);
+      authService.logout();
+      patchState(store, { user: null, token: null });
+      router.navigate(['/']);
     }
   }))
 );

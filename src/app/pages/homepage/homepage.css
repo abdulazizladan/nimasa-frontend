@@ -1,0 +1,65 @@
+.homepage-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: var(--surface-bg);
+  padding: 24px;
+}
+
+.hero-card {
+  max-width: 600px;
+  width: 100%;
+  padding: 48px;
+  text-align: center;
+  border-top: 6px solid var(--brand-green);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+}
+
+.logo-container {
+  margin-bottom: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.hero-logo {
+  height: 120px;
+  width: auto;
+}
+
+.hero-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+}
+
+.hero-subtitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--brand-green);
+  margin-bottom: 24px;
+}
+
+.hero-description {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  margin-bottom: 40px;
+}
+
+.hero-actions {
+  display: flex;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.btn-large {
+  padding: 14px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-decoration: none;
+  display: inline-block;
+}

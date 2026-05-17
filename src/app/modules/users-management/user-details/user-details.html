@@ -1,0 +1,86 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="header-title">
+      <button class="btn-icon" (click)="goBack()">←</button>
+      <h2>User Profile</h2>
+    </div>
+    <div>
+      <button *ngIf="!editMode" class="btn-primary" (click)="toggleEditMode()">Edit User</button>
+      <button *ngIf="editMode" class="btn-ghost" (click)="toggleEditMode()" [disabled]="userStore.saving()">Cancel Edit</button>
+    </div>
+  </div>
+
+  <div *ngIf="userStore.error()" class="error-message">{{ userStore.error() }}</div>
+
+  <div *ngIf="userStore.loading()" class="loading-state">Loading details...</div>
+
+  <div class="profile-layout" *ngIf="!userStore.loading() && displayUser as user">
+    <div class="profile-sidebar card">
+      <div class="avatar-large-placeholder">
+        {{ user.info?.firstName?.charAt(0) || user.email.charAt(0) | uppercase }}
+      </div>
+      <h3>{{ user.info?.firstName }} {{ user.info?.lastName }}</h3>
+      <p class="text-muted">{{ user.email }}</p>
+      
+      <div class="badges">
+        <span class="badge role-badge">{{ user.role }}</span>
+        <span class="badge status-badge" [ngClass]="user.status">{{ user.status || 'active' }}</span>
+      </div>
+    </div>
+
+    <div class="profile-content card">
+      <h3>Personal Information</h3>
+      <form (ngSubmit)="saveChanges()" #form="ngForm">
+        
+        <div class="info-grid">
+          <div class="info-group">
+            <label>First Name</label>
+            <div *ngIf="!editMode" class="read-only-value">{{ user.info?.firstName || '-' }}</div>
+            <input *ngIf="editMode" type="text" name="firstName" [(ngModel)]="user.info!.firstName" required>
+          </div>
+          
+          <div class="info-group">
+            <label>Last Name</label>
+            <div *ngIf="!editMode" class="read-only-value">{{ user.info?.lastName || '-' }}</div>
+            <input *ngIf="editMode" type="text" name="lastName" [(ngModel)]="user.info!.lastName" required>
+          </div>
+
+          <div class="info-group">
+            <label>Email Address</label>
+            <div class="read-only-value text-muted">{{ user.email }}</div>
+            <small *ngIf="editMode" class="hint">Email cannot be changed</small>
+          </div>
+
+          <div class="info-group">
+            <label>Phone Number</label>
+            <div *ngIf="!editMode" class="read-only-value">{{ user.contact?.phone || '-' }}</div>
+            <input *ngIf="editMode" type="tel" name="phone" [(ngModel)]="user.contact!.phone">
+          </div>
+
+          <div class="info-group" *ngIf="editMode">
+            <label>Role</label>
+            <select name="role" [(ngModel)]="user.role" required>
+              <option value="admin">Admin</option>
+              <option value="director">Director</option>
+              <option value="manager">Manager</option>
+            </select>
+          </div>
+
+          <div class="info-group" *ngIf="editMode">
+            <label>Status</label>
+            <select name="status" [(ngModel)]="user.status">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-actions" *ngIf="editMode">
+          <button type="submit" class="btn-primary" [disabled]="form.invalid || userStore.saving()">
+            {{ userStore.saving() ? 'Saving...' : 'Save Changes' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

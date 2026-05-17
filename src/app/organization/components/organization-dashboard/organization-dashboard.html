@@ -1,0 +1,327 @@
+<div class="page-container">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <div class="header-badge">Governance</div>
+      <h2>Organization Management</h2>
+      <p class="subtitle">Configure corporate bodies, agencies, and operational departments</p>
+    </div>
+    <div class="header-stats">
+      <div class="stat-chip">
+        <span class="stat-value">{{ store.agencies().length }}</span>
+        <span class="stat-label">Agencies</span>
+      </div>
+      <div class="stat-chip stat-chip-teal">
+        <span class="stat-value">{{ store.departments().length }}</span>
+        <span class="stat-label">Departments</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Alerts -->
+  <div *ngIf="store.error()" class="alert-error">
+    <span>⚠️ {{ store.error() }}</span>
+    <button (click)="store.clearError()">✕</button>
+  </div>
+
+  <!-- Tabs Navigation -->
+  <div class="tab-container">
+    <div class="tab-buttons">
+      <button
+        class="tab-btn"
+        [class.active]="store.activeTab() === 'agencies'"
+        (click)="setTab('agencies')"
+      >🏢 Agencies</button>
+      <button
+        class="tab-btn"
+        [class.active]="store.activeTab() === 'departments'"
+        (click)="setTab('departments')"
+      >👥 Departments</button>
+    </div>
+  </div>
+
+  <!-- Search & Action Bar -->
+  <div class="action-bar">
+    <div class="search-group">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        [(ngModel)]="searchText"
+        (ngModelChange)="onSearch()"
+        placeholder="Search by code or name..."
+        class="search-input"
+      />
+    </div>
+    <div class="action-buttons">
+      <button
+        *ngIf="store.activeTab() === 'agencies'"
+        class="btn-primary"
+        (click)="openAddAgency()"
+      >+ Add Agency</button>
+      <button
+        *ngIf="store.activeTab() === 'departments'"
+        class="btn-primary"
+        (click)="openAddDept()"
+      >+ Add Department</button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="store.loading()" class="loading-wrapper">
+    <div class="spinner"></div>
+    <p>Retrieving records...</p>
+  </div>
+
+  <!-- Content Grid -->
+  <div class="content-body" *ngIf="!store.loading()">
+
+    <!-- AGENCIES LIST -->
+    <div *ngIf="store.activeTab() === 'agencies'">
+      <div class="table-container">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th>Logo</th>
+              <th>Code</th>
+              <th>Name</th>
+              <th>Motto</th>
+              <th>Status</th>
+              <th class="actions-col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let a of filteredAgencies()">
+              <td class="logo-td">
+                <div class="logo-circle" [style.background-image]="a.logo ? 'url(' + a.logo + ')' : ''">
+                  {{ !a.logo ? a.code.slice(0, 2) : '' }}
+                </div>
+              </td>
+              <td class="bold-code">{{ a.code }}</td>
+              <td class="name-td">{{ a.name }}</td>
+              <td class="italic-motto">"{{ a.motto || 'N/A' }}"</td>
+              <td>
+                <span class="status-badge" [class.active]="a.isActive">
+                  {{ a.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+              <td class="actions-col">
+                <button class="btn-edit" (click)="openEditAgency(a)">✏️ Edit</button>
+              </td>
+            </tr>
+            <tr *ngIf="filteredAgencies().length === 0">
+              <td colspan="6" class="no-records">No agencies match your search.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- DEPARTMENTS LIST -->
+    <div *ngIf="store.activeTab() === 'departments'">
+      <div class="table-container">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Name</th>
+              <th>Department Head</th>
+              <th>Director Email</th>
+              <th>Contact Phone</th>
+              <th>Parent Agency</th>
+              <th class="actions-col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let d of filteredDepartments()">
+              <td class="bold-code">{{ d.code }}</td>
+              <td class="name-td">
+                <div class="dept-title">{{ d.name }}</div>
+                <div class="dept-desc">{{ d.description || 'No description' }}</div>
+              </td>
+              <td>🧑‍💼 {{ d.head }}</td>
+              <td>📧 <span class="email-text">{{ d.directorEmail || 'N/A' }}</span></td>
+              <td>📞 {{ d.contactPhone || 'N/A' }}</td>
+              <td>
+                <span class="agency-tag">{{ d.organization?.name || 'NIMASA' }}</span>
+              </td>
+              <td class="actions-col">
+                <button class="btn-edit" (click)="openEditDept(d)">✏️ Edit</button>
+              </td>
+            </tr>
+            <tr *ngIf="filteredDepartments().length === 0">
+              <td colspan="7" class="no-records">No departments match your search.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Agency Form Modal -->
+  <div class="modal-overlay" *ngIf="showAgencyModal" (click)="closeAgencyModal()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ isEditingAgency ? 'Edit Agency' : 'Register New Agency' }}</h3>
+        <button class="close-btn" (click)="closeAgencyModal()">✕</button>
+      </div>
+      <form (submit)="submitAgencyForm(); $event.preventDefault()">
+        <div class="modal-body">
+          <div class="form-row">
+            <label for="agency-code">Agency Code *</label>
+            <input
+              id="agency-code"
+              type="text"
+              [(ngModel)]="agencyForm.code"
+              name="code"
+              placeholder="e.g. NIMASA"
+              [disabled]="isEditingAgency"
+              required
+            />
+          </div>
+          <div class="form-row">
+            <label for="agency-name">Agency Name *</label>
+            <input
+              id="agency-name"
+              type="text"
+              [(ngModel)]="agencyForm.name"
+              name="name"
+              placeholder="e.g. Nigerian Maritime Administration and Safety Agency"
+              required
+            />
+          </div>
+          <div class="form-row">
+            <label for="agency-motto">Motto / Tagline</label>
+            <input
+              id="agency-motto"
+              type="text"
+              [(ngModel)]="agencyForm.motto"
+              name="motto"
+              placeholder="e.g. Safety at Sea, Clean Oceans"
+            />
+          </div>
+          <div class="form-row">
+            <label for="agency-logo">Logo URL</label>
+            <input
+              id="agency-logo"
+              type="text"
+              [(ngModel)]="agencyForm.logo"
+              name="logo"
+              placeholder="e.g. /assets/logo.png"
+            />
+          </div>
+          <div class="form-row checkbox-row">
+            <input
+              id="agency-active"
+              type="checkbox"
+              [(ngModel)]="agencyForm.isActive"
+              name="isActive"
+            />
+            <label for="agency-active">Active Operational Status</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" (click)="closeAgencyModal()">Cancel</button>
+          <button type="submit" class="btn-submit">Save Agency</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Department Form Modal -->
+  <div class="modal-overlay" *ngIf="showDeptModal" (click)="closeDeptModal()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ isEditingDept ? 'Edit Department' : 'Create Operational Department' }}</h3>
+        <button class="close-btn" (click)="closeDeptModal()">✕</button>
+      </div>
+      <form (submit)="submitDeptForm(); $event.preventDefault()">
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-row">
+              <label for="dept-code">Department Code *</label>
+              <input
+                id="dept-code"
+                type="text"
+                [(ngModel)]="deptForm.code"
+                name="code"
+                placeholder="e.g. MARSEC"
+                [disabled]="isEditingDept"
+                required
+              />
+            </div>
+            <div class="form-row">
+              <label for="dept-name">Department Name *</label>
+              <input
+                id="dept-name"
+                type="text"
+                [(ngModel)]="deptForm.name"
+                name="name"
+                placeholder="e.g. Maritime Security & safety"
+                required
+              />
+            </div>
+            <div class="form-row full-width">
+              <label for="dept-desc">Function / Description</label>
+              <textarea
+                id="dept-desc"
+                [(ngModel)]="deptForm.description"
+                name="description"
+                placeholder="Brief summary of operations..."
+                rows="2"
+              ></textarea>
+            </div>
+            <div class="form-row">
+              <label for="dept-head">Department Head *</label>
+              <input
+                id="dept-head"
+                type="text"
+                [(ngModel)]="deptForm.head"
+                name="head"
+                placeholder="e.g. Captain John Doe"
+                required
+              />
+            </div>
+            <div class="form-row">
+              <label for="dept-email">Director Email</label>
+              <input
+                id="dept-email"
+                type="email"
+                [(ngModel)]="deptForm.directorEmail"
+                name="directorEmail"
+                placeholder="e.g. j.doe@nimasa.gov.ng"
+              />
+            </div>
+            <div class="form-row">
+              <label for="dept-phone">Contact Phone</label>
+              <input
+                id="dept-phone"
+                type="text"
+                [(ngModel)]="deptForm.contactPhone"
+                name="contactPhone"
+                placeholder="e.g. +2348012345678"
+              />
+            </div>
+            <div class="form-row">
+              <label for="dept-agency">Belongs to Agency *</label>
+              <select
+                id="dept-agency"
+                [(ngModel)]="deptForm.organizationCode"
+                name="organizationCode"
+                required
+              >
+                <option *ngFor="let a of store.agencies()" [value]="a.code">{{ a.name }}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" (click)="closeDeptModal()">Cancel</button>
+          <button type="submit" class="btn-submit">Save Department</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>

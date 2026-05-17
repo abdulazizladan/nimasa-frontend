@@ -1,157 +1,116 @@
-import { Component, OnInit } from '@angular/core';
-import { ChartConfiguration, ChartOptions } from 'chart.js';
+import { Component, OnInit, inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { DashboardStore } from '../../store/dashboard.store';
+
+interface QuarterMetric {
+  label: string;
+  target: number;
+  actual: number;
+}
+
+interface YearData {
+  [year: string]: QuarterMetric[];
+}
 
 @Component({
   selector: 'app-dashboard',
   standalone: false,
   templateUrl: './dashboard.html',
-  styleUrl: './dashboard.scss'
+  styleUrl: './dashboard.css',
 })
-export class Dashboard implements OnInit{
-// Bar Chart - Target vs Actual
-public barChartData: ChartConfiguration<'bar'>['data'] = {
-  labels: ['Seafarers Placed', 'ISPS Compliance', 'Online Transactions', 'Policy Development'],
-  datasets: [
-    {
-      label: '2024 Target',
-      data: [5415, 85, 4500, 100],
-      backgroundColor: 'rgba(54, 162, 235, 0.6)'
-    },
-    {
-      label: '2024 Actual',
-      data: [3857, 85, 3200, 45],
-      backgroundColor: 'rgba(54, 162, 235, 1)'
-    },
-    {
-      label: '2025 Target',
-      data: [5415, 90, 5000, 100],
-      backgroundColor: 'rgba(255, 99, 132, 0.6)'
-    },
-    {
-      label: 'Q2 2025 Actual',
-      data: [3446, 88, 0, 0],
-      backgroundColor: 'rgba(255, 99, 132, 1)'
-    }
-  ]
-};
+export class Dashboard implements OnInit {
+  dashboardStore = inject(DashboardStore);
+  private router = inject(Router);
 
-public barChartOptions: ChartConfiguration<'bar'>['options'] = {
-  responsive: true,
-  plugins: {
-    legend: {
-      position: 'top',
-    },
-    title: {
-      display: true,
-      text: 'Target vs Actual Comparison'
-    }
-  }
-};
+  // Selected years
+  selectedPresidentialYear = '2025';
+  selectedMinisterialYear = '2025';
+  selectedAgencyYear = '2025';
 
-// Line Chart - Quarterly Progress
-public lineChartData: ChartConfiguration<'line'>['data'] = {
-  labels: ['Q1', 'Q2', 'Q3', 'Q4'],
-  datasets: [
-    {
-      label: 'Seafarers Placed - Actual',
-      data: [1200, 3446, null, null],
-      borderColor: 'rgba(75, 192, 192, 1)',
-      backgroundColor: 'rgba(75, 192, 192, 0.2)',
-      fill: true
-    },
-    {
-      label: 'Seafarers Placed - Target',
-      data: [1354, 1354, 1354, 1354],
-      borderColor: 'rgba(255, 99, 132, 1)',
-      borderDash: [5, 5],
-      fill: false
-    }
-  ]
-};
+  // Available years
+  years = ['2024', '2025', '2026'];
 
-public lineChartOptions: ChartConfiguration<'line'>['options'] = {
-  responsive: true,
-  plugins: {
-    legend: {
-      position: 'top',
-    }
-  }
-};
-
-// Doughnut Chart - Performance by Priority Area
-public doughnutChartData: ChartConfiguration<'doughnut'>['data'] = {
-  labels: ['Infrastructure', 'Governance', 'Service Delivery'],
-  datasets: [{
-    data: [65, 25, 10],
-    backgroundColor: [
-      'rgba(54, 162, 235, 0.8)',
-      'rgba(255, 99, 132, 0.8)',
-      'rgba(255, 206, 86, 0.8)'
+  // Mock Performance Data
+  presidentialData: YearData = {
+    '2024': [
+      { label: 'Q1', target: 70, actual: 65 },
+      { label: 'Q2', target: 75, actual: 72 },
+      { label: 'Q3', target: 80, actual: 82 },
+      { label: 'Q4', target: 85, actual: 84 },
+    ],
+    '2025': [
+      { label: 'Q1', target: 80, actual: 78 },
+      { label: 'Q2', target: 85, actual: 88 },
+      { label: 'Q3', target: 90, actual: 87 },
+      { label: 'Q4', target: 95, actual: 92 },
+    ],
+    '2026': [
+      { label: 'Q1', target: 85, actual: 80 },
+      { label: 'Q2', target: 90, actual: 92 },
+      { label: 'Q3', target: 92, actual: 89 },
+      { label: 'Q4', target: 95, actual: 96 },
     ]
-  }]
-};
+  };
 
-public doughnutChartOptions: ChartConfiguration<'doughnut'>['options'] = {
-  responsive: true,
-  plugins: {
-    legend: {
-      position: 'top',
-    }
-  }
-};
-
-// Horizontal Bar Chart - Outstanding Targets
-public horizontalBarChartData: ChartConfiguration<'bar'>['data'] = {
-  labels: ['Online Transactions', 'Seafarers Placement', 'Policy Development'],
-  datasets: [{
-    label: 'Outstanding Target',
-    data: [-5000, -1940, -100],
-    backgroundColor: [
-      'rgba(255, 99, 132, 0.8)',
-      'rgba(255, 159, 64, 0.8)',
-      'rgba(255, 205, 86, 0.8)'
+  ministerialData: YearData = {
+    '2024': [
+      { label: 'Q1', target: 65, actual: 60 },
+      { label: 'Q2', target: 70, actual: 68 },
+      { label: 'Q3', target: 75, actual: 74 },
+      { label: 'Q4', target: 80, actual: 82 },
+    ],
+    '2025': [
+      { label: 'Q1', target: 75, actual: 72 },
+      { label: 'Q2', target: 80, actual: 84 },
+      { label: 'Q3', target: 85, actual: 82 },
+      { label: 'Q4', target: 90, actual: 91 },
+    ],
+    '2026': [
+      { label: 'Q1', target: 80, actual: 78 },
+      { label: 'Q2', target: 85, actual: 89 },
+      { label: 'Q3', target: 90, actual: 92 },
+      { label: 'Q4', target: 95, actual: 94 },
     ]
-  }]
-};
+  };
 
-public horizontalBarChartOptions: ChartConfiguration<'bar'>['options'] = {
-  indexAxis: 'y',
-  responsive: true,
-  plugins: {
-    legend: {
-      display: false
-    }
+  agencyData: YearData = {
+    '2024': [
+      { label: 'Q1', target: 60, actual: 55 },
+      { label: 'Q2', target: 65, actual: 68 },
+      { label: 'Q3', target: 70, actual: 72 },
+      { label: 'Q4', target: 75, actual: 70 },
+    ],
+    '2025': [
+      { label: 'Q1', target: 70, actual: 72 },
+      { label: 'Q2', target: 75, actual: 78 },
+      { label: 'Q3', target: 80, actual: 83 },
+      { label: 'Q4', target: 85, actual: 80 },
+    ],
+    '2026': [
+      { label: 'Q1', target: 75, actual: 74 },
+      { label: 'Q2', target: 80, actual: 82 },
+      { label: 'Q3', target: 85, actual: 88 },
+      { label: 'Q4', target: 90, actual: 91 },
+    ]
+  };
+
+  ngOnInit() {
+    this.dashboardStore.loadStats();
   }
-};
 
-// Data Table
-displayedColumns: string[] = ['priorityArea', 'deliverable', 'target2025', 'actualQ22025', 'outstanding'];
-dataSource = [
-  {
-    priorityArea: 'Enhance Infrastructure',
-    deliverable: 'Develop and Implement National Policy',
-    target2025: 100,
-    actualQ22025: 0,
-    outstanding: -100
-  },
-  {
-    priorityArea: 'Enhance Infrastructure',
-    deliverable: 'Number of Nigerian Seafarers placed',
-    target2025: 5415,
-    actualQ22025: 3446,
-    outstanding: -1940
-  },
-  {
-    priorityArea: 'Improve Governance',
-    deliverable: 'Number of transactions conducted online',
-    target2025: 5000,
-    actualQ22025: 0,
-    outstanding: -5000
+  navigateTo(path: string) {
+    this.router.navigate([`/admin/${path}`]);
   }
-];
 
-constructor() { }
+  get presidentialQuarterly() {
+    return this.presidentialData[this.selectedPresidentialYear];
+  }
 
-ngOnInit(): void { }
+  get ministerialQuarterly() {
+    return this.ministerialData[this.selectedMinisterialYear];
+  }
+
+  get agencyQuarterly() {
+    return this.agencyData[this.selectedAgencyYear];
+  }
 }
-

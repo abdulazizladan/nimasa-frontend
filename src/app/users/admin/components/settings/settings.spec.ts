@@ -3,21 +3,20 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Settings } from './settings';
 
 describe('Settings', () => {
-    let component: Settings;
-    let fixture: ComponentFixture<Settings>;
+  let component: Settings;
+  let fixture: ComponentFixture<Settings>;
 
-    beforeEach(async () => {
-        await TestBed.configureTestingModule({
-            declarations: [Settings]
-        })
-            .compileComponents();
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      declarations: [Settings],
+    }).compileComponents();
 
-        fixture = TestBed.createComponent(Settings);
-        component = fixture.componentInstance;
-        fixture.detectChanges();
-    });
+    fixture = TestBed.createComponent(Settings);
+    component = fixture.componentInstance;
+    await fixture.whenStable();
+  });
 
-    it('should create', () => {
-        expect(component).toBeTruthy();
-    });
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
 });

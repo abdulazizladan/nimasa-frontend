@@ -1,195 +1,295 @@
-<!-- dashboard.component.html -->
-<div fxLayout="column" class="dashboard-container page-container">
-
-  <div fxLayout="row" fxLayout.lt-md="column" class="kpi-cards-row card-gap mb-2xl">
-
-    <div fxFlex>
-      <mat-card class="kpi-scorecard">
-        <div class="kpi-content">
-          <div class="kpi-main-value">
-            <div class="kpi-value-text">78%</div>
-            <mat-icon class="status-icon positive-icon">arrow_upward</mat-icon>
-          </div>
-          <div class="kpi-subtitle-text">Overall Goal Attainment (2024)</div>
-        </div>
-        <div class="kpi-status-bar neutral-bar"></div>
-      </mat-card>
-    </div>
-
-    <div fxFlex>
-      <mat-card class="kpi-scorecard">
-        <div class="kpi-content">
-          <div class="kpi-main-value">
-            <div class="kpi-value-text">45%</div>
-            <mat-icon class="status-icon neutral-icon">trending_flat</mat-icon>
-          </div>
-          <div class="kpi-subtitle-text">Current Progress (2025 Q3)</div>
-        </div>
-        <div class="kpi-status-bar neutral-bar"></div>
-      </mat-card>
-    </div>
-
-    <div fxFlex>
-      <mat-card class="kpi-scorecard">
-        <div class="kpi-content">
-          <div class="kpi-main-value">
-            <div class="kpi-value-text">100%</div>
-            <mat-icon class="status-icon positive-icon">check_circle_outline</mat-icon>
-          </div>
-          <div class="kpi-subtitle-text">ISPS Code Compliance</div>
-        </div>
-        <div class="kpi-status-bar positive-bar"></div>
-      </mat-card>
-    </div>
-
-    <div fxFlex>
-      <mat-card class="kpi-scorecard">
-        <div class="kpi-content">
-          <div class="kpi-main-value">
-            <div class="kpi-value-text negative-value">-1,940</div>
-            <mat-icon class="status-icon negative-icon">error_outline</mat-icon>
-          </div>
-          <div class="kpi-subtitle-text">Seafarers Placement Gap</div>
-        </div>
-        <div class="kpi-status-bar negative-bar"></div>
-      </mat-card>
-    </div>
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h2>Dashboard Overview</h2>
+    <p class="text-muted">Welcome to the NIMASA Performance Management System.</p>
   </div>
 
-  <!-- Filters -->
-  <mat-card class="section-spacing">
-    <mat-card-header>
-      <mat-card-title>Filters</mat-card-title>
-    </mat-card-header>
-    <mat-card-content>
-      <div fxLayout="row" fxLayout.lt-sm="column" class="card-gap">
-        <mat-form-field fxFlex appearance="outline">
-          <mat-label>Priority Area</mat-label>
-          <mat-select multiple appearance="outline">
-            <mat-option value="infrastructure">Enhance Infrastructure</mat-option>
-            <mat-option value="governance">Improve Governance</mat-option>
-          </mat-select>
-        </mat-form-field>
-
-        <mat-form-field fxFlex appearance="outline">
-          <mat-label>Deliverable</mat-label>
-          <mat-select>
-            <mat-option value="all">All Deliverables</mat-option>
-          </mat-select>
-        </mat-form-field>
-
-        <mat-form-field fxFlex appearance="outline">
-          <mat-label>Year</mat-label>
-          <mat-select>
-            <mat-option value="2024">2024</mat-option>
-            <mat-option value="2025">2025</mat-option>
-          </mat-select>
-        </mat-form-field>
+  <div class="stats-grid">
+    <!-- Users Card -->
+    <div class="stat-card stat-users" (click)="navigateTo('users')">
+      <div class="stat-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+        </svg>
       </div>
-    </mat-card-content>
-  </mat-card>
-
-  <!-- Charts Row 1 -->
-  <div fxLayout="row" fxLayout.lt-lg="column" class="card-gap section-spacing">
-    <!-- Target vs Actual Chart -->
-    <div fxFlex="50">
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title>Target vs Actual (2024 & 2025)</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <canvas baseChart [data]="barChartData" [options]="barChartOptions" [type]="'bar'">
-          </canvas>
-        </mat-card-content>
-      </mat-card>
+      <div class="stat-content">
+        <p class="stat-label">Total Users</p>
+        <h3 class="stat-value">{{ dashboardStore.stats().users }}</h3>
+      </div>
+      <div class="stat-trend positive">
+        <span *ngIf="dashboardStore.loading()">Loading...</span>
+        <span *ngIf="!dashboardStore.loading()">+12%</span> <span *ngIf="!dashboardStore.loading()">vs last month</span>
+      </div>
     </div>
 
-    <!-- Quarterly Progress Chart -->
-    <div fxFlex="50">
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title>Quarterly Progress & Trend (2025)</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <canvas baseChart [data]="lineChartData" [options]="lineChartOptions" [type]="'line'">
-          </canvas>
-        </mat-card-content>
-      </mat-card>
+    <!-- Presidential Priorities Card -->
+    <div class="stat-card stat-priorities" (click)="navigateTo('priorities')">
+      <div class="stat-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-1.81.688l1.154 5.432c.113.528-.444.925-.89.658l-4.73-2.822a.563.563 0 00-.54 0l-4.73 2.822c-.446.267-1.003-.13-.89-.658l1.154-5.432a.563.563 0 00-.181-.688l-4.204-3.602c-.38-.325-.178-.948.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+        </svg>
+      </div>
+      <div class="stat-content">
+        <p class="stat-label">Presidential Priorities</p>
+        <h3 class="stat-value">{{ dashboardStore.stats().presidentialPriorities }}</h3>
+      </div>
+      <div class="stat-trend neutral">
+        <span *ngIf="dashboardStore.loading()">Loading...</span>
+        <span *ngIf="!dashboardStore.loading()">Active Focus</span>
+      </div>
+    </div>
+
+    <!-- Ministerial Deliverables Card -->
+    <div class="stat-card stat-deliverables" (click)="navigateTo('deliverables')">
+      <div class="stat-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z" />
+        </svg>
+      </div>
+      <div class="stat-content">
+        <p class="stat-label">Ministerial Deliverables</p>
+        <h3 class="stat-value">{{ dashboardStore.stats().ministerialDeliverables }}</h3>
+      </div>
+      <div class="stat-trend positive">
+        <span *ngIf="dashboardStore.loading()">Loading...</span>
+        <span *ngIf="!dashboardStore.loading()">72%</span> <span *ngIf="!dashboardStore.loading()">Completion</span>
+      </div>
+    </div>
+
+    <!-- Agency KPIs Card -->
+    <div class="stat-card stat-kpis" (click)="navigateTo('agency-deliverables')">
+      <div class="stat-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+        </svg>
+      </div>
+      <div class="stat-content">
+        <p class="stat-label">Agency KPIs</p>
+        <h3 class="stat-value">{{ dashboardStore.stats().agencyKPIs }}</h3>
+      </div>
+      <div class="stat-trend negative">
+        <span *ngIf="dashboardStore.loading()">Loading...</span>
+        <span *ngIf="!dashboardStore.loading()">-2</span> <span *ngIf="!dashboardStore.loading()">Off track</span>
+      </div>
     </div>
   </div>
 
-  <!-- Charts Row 2 -->
-  <div fxLayout="row" fxLayout.lt-lg="column" class="card-gap section-spacing">
-    <!-- Performance by Priority Area -->
-    <div fxFlex="50">
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title>Performance by Priority Area</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <canvas baseChart [data]="doughnutChartData" [options]="doughnutChartOptions" [type]="'doughnut'">
-          </canvas>
-        </mat-card-content>
-      </mat-card>
+  <!-- Quarterly Performance Charts Section -->
+  <div class="performance-section">
+    <div class="section-title-row">
+      <h2>Quarterly Performance Tracking</h2>
+      <p class="subtitle">Direct comparison of set operational targets against actual registered scores</p>
     </div>
 
-    <!-- Outstanding Target Analysis -->
-    <div fxFlex="50">
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title>Outstanding Target Analysis</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <canvas baseChart [data]="horizontalBarChartData" [options]="horizontalBarChartOptions" [type]="'bar'">
-          </canvas>
-        </mat-card-content>
-      </mat-card>
+    <div class="charts-grid">
+      <!-- Presidential Priorities Chart Card -->
+      <div class="chart-card card-presidential" (click)="navigateTo('priorities')">
+        <div class="chart-header">
+          <div class="title-with-info">
+            <h3>Presidential Priorities</h3>
+            <div class="info-tooltip-container" (click)="$event.stopPropagation()">
+              <span class="info-icon">ℹ️</span>
+              <div class="tooltip-box">
+                Tracks high impact priority areas aligned directly with national strategy deliverables.
+              </div>
+            </div>
+          </div>
+          <div class="year-select-group">
+            <select [(ngModel)]="selectedPresidentialYear" (click)="$event.stopPropagation()">
+              <option *ngFor="let y of years" [value]="y">{{ y }}</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Vertical CSS Bars Chart -->
+        <div class="chart-body">
+          <div class="chart-y-axis">
+            <span>100%</span>
+            <span>75%</span>
+            <span>50%</span>
+            <span>25%</span>
+            <span>0%</span>
+          </div>
+          <div class="chart-canvas">
+            <!-- Gridlines background -->
+            <div class="chart-gridlines">
+              <div class="gridline"></div>
+              <div class="gridline"></div>
+              <div class="gridline"></div>
+              <div class="gridline"></div>
+              <div class="gridline"></div>
+            </div>
+            
+            <div class="chart-bars-wrapper">
+              <div class="quarter-column" *ngFor="let q of presidentialQuarterly">
+                <div class="bar-pair">
+                  <!-- Target Bar -->
+                  <div
+                    class="bar target-bar"
+                    [style.height.%]="q.target"
+                    [attr.data-tooltip]="'Target: ' + q.target + '%'"
+                  ></div>
+                  <!-- Actual Bar -->
+                  <div
+                    class="bar actual-bar"
+                    [style.height.%]="q.actual"
+                    [attr.data-tooltip]="'Actual: ' + q.actual + '%'"
+                  ></div>
+                </div>
+                <span class="quarter-label">{{ q.label }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chart Legend -->
+        <div class="chart-legend">
+          <div class="legend-item">
+            <span class="legend-dot target-dot"></span>
+            <span>Target</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot actual-dot"></span>
+            <span>Actual</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ministerial Deliverables Chart Card -->
+      <div class="chart-card card-ministerial" (click)="navigateTo('deliverables')">
+        <div class="chart-header">
+          <div class="title-with-info">
+            <h3>Ministerial Deliverables</h3>
+            <div class="info-tooltip-container" (click)="$event.stopPropagation()">
+              <span class="info-icon">ℹ️</span>
+              <div class="tooltip-box">
+                Tracks KPI progress metrics established under the Ministerial performance-bonds.
+              </div>
+            </div>
+          </div>
+          <div class="year-select-group">
+            <select [(ngModel)]="selectedMinisterialYear" (click)="$event.stopPropagation()">
+              <option *ngFor="let y of years" [value]="y">{{ y }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="chart-body">
+          <div class="chart-y-axis">
+            <span>100%</span>
+            <span>75%</span>
+            <span>50%</span>
+            <span>25%</span>
+            <span>0%</span>
+          </div>
+          <div class="chart-canvas">
+            <div class="chart-gridlines">
+              <div class="gridline"></div>
+              <div class="gridline"></div>
+              <div class="gridline"></div>
+              <div class="gridline"></div>
+              <div class="gridline"></div>
+            </div>
+            
+            <div class="chart-bars-wrapper">
+              <div class="quarter-column" *ngFor="let q of ministerialQuarterly">
+                <div class="bar-pair">
+                  <div
+                    class="bar target-bar"
+                    [style.height.%]="q.target"
+                    [attr.data-tooltip]="'Target: ' + q.target + '%'"
+                  ></div>
+                  <div
+                    class="bar actual-bar"
+                    [style.height.%]="q.actual"
+                    [attr.data-tooltip]="'Actual: ' + q.actual + '%'"
+                  ></div>
+                </div>
+                <span class="quarter-label">{{ q.label }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chart-legend">
+          <div class="legend-item">
+            <span class="legend-dot target-dot"></span>
+            <span>Target</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot actual-dot"></span>
+            <span>Actual</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agency Deliverables Chart Card -->
+      <div class="chart-card card-agency" (click)="navigateTo('agency-deliverables')">
+        <div class="chart-header">
+          <div class="title-with-info">
+            <h3>Agency Deliverables</h3>
+            <div class="info-tooltip-container" (click)="$event.stopPropagation()">
+              <span class="info-icon">ℹ️</span>
+              <div class="tooltip-box">
+                Tracks monthly and quarterly metrics for individual NIMASA operational departments.
+              </div>
+            </div>
+          </div>
+          <div class="year-select-group">
+            <select [(ngModel)]="selectedAgencyYear" (click)="$event.stopPropagation()">
+              <option *ngFor="let y of years" [value]="y">{{ y }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="chart-body">
+          <div class="chart-y-axis">
+            <span>100%</span>
+            <span>75%</span>
+            <span>50%</span>
+            <span>25%</span>
+            <span>0%</span>
+          </div>
+          <div class="chart-canvas">
+            <div class="chart-gridlines">
+              <div class="gridline"></div>
+              <div class="gridline"></div>
+              <div class="gridline"></div>
+              <div class="gridline"></div>
+              <div class="gridline"></div>
+            </div>
+            
+            <div class="chart-bars-wrapper">
+              <div class="quarter-column" *ngFor="let q of agencyQuarterly">
+                <div class="bar-pair">
+                  <div
+                    class="bar target-bar"
+                    [style.height.%]="q.target"
+                    [attr.data-tooltip]="'Target: ' + q.target + '%'"
+                  ></div>
+                  <div
+                    class="bar actual-bar"
+                    [style.height.%]="q.actual"
+                    [attr.data-tooltip]="'Actual: ' + q.actual + '%'"
+                  ></div>
+                </div>
+                <span class="quarter-label">{{ q.label }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chart-legend">
+          <div class="legend-item">
+            <span class="legend-dot target-dot"></span>
+            <span>Target</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot actual-dot"></span>
+            <span>Actual</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-
-  <!-- Data Table -->
-  <mat-card class="section-spacing">
-    <mat-card-header>
-      <mat-card-title>Detailed Performance Table</mat-card-title>
-    </mat-card-header>
-    <mat-card-content>
-      <table mat-table [dataSource]="dataSource" class="mat-elevation-z8">
-
-        <!-- Priority Area Column -->
-        <ng-container matColumnDef="priorityArea">
-          <th mat-header-cell *matHeaderCellDef>Priority Area</th>
-          <td mat-cell *matCellDef="let element">{{element.priorityArea}}</td>
-        </ng-container>
-
-        <!-- Deliverable Column -->
-        <ng-container matColumnDef="deliverable">
-          <th mat-header-cell *matHeaderCellDef>Deliverable</th>
-          <td mat-cell *matCellDef="let element">{{element.deliverable}}</td>
-        </ng-container>
-
-        <!-- 2025 Target Column -->
-        <ng-container matColumnDef="target2025">
-          <th mat-header-cell *matHeaderCellDef>2025 Target</th>
-          <td mat-cell *matCellDef="let element">{{element.target2025 | number}}</td>
-        </ng-container>
-
-        <!-- Q2 2025 Actual Column -->
-        <ng-container matColumnDef="actualQ22025">
-          <th mat-header-cell *matHeaderCellDef>Q2 2025 Actual</th>
-          <td mat-cell *matCellDef="let element">{{element.actualQ22025 | number}}</td>
-        </ng-container>
-
-        <!-- Outstanding Column -->
-        <ng-container matColumnDef="outstanding">
-          <th mat-header-cell *matHeaderCellDef>Outstanding</th>
-          <td mat-cell *matCellDef="let element" [class.negative-value]="element.outstanding < 0">
-            {{element.outstanding | number}}
-          </td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-      </table>
-    </mat-card-content>
-  </mat-card>
 </div>

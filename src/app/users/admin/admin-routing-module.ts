@@ -20,32 +20,27 @@ const routes: Routes = [
       },
       {
         path: 'users',
-        loadChildren: () => import('../../features/users-management/users-management-module').then(module => module.UsersManagementModule)
+        loadChildren: () => import('../../modules/users-management/users-management-module').then(m => m.UsersManagementModule)
       },
       {
-        path: 'organization',
-        loadChildren: () => import('../../features/organization-management/organization-management-module').then(module => module.OrganizationManagementModule)
+        path: 'agency-deliverables',
+        loadChildren: () => import('../../agency-performance/agency-performance-module').then(m => m.AgencyPerformanceModule)
       },
-      /**{
-        path: 'departments',
-        loadChildren: () => import('../../features/departments-management/departments-management-module').then(module => module.DepartmentsManagementModule)
-      },**/
       {
-        path: 'projects',
-        loadChildren: () => import('../../features/projects-management/projects-management-module').then(module => module.ProjectstsManagementModule)
+        path: 'priorities',
+        loadChildren: () => import('../../presidential-priorities/presidential-priorities-module').then(m => m.PresidentialPrioritiesModule)
       },
       {
         path: 'deliverables',
-        loadChildren: () => import('../../features/deliverables/deliverables-module').then(module => module.DeliverablesModule)
+        loadChildren: () => import('../../ministerial-deliverables/ministerial-deliverables-module').then(m => m.MinisterialDeliverablesModule)
+      },
+      {
+        path: 'organization',
+        loadChildren: () => import('../../organization/organization-module').then(m => m.OrganizationModule)
       },
       {
         path: 'settings',
         component: Settings
-      },
-      {
-        path: '**',
-        redirectTo: 'dashboard',
-        pathMatch: 'full'
       }
     ]
   }
@@ -53,6 +48,6 @@ const routes: Routes = [
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule],
 })
 export class AdminRoutingModule { }
