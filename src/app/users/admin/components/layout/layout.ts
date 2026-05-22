@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { AuthStore } from '../../../../auth/store/auth.store';
 
 @Component({
@@ -9,6 +10,11 @@ import { AuthStore } from '../../../../auth/store/auth.store';
 })
 export class Layout {
   private authStore = inject(AuthStore);
+  private router = inject(Router);
+
+  get isDashboard(): boolean {
+    return this.router.url === '/admin/dashboard' || this.router.url === '/admin';
+  }
 
   logout() {
     this.authStore.logout();
