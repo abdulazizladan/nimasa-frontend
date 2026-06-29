@@ -345,6 +345,21 @@
   position: relative;
   transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
+  overflow: visible;
+}
+
+/* Always-visible value label above each bar */
+.bar-label {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-weight: 700;
+  color: #334155;
+  white-space: nowrap;
+  pointer-events: none;
+  line-height: 1;
 }
 
 .bar:hover {

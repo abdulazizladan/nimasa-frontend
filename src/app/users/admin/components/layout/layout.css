@@ -137,9 +137,4 @@
   z-index: 1;
 }
 
-/* Hide the sidenav on the homepage (dashboard) unless in smaller screens */
-@media (min-width: 768px) {
-  .layout-wrapper.is-dashboard .sidenav {
-    display: none;
-  }
-}
+
