@@ -1,7 +1,15 @@
 <div class="dashboard-container">
-  <div class="dashboard-header">
-    <h2>Dashboard Overview</h2>
-    <p class="text-muted">Welcome to the NIMASA Performance Management System.</p>
+  <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <h2>Dashboard Overview</h2>
+      <p class="text-muted">Welcome to the NIMASA Performance Management System.</p>
+    </div>
+    <div class="global-year-filter">
+      <label style="font-weight: bold; margin-right: 8px;">Global Year:</label>
+      <select [ngModel]="globalYear" (ngModelChange)="onGlobalYearChange($event)" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1;">
+        <option *ngFor="let y of years" [value]="y">{{ y }}</option>
+      </select>
+    </div>
   </div>
 
   <div class="stats-grid">
@@ -94,11 +102,6 @@
               </div>
             </div>
           </div>
-          <div class="year-select-group">
-            <select [(ngModel)]="selectedPresidentialYear" (click)="$event.stopPropagation()">
-              <option *ngFor="let y of years" [value]="y">{{ y }}</option>
-            </select>
-          </div>
         </div>
 
         <!-- Vertical CSS Bars Chart -->
@@ -171,11 +174,6 @@
               </div>
             </div>
           </div>
-          <div class="year-select-group">
-            <select [(ngModel)]="selectedMinisterialYear" (click)="$event.stopPropagation()">
-              <option *ngFor="let y of years" [value]="y">{{ y }}</option>
-            </select>
-          </div>
         </div>
 
         <div class="chart-body">
@@ -242,11 +240,6 @@
                 Tracks monthly and quarterly metrics for individual NIMASA operational departments.
               </div>
             </div>
-          </div>
-          <div class="year-select-group">
-            <select [(ngModel)]="selectedAgencyYear" (click)="$event.stopPropagation()">
-              <option *ngFor="let y of years" [value]="y">{{ y }}</option>
-            </select>
           </div>
         </div>
 

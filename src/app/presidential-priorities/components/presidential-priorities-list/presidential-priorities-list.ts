@@ -1,6 +1,8 @@
-import { Component, OnInit, inject, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, computed } from '@angular/core';
 import { PresidentialPrioritiesStore } from '../../store/presidential-priorities.store';
 import { PresidentialPriority } from '../../services/presidential-priorities.service';
+import { GlobalStateService } from '../../../core/services/global-state.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-presidential-priorities-list',
@@ -15,6 +17,12 @@ export class PresidentialPrioritiesList implements OnInit {
   searchPriorityArea = '';
   searchDepartment = '';
   expandedId: string | null = null;
+  globalYear = '2025';
+  private sub?: Subscription;
+  private globalState = inject(GlobalStateService);
+
+  // Available years
+  years = ['2023', '2024', '2025', '2026'];
 
   // Add modal state variables
   showAddModal = false;
@@ -41,11 +49,16 @@ export class PresidentialPrioritiesList implements OnInit {
     const min = this.store.filterMinistry().toLowerCase();
     const area = this.store.filterPriorityArea().toLowerCase();
     const dept = this.store.filterDepartment().toLowerCase();
+    
+    // Convert global year to number for comparison
+    const selectedYearNum = parseInt(this.globalYear, 10);
+    
     return all.filter(p => {
       const matchMin = !min || p.ministry.toLowerCase().includes(min);
       const matchArea = !area || p.priorityArea.toLowerCase().includes(area);
       const matchDept = !dept || p.responsibleDepartment.toLowerCase().includes(dept);
-      return matchMin && matchArea && matchDept;
+      const matchYear = p.baselineYear ? p.baselineYear <= selectedYearNum : true;
+      return matchMin && matchArea && matchDept && matchYear;
     });
   });
 
@@ -61,6 +74,18 @@ export class PresidentialPrioritiesList implements OnInit {
     this.store.loadPriorities();
     this.store.loadPriorityAreas();
     this.store.loadDepartments();
+    
+    this.sub = this.globalState.selectedYear$.subscribe(year => {
+      this.globalYear = year.toString();
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.sub) this.sub.unsubscribe();
+  }
+  
+  onGlobalYearChange(year: string): void {
+    this.globalState.setYear(parseInt(year, 10));
   }
 
   applyMinistryFilter(): void {
@@ -115,6 +140,7 @@ export class PresidentialPrioritiesList implements OnInit {
       deliverable: '',
       baselineType: 'Percentage',
       indicator: '',
+      baselineYear: new Date().getFullYear() - 1, // Auto-fill Baseline from previous year
       baseline2023: undefined,
       responsibleDepartment: '',
       supportingEvidence: '',
@@ -133,8 +159,8 @@ export class PresidentialPrioritiesList implements OnInit {
   }
 
   submitAdd(): void {
-    if (!this.newPriority.priorityArea || !this.newPriority.deliverable || !this.newPriority.indicator) {
-      alert('Please fill in all required fields (Priority Area, Deliverable, and KPI/Indicator).');
+    if (!this.newPriority.priorityArea || !this.newPriority.indicator || !this.newPriority.baselineYear) {
+      alert('Please fill in all required fields (Priority Area, KPI/Indicator, Baseline Year).');
       return;
     }
     // Convert serialNumber to number
@@ -144,9 +170,16 @@ export class PresidentialPrioritiesList implements OnInit {
     if (this.newPriority.baseline2023) {
       this.newPriority.baseline2023 = Number(this.newPriority.baseline2023);
     }
+    if (this.newPriority.baselineYear) {
+      this.newPriority.baselineYear = Number(this.newPriority.baselineYear);
+    }
 
     // Call store rxMethod to save
-    this.store.createPriority(this.newPriority);
+    if (this.newPriority.id) {
+      this.store.updatePriority({ id: this.newPriority.id, priority: this.newPriority });
+    } else {
+      this.store.createPriority(this.newPriority);
+    }
 
     // Watch loading and error states to close modal on success
     const interval = setInterval(() => {
@@ -235,5 +268,16 @@ export class PresidentialPrioritiesList implements OnInit {
         }
       }
     }, 100);
+  }
+
+  editPriority(priority: PresidentialPriority): void {
+    this.newPriority = { ...priority };
+    this.showAddModal = true;
+  }
+
+  deletePriority(id: string): void {
+    if (confirm('Are you sure you want to delete this priority?')) {
+      this.store.deletePriority(id);
+    }
   }
 }

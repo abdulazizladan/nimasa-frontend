@@ -1,6 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { DashboardStore } from '../../store/dashboard.store';
+import { GlobalStateService } from '../../../../core/services/global-state.service';
+import { Subscription } from 'rxjs';
 
 interface QuarterMetric {
   label: string;
@@ -18,14 +20,13 @@ interface YearData {
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
-export class Dashboard implements OnInit {
+export class Dashboard implements OnInit, OnDestroy {
   dashboardStore = inject(DashboardStore);
+  globalState = inject(GlobalStateService);
   private router = inject(Router);
+  private sub?: Subscription;
 
-  // Selected years
-  selectedPresidentialYear = '2025';
-  selectedMinisterialYear = '2025';
-  selectedAgencyYear = '2025';
+  globalYear = '2025';
 
   // Available years
   years = ['2024', '2025', '2026'];
@@ -96,6 +97,17 @@ export class Dashboard implements OnInit {
 
   ngOnInit() {
     this.dashboardStore.loadStats();
+    this.sub = this.globalState.selectedYear$.subscribe(year => {
+      this.globalYear = year.toString();
+    });
+  }
+
+  ngOnDestroy() {
+    if (this.sub) this.sub.unsubscribe();
+  }
+
+  onGlobalYearChange(year: string) {
+    this.globalState.setYear(parseInt(year, 10));
   }
 
   navigateTo(path: string) {
@@ -103,14 +115,14 @@ export class Dashboard implements OnInit {
   }
 
   get presidentialQuarterly() {
-    return this.presidentialData[this.selectedPresidentialYear];
+    return this.presidentialData[this.globalYear] || [];
   }
 
   get ministerialQuarterly() {
-    return this.ministerialData[this.selectedMinisterialYear];
+    return this.ministerialData[this.globalYear] || [];
   }
 
   get agencyQuarterly() {
-    return this.agencyData[this.selectedAgencyYear];
+    return this.agencyData[this.globalYear] || [];
   }
 }

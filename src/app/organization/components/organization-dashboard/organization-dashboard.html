@@ -55,11 +55,6 @@
     </div>
     <div class="action-buttons">
       <button
-        *ngIf="store.activeTab() === 'agencies'"
-        class="btn-primary"
-        (click)="openAddAgency()"
-      >+ Add Agency</button>
-      <button
         *ngIf="store.activeTab() === 'departments'"
         class="btn-primary"
         (click)="openAddDept()"
@@ -247,7 +242,6 @@
                 [(ngModel)]="deptForm.code"
                 name="code"
                 placeholder="e.g. MARSEC"
-                [disabled]="isEditingDept"
                 required
               />
             </div>

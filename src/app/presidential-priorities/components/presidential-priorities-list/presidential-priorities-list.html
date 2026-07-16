@@ -7,7 +7,13 @@
       <h2>Presidential Priorities</h2>
       <p class="subtitle">Strategic national priorities tracked across all ministries and agencies</p>
     </div>
-    <div class="header-right-actions">
+    <div class="header-right-actions" style="display: flex; align-items: center; gap: 12px;">
+      <div class="global-year-filter">
+        <label style="font-weight: bold; margin-right: 8px;">Global Year:</label>
+        <select [ngModel]="globalYear" (ngModelChange)="onGlobalYearChange($event)" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1;">
+          <option *ngFor="let y of years" [value]="y">{{ y }}</option>
+        </select>
+      </div>
       <button class="btn-secondary" (click)="openAddAreaModal()">
         <span class="btn-icon">+</span> Add Priority Area
       </button>
@@ -33,21 +39,7 @@
     <button (click)="store.clearError()">✕</button>
   </div>
 
-  <!-- Priority Area Pills (from backend) -->
-  <div class="priority-area-bar" *ngIf="store.priorityAreas().length > 0">
-    <button
-      class="area-pill"
-      [class.active]="searchPriorityArea === ''"
-      (click)="onPriorityAreaChange('')"
-    >All</button>
-    <button
-      *ngFor="let area of store.priorityAreas()"
-      class="area-pill"
-      [class.active]="searchPriorityArea === area.name"
-      (click)="onPriorityAreaChange(area.name)"
-    >{{ area.name }}</button>
-  </div>
-
+  
   <!-- Filters -->
   <div class="filter-bar">
     <div class="filter-group">
@@ -125,10 +117,12 @@
           </div>
         </div>
         <div class="card-right">
-          <div class="baseline-block" *ngIf="p.baseline2023">
-            <span class="baseline-label">Baseline 2023</span>
-            <span class="baseline-value">{{ p.baseline2023 }}</span>
+          <div class="baseline-block" *ngIf="p.baselineYear">
+            <span class="baseline-label">Baseline Year</span>
+            <span class="baseline-value">{{ p.baselineYear }}</span>
           </div>
+          <button class="btn-ghost" (click)="editPriority(p); $event.stopPropagation()" style="margin-right: 8px;">✏️ Edit</button>
+          <button class="btn-ghost" (click)="deletePriority(p.id); $event.stopPropagation()" style="color: #ef4444; margin-right: 8px;">🗑️ Delete</button>
           <button class="expand-btn" [class.rotated]="expandedId === p.id">▾</button>
         </div>
       </div>
@@ -248,7 +242,21 @@
           </div>
 
           <div class="form-group">
-            <label for="outcome">Target Outcome</label>
+            <label for="category">Type *</label>
+            <select
+               id="category"
+               [(ngModel)]="newPriority.category"
+               name="category"
+               required
+            >
+              <option value="PRESIDENTIAL_PRIORITY">Presidential</option>
+              <option value="MINISTERIAL">Ministerial</option>
+              <option value="BOTH">Both</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="outcome">Deliverable</label>
             <input
               id="outcome"
               type="text"
@@ -258,13 +266,12 @@
           </div>
 
           <div class="form-group">
-            <label for="deliverable">Deliverable Description *</label>
+            <label for="deliverable">Description</label>
             <textarea
               id="deliverable"
               rows="3"
               [(ngModel)]="newPriority.deliverable"
               name="deliverable"
-              required
               placeholder="Describe the expected deliverable..."
             ></textarea>
           </div>
@@ -281,7 +288,18 @@
               />
             </div>
             <div class="form-group">
-              <label for="baseline">Baseline (2023)</label>
+              <label for="baselineYear">Baseline Year *</label>
+              <input
+                id="baselineYear"
+                type="number"
+                [(ngModel)]="newPriority.baselineYear"
+                name="baselineYear"
+                required
+                placeholder="e.g. 2023"
+              />
+            </div>
+            <div class="form-group">
+              <label for="baseline">Baseline Value</label>
               <input
                 id="baseline"
                 type="number"

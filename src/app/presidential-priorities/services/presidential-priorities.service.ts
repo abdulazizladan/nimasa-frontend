@@ -13,6 +13,7 @@ export interface PresidentialPriority {
   deliverable: string;
   baselineType: string;
   indicator: string;
+  baselineYear?: number;
   baseline2023?: number;
   yearlyPerformance?: Record<string, any>;
   projections?: Record<string, number>;
@@ -81,11 +82,20 @@ export class PresidentialPrioritiesService {
     return this.http.post<PresidentialPriority>(this.base, dto);
   }
 
+  update(id: string, dto: Partial<PresidentialPriority>): Observable<PresidentialPriority> {
+    return this.http.patch<PresidentialPriority>(`${this.base}/${id}`, dto);
+  }
+
+  delete(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${id}`);
+  }
+
   createPriorityArea(name: string): Observable<PriorityArea> {
     return this.http.post<PriorityArea>(`${this.agencyBase}/priority-areas`, { name });
   }
 
   createSubmission(deliverableId: string, submission: any): Observable<any> {
-    return this.http.post<any>(`${this.agencyBase}/${deliverableId}/submissions`, submission);
+    const payload = { ...submission, deliverableId };
+    return this.http.post<any>(`${environment.baseUrl}/quarterly-reports`, payload);
   }
 }

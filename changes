@@ -1,0 +1,28 @@
+Project: NIMASA Performance Monitoring System (Angular/NestJS)
+Module 1: Global Configuration & Auth
+Session Management: Implement a global AuthGuard/Interceptor to monitor session status. Redirect users to the /login route immediately upon token expiration.
+Global Filters: Implement a global "Year" state (range from initial start year to present) that persists across all modules.
+Module 2: Organization & Administration
+Department Modal:
+CSS: Increase modal width to ensure full content visibility.
+Logic: Enable editing for the "Code" field.
+Agency Cleanup: Remove "Add Agency" button and associated controller/service endpoints.
+Module 3: Dashboard Refactoring
+UI Layout: Create a "Birdseye View" dashboard component.
+Implement header Year filter (Global).
+Display numeric scorecards: Registered Users (Admin/Guest), Total Presidential Priorities, Total Ministerial Deliverables, Total Agency KPIs.
+Chart Logic: Refactor existing line graphs to dynamically filter quarterly performance data based on the selected Year.
+Module 4: Presidential Priorities & Deliverables
+Navigation: Remove tab-based navigation; replace with global Year filter.
+Form Updates ("Add Priority"):
+Field Changes: Rename "Target Outcome" to "Deliverable".
+New Fields: Add a "Type" selector (Presidential/Ministerial/Both). Add "Baseline Year" (required).
+Validation: Ensure "Baseline Year" is mandatory for new entries.
+CRUD Operations: Enable full Edit/Delete functionality for all Priority items.
+Filtering: Update KPI logic to restrict display to KPIs viable for the currently selected Year.
+Module 5: Data Entry & Reporting
+Bug Fix (Persistence): Debug and resolve the issue where quarterly reports are failing to save/persist to the database.
+Form Implementation ("New Report"): Create a new data entry form with: Year (Dropdown), Quarter (Dropdown), Ministry, Priority Area, Outcome, Deliverable Name, Indicator, Baseline (Pre-fill with previous year"s data), Target, Actual Score, Responsible Department, Supporting Document Type.
+Validation:
+Change "Delivery Description" from mandatory to optional.
+Ensure "Baseline" field logic automatically fetches and pre-fills the value from the previous year.

@@ -114,6 +114,54 @@ export const PresidentialPrioritiesStore = signalStore(
         )
       )
     ),
+    updatePriority: rxMethod<{ id: string; priority: Partial<PresidentialPriority> }>(
+      pipe(
+        tap(() => patchState(store, { loading: true, error: null })),
+        switchMap(({ id, priority }) =>
+          service.update(id, priority).pipe(
+            tap((updatedPriority) => {
+              const updatedList = store.priorities().map(p => 
+                p.id === id ? updatedPriority : p
+              );
+              patchState(store, {
+                priorities: updatedList,
+                loading: false
+              });
+            }),
+            catchError((err) => {
+              patchState(store, {
+                error: err.error?.message || 'Failed to update priority.',
+                loading: false
+              });
+              return of(null);
+            })
+          )
+        )
+      )
+    ),
+    deletePriority: rxMethod<string>(
+      pipe(
+        tap(() => patchState(store, { loading: true, error: null })),
+        switchMap((id) =>
+          service.delete(id).pipe(
+            tap(() => {
+              const updatedList = store.priorities().filter(p => p.id !== id);
+              patchState(store, {
+                priorities: updatedList,
+                loading: false
+              });
+            }),
+            catchError((err) => {
+              patchState(store, {
+                error: err.error?.message || 'Failed to delete priority.',
+                loading: false
+              });
+              return of(null);
+            })
+          )
+        )
+      )
+    ),
     createPriorityArea: rxMethod<string>(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
