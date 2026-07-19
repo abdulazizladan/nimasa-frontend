@@ -25,21 +25,6 @@
     <button (click)="store.clearError()">✕</button>
   </div>
 
-  <!-- Tabs Navigation -->
-  <div class="tab-container">
-    <div class="tab-buttons">
-      <button
-        class="tab-btn"
-        [class.active]="store.activeTab() === 'agencies'"
-        (click)="setTab('agencies')"
-      >🏢 Agencies</button>
-      <button
-        class="tab-btn"
-        [class.active]="store.activeTab() === 'departments'"
-        (click)="setTab('departments')"
-      >👥 Departments</button>
-    </div>
-  </div>
 
   <!-- Search & Action Bar -->
   <div class="action-bar">
@@ -55,7 +40,6 @@
     </div>
     <div class="action-buttons">
       <button
-        *ngIf="store.activeTab() === 'departments'"
         class="btn-primary"
         (click)="openAddDept()"
       >+ Add Department</button>
@@ -71,49 +55,36 @@
   <!-- Content Grid -->
   <div class="content-body" *ngIf="!store.loading()">
 
-    <!-- AGENCIES LIST -->
-    <div *ngIf="store.activeTab() === 'agencies'">
-      <div class="table-container">
-        <table class="modern-table">
-          <thead>
-            <tr>
-              <th>Logo</th>
-              <th>Code</th>
-              <th>Name</th>
-              <th>Motto</th>
-              <th>Status</th>
-              <th class="actions-col">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let a of filteredAgencies()">
-              <td class="logo-td">
-                <div class="logo-circle" [style.background-image]="a.logo ? 'url(' + a.logo + ')' : ''">
-                  {{ !a.logo ? a.code.slice(0, 2) : '' }}
-                </div>
-              </td>
-              <td class="bold-code">{{ a.code }}</td>
-              <td class="name-td">{{ a.name }}</td>
-              <td class="italic-motto">"{{ a.motto || 'N/A' }}"</td>
-              <td>
-                <span class="status-badge" [class.active]="a.isActive">
-                  {{ a.isActive ? 'Active' : 'Inactive' }}
-                </span>
-              </td>
-              <td class="actions-col">
-                <button class="btn-edit" (click)="openEditAgency(a)">✏️ Edit</button>
-              </td>
-            </tr>
-            <tr *ngIf="filteredAgencies().length === 0">
-              <td colspan="6" class="no-records">No agencies match your search.</td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- AGENCY INFORMATION CARD -->
+    <div class="agency-card-container" *ngIf="store.agencies().length > 0">
+      <div class="agency-card" *ngFor="let a of store.agencies().slice(0, 1)">
+        <div class="agency-card-content">
+          <div class="logo-wrapper">
+            <div class="logo-circle large-logo" [style.background-image]="a.logo ? 'url(' + a.logo + ')' : ''">
+              {{ !a.logo ? a.code.slice(0, 2) : '' }}
+            </div>
+          </div>
+          <div class="agency-details">
+            <h3 class="agency-name">{{ a.name }}</h3>
+            <div class="agency-meta">
+              <span class="bold-code">{{ a.code }}</span>
+              <span class="divider">•</span>
+              <span class="status-badge" [class.active]="a.isActive">
+                {{ a.isActive ? 'Active' : 'Inactive' }}
+              </span>
+            </div>
+            <div class="italic-motto">"{{ a.motto || 'N/A' }}"</div>
+          </div>
+          <div class="agency-actions">
+            <button class="btn-edit" (click)="openEditAgency(a)">✏️ Edit Agency</button>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- DEPARTMENTS LIST -->
-    <div *ngIf="store.activeTab() === 'departments'">
+    <div class="departments-section">
+      <h3 class="section-title">Departments</h3>
       <div class="table-container">
         <table class="modern-table">
           <thead>

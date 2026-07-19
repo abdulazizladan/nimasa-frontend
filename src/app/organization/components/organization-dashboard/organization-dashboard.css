@@ -512,3 +512,69 @@
   font-weight: 600;
   font-family: 'Open Sans', sans-serif;
 }
+
+/* ── Agency Card ── */
+.agency-card-container {
+  margin-bottom: 24px;
+}
+
+.agency-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border: 1px solid #f0f4f8;
+  padding: 20px 24px;
+}
+
+.agency-card-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.large-logo {
+  width: 64px;
+  height: 64px;
+  font-size: 24px;
+}
+
+.agency-details {
+  flex: 1;
+}
+
+.agency-name {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 8px 0;
+}
+
+.agency-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.divider {
+  color: #cbd5e1;
+}
+
+.agency-actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.departments-section {
+  margin-top: 16px;
+}
+
+.section-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 16px 0;
+}

@@ -20,7 +20,6 @@ export const PresidentialPrioritiesStore = signalStore(
     loading: false,
     loadingMeta: false,
     error: null as string | null,
-    filterMinistry: '' as string,
     filterPriorityArea: '' as string,
     filterDepartment: '' as string,
   }),
@@ -189,11 +188,10 @@ export const PresidentialPrioritiesStore = signalStore(
         tap(() => patchState(store, { loading: true, error: null })),
         switchMap(({ id, submission }) =>
           service.createSubmission(id, submission).pipe(
-            tap(() => {
-              service.getAll().subscribe((data: any) => {
-                const list = Array.isArray(data) ? data : (data?.data ?? []);
-                patchState(store, { priorities: list, loading: false });
-              });
+            switchMap(() => service.getAll()),
+            tap((data: any) => {
+              const list = Array.isArray(data) ? data : (data?.data ?? []);
+              patchState(store, { priorities: list, loading: false });
             }),
             catchError((err) => {
               patchState(store, {
@@ -206,9 +204,6 @@ export const PresidentialPrioritiesStore = signalStore(
         )
       )
     ),
-    setFilterMinistry(ministry: string) {
-      patchState(store, { filterMinistry: ministry });
-    },
     setFilterPriorityArea(area: string) {
       patchState(store, { filterPriorityArea: area });
     },

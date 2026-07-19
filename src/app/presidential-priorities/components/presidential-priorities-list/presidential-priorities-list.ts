@@ -13,7 +13,6 @@ import { Subscription } from 'rxjs';
 export class PresidentialPrioritiesList implements OnInit {
   store = inject(PresidentialPrioritiesStore);
 
-  searchMinistry = '';
   searchPriorityArea = '';
   searchDepartment = '';
   expandedId: string | null = null;
@@ -46,7 +45,6 @@ export class PresidentialPrioritiesList implements OnInit {
 
   filteredPriorities = computed(() => {
     const all = this.store.priorities();
-    const min = this.store.filterMinistry().toLowerCase();
     const area = this.store.filterPriorityArea().toLowerCase();
     const dept = this.store.filterDepartment().toLowerCase();
     
@@ -54,20 +52,15 @@ export class PresidentialPrioritiesList implements OnInit {
     const selectedYearNum = parseInt(this.globalYear, 10);
     
     return all.filter(p => {
-      const matchMin = !min || p.ministry.toLowerCase().includes(min);
       const matchArea = !area || p.priorityArea.toLowerCase().includes(area);
       const matchDept = !dept || p.responsibleDepartment.toLowerCase().includes(dept);
       const matchYear = p.baselineYear ? p.baselineYear <= selectedYearNum : true;
-      return matchMin && matchArea && matchDept && matchYear;
+      return matchArea && matchDept && matchYear;
     });
   });
 
-  uniqueMinistries = computed(() => {
-    return [...new Set(this.store.priorities().map(p => p.ministry))].sort();
-  });
-
   hasActiveFilter = computed(() =>
-    !!this.store.filterMinistry() || !!this.store.filterPriorityArea() || !!this.store.filterDepartment()
+    !!this.store.filterPriorityArea() || !!this.store.filterDepartment()
   );
 
   ngOnInit(): void {
@@ -88,10 +81,6 @@ export class PresidentialPrioritiesList implements OnInit {
     this.globalState.setYear(parseInt(year, 10));
   }
 
-  applyMinistryFilter(): void {
-    this.store.setFilterMinistry(this.searchMinistry);
-  }
-
   onPriorityAreaChange(area: string): void {
     this.searchPriorityArea = area;
     this.store.setFilterPriorityArea(area);
@@ -103,10 +92,8 @@ export class PresidentialPrioritiesList implements OnInit {
   }
 
   clearFilters(): void {
-    this.searchMinistry = '';
     this.searchPriorityArea = '';
     this.searchDepartment = '';
-    this.store.setFilterMinistry('');
     this.store.setFilterPriorityArea('');
     this.store.setFilterDepartment('');
   }
