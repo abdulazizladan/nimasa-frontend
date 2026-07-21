@@ -45,6 +45,17 @@ export class OrganizationDashboard implements OnInit {
 
   editingDeptId = '';
 
+  showSuccessModal = false;
+  successMessage = '';
+
+  showSuccess(message: string): void {
+    this.successMessage = message;
+    this.showSuccessModal = true;
+    setTimeout(() => {
+      this.showSuccessModal = false;
+    }, 5000);
+  }
+
   // Computeds
   filteredAgencies = computed(() => {
     const list = this.store.agencies();
@@ -125,12 +136,18 @@ export class OrganizationDashboard implements OnInit {
           logo: this.agencyForm.logo,
           isActive: this.agencyForm.isActive
         },
-        successCb: () => this.closeAgencyModal()
+        successCb: () => {
+          this.closeAgencyModal();
+          this.showSuccess('Agency saved successfully.');
+        }
       });
     } else {
       this.store.createAgency({
         payload: this.agencyForm,
-        successCb: () => this.closeAgencyModal()
+        successCb: () => {
+          this.closeAgencyModal();
+          this.showSuccess('Agency created successfully.');
+        }
       });
     }
   }
@@ -177,12 +194,18 @@ export class OrganizationDashboard implements OnInit {
       this.store.updateDepartment({
         id: this.editingDeptId,
         payload: this.deptForm,
-        successCb: () => this.closeDeptModal()
+        successCb: () => {
+          this.closeDeptModal();
+          this.showSuccess('Department saved successfully.');
+        }
       });
     } else {
       this.store.createDepartment({
         payload: this.deptForm,
-        successCb: () => this.closeDeptModal()
+        successCb: () => {
+          this.closeDeptModal();
+          this.showSuccess('Department created successfully.');
+        }
       });
     }
   }

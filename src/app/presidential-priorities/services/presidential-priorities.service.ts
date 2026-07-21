@@ -94,6 +94,14 @@ export class PresidentialPrioritiesService {
     return this.http.post<PriorityArea>(`${this.agencyBase}/priority-areas`, { name });
   }
 
+  updatePriorityArea(id: string, name: string): Observable<PriorityArea> {
+    return this.http.patch<PriorityArea>(`${this.agencyBase}/priority-areas/${id}`, { name });
+  }
+
+  deletePriorityArea(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.agencyBase}/priority-areas/${id}`);
+  }
+
   createSubmission(deliverableId: string, submission: any): Observable<any> {
     const payload = { ...submission, deliverableId };
     return this.http.post<any>(`${environment.baseUrl}/quarterly-reports`, payload);

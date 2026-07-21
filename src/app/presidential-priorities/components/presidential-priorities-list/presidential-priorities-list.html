@@ -39,9 +39,14 @@
     <button (click)="store.clearError()">✕</button>
   </div>
 
+  <!-- Tabs -->
+  <div class="tabs-container" style="margin-bottom: 24px; display: flex; gap: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+    <button [class.active-tab]="activeTab === 'priorities'" (click)="activeTab = 'priorities'" style="background: none; border: none; font-size: 16px; font-weight: 600; cursor: pointer; padding: 8px 16px; border-radius: 6px;" [style.color]="activeTab === 'priorities' ? '#0f172a' : '#64748b'" [style.border-bottom]="activeTab === 'priorities' ? '2px solid #0f172a' : 'none'">Priorities</button>
+    <button [class.active-tab]="activeTab === 'areas'" (click)="activeTab = 'areas'" style="background: none; border: none; font-size: 16px; font-weight: 600; cursor: pointer; padding: 8px 16px; border-radius: 6px;" [style.color]="activeTab === 'areas' ? '#0f172a' : '#64748b'" [style.border-bottom]="activeTab === 'areas' ? '2px solid #0f172a' : 'none'">Priority Areas</button>
+  </div>
   
   <!-- Filters -->
-  <div class="filter-bar">
+  <div class="filter-bar" *ngIf="activeTab === 'priorities'">
     <div class="filter-group">
       <label for="filter-dept">Department</label>
       <select
@@ -69,8 +74,8 @@
     <p>Loading presidential priorities...</p>
   </div>
 
-  <!-- Empty State -->
-  <div *ngIf="!store.loading() && filteredPriorities().length === 0" class="empty-state">
+  <!-- Empty State Priorities -->
+  <div *ngIf="!store.loading() && activeTab === 'priorities' && filteredPriorities().length === 0" class="empty-state">
     <div class="empty-icon">⭐</div>
     <h3>No priorities found</h3>
     <p>{{ store.priorities().length === 0 ? 'No presidential priorities have been created yet.' : 'No results match your current filters.' }}</p>
@@ -78,7 +83,7 @@
   </div>
 
   <!-- Priorities List -->
-  <div class="priorities-list" *ngIf="!store.loading() && filteredPriorities().length > 0">
+  <div class="priorities-list" *ngIf="!store.loading() && activeTab === 'priorities' && filteredPriorities().length > 0">
     <div
       class="priority-card"
       *ngFor="let p of filteredPriorities()"
@@ -179,8 +184,28 @@
     </div>
   </div>
 
+  <!-- Empty State Priority Areas -->
+  <div *ngIf="!store.loadingMeta() && activeTab === 'areas' && store.priorityAreas().length === 0" class="empty-state">
+    <div class="empty-icon">📂</div>
+    <h3>No priority areas found</h3>
+    <p>No presidential priority areas have been created yet.</p>
+  </div>
+
+  <!-- Priority Areas List -->
+  <div class="priority-areas-list" *ngIf="!store.loadingMeta() && activeTab === 'areas' && store.priorityAreas().length > 0" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;">
+    <div class="area-card" *ngFor="let area of store.priorityAreas()" style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <h4 style="margin: 0; font-size: 16px; color: #0f172a;">{{ area.name }}</h4>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn-ghost" (click)="editArea(area)" style="color: #64748b; background: none; border: none; cursor: pointer; padding: 4px;">✏️</button>
+        <button class="btn-ghost" (click)="deleteArea(area.id)" style="color: #ef4444; background: none; border: none; cursor: pointer; padding: 4px;">🗑️</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Create Modal Overlay -->
-  <div class="modal-overlay" *ngIf="showAddModal" (click)="closeAddModal()">
+  <div class="modal-overlay" *ngIf="showAddModal">
     <div class="modal-card" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>Create Presidential Priority</h3>
@@ -350,10 +375,10 @@
     </div>
   </div>
   <!-- Create Priority Area Modal Overlay -->
-  <div class="modal-overlay" *ngIf="showAddAreaModal" (click)="closeAddAreaModal()">
+  <div class="modal-overlay" *ngIf="showAddAreaModal">
     <div class="modal-card compact-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>Create Priority Area</h3>
+        <h3>{{ isEditingArea ? 'Edit Priority Area' : 'Create Priority Area' }}</h3>
         <button class="close-modal-btn" (click)="closeAddAreaModal()">✕</button>
       </div>
       <form (ngSubmit)="submitAddArea()" #addAreaForm="ngForm">
@@ -390,7 +415,7 @@
   </div>
 
   <!-- Create Quarterly Report Modal Overlay -->
-  <div class="modal-overlay" *ngIf="showReportModal" (click)="closeReportModal()">
+  <div class="modal-overlay" *ngIf="showReportModal">
     <div class="modal-card scrollable-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>Submit Quarterly Performance Report</h3>
@@ -407,6 +432,8 @@
                 [(ngModel)]="newReport.year"
                 name="year"
                 required
+                disabled
+                style="background-color: #f1f5f9; color: #94a3b8; cursor: not-allowed;"
                 placeholder="e.g. 2024"
                 min="2000"
                 max="2100"
@@ -508,6 +535,14 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+  <!-- Success Modal Overlay -->
+  <div class="modal-overlay" *ngIf="showSuccessModal" style="z-index: 1000;" (click)="showSuccessModal = false">
+    <div class="modal-card compact-modal" style="text-align: center; padding: 32px;" (click)="$event.stopPropagation()">
+      <div style="font-size: 48px; margin-bottom: 16px;">✅</div>
+      <h3 style="color: #10b981; margin-bottom: 8px;">Success</h3>
+      <p style="color: #64748b; margin-bottom: 0;">{{ successMessage }}</p>
     </div>
   </div>
 </div>

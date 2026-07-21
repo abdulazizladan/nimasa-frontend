@@ -35,6 +35,17 @@ export class AgencyDeliverablesList implements OnInit {
     comments: ''
   };
 
+  showSuccessModal = false;
+  successMessage = '';
+
+  showSuccess(message: string): void {
+    this.successMessage = message;
+    this.showSuccessModal = true;
+    setTimeout(() => {
+      this.showSuccessModal = false;
+    }, 5000);
+  }
+
   filteredDeliverables = computed(() => {
     const all = this.store.deliverables();
     const agency = this.store.filterAgency().toLowerCase();
@@ -138,6 +149,7 @@ export class AgencyDeliverablesList implements OnInit {
         clearInterval(interval);
         if (!this.store.error()) {
           this.closeAddModal();
+          this.showSuccess('Deliverable saved successfully.');
         }
       }
     }, 100);
@@ -186,6 +198,7 @@ export class AgencyDeliverablesList implements OnInit {
         clearInterval(interval);
         if (!this.store.error()) {
           this.closeReportModal();
+          this.showSuccess('Report submitted successfully.');
         }
       }
     }, 100);

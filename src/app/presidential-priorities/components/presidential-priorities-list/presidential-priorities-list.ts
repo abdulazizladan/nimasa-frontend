@@ -15,6 +15,7 @@ export class PresidentialPrioritiesList implements OnInit {
 
   searchPriorityArea = '';
   searchDepartment = '';
+  activeTab: 'priorities' | 'areas' = 'priorities';
   expandedId: string | null = null;
   globalYear = '2025';
   private sub?: Subscription;
@@ -27,6 +28,8 @@ export class PresidentialPrioritiesList implements OnInit {
   showAddModal = false;
   showAddAreaModal = false;
   newAreaName = '';
+  isEditingArea = false;
+  editingAreaId = '';
   newPriority: Partial<PresidentialPriority> = this.getEmptyForm();
 
   // Quarterly Report Modal State
@@ -42,6 +45,17 @@ export class PresidentialPrioritiesList implements OnInit {
     mdaEfforts: '',
     comments: ''
   };
+
+  showSuccessModal = false;
+  successMessage = '';
+
+  showSuccess(message: string): void {
+    this.successMessage = message;
+    this.showSuccessModal = true;
+    setTimeout(() => {
+      this.showSuccessModal = false;
+    }, 5000);
+  }
 
   filteredPriorities = computed(() => {
     const all = this.store.priorities();
@@ -174,6 +188,7 @@ export class PresidentialPrioritiesList implements OnInit {
         clearInterval(interval);
         if (!this.store.error()) {
           this.closeAddModal();
+          this.showSuccess('Priority saved successfully.');
         }
       }
     }, 100);
@@ -181,7 +196,22 @@ export class PresidentialPrioritiesList implements OnInit {
 
   openAddAreaModal(): void {
     this.newAreaName = '';
+    this.isEditingArea = false;
+    this.editingAreaId = '';
     this.showAddAreaModal = true;
+  }
+
+  editArea(area: any): void {
+    this.newAreaName = area.name;
+    this.isEditingArea = true;
+    this.editingAreaId = area.id;
+    this.showAddAreaModal = true;
+  }
+
+  deleteArea(id: string): void {
+    if (confirm('Are you sure you want to delete this priority area?')) {
+      this.store.deletePriorityArea(id);
+    }
   }
 
   closeAddAreaModal(): void {
@@ -195,8 +225,11 @@ export class PresidentialPrioritiesList implements OnInit {
       return;
     }
 
-    // Call store rxMethod to save
-    this.store.createPriorityArea(this.newAreaName.trim());
+    if (this.isEditingArea && this.editingAreaId) {
+      this.store.updatePriorityArea({ id: this.editingAreaId, name: this.newAreaName.trim() });
+    } else {
+      this.store.createPriorityArea(this.newAreaName.trim());
+    }
 
     // Watch loading and error states to close modal on success
     const interval = setInterval(() => {
@@ -204,6 +237,7 @@ export class PresidentialPrioritiesList implements OnInit {
         clearInterval(interval);
         if (!this.store.error()) {
           this.closeAddAreaModal();
+          this.showSuccess(this.isEditingArea ? 'Priority Area updated successfully.' : 'Priority Area created successfully.');
         }
       }
     }, 100);
@@ -252,6 +286,7 @@ export class PresidentialPrioritiesList implements OnInit {
         clearInterval(interval);
         if (!this.store.error()) {
           this.closeReportModal();
+          this.showSuccess('Report submitted successfully.');
         }
       }
     }, 100);

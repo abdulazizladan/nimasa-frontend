@@ -126,7 +126,7 @@
   </div>
 
   <!-- Agency Form Modal -->
-  <div class="modal-overlay" *ngIf="showAgencyModal" (click)="closeAgencyModal()">
+  <div class="modal-overlay" *ngIf="showAgencyModal">
     <div class="modal-box" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>{{ isEditingAgency ? 'Edit Agency' : 'Register New Agency' }}</h3>
@@ -196,7 +196,7 @@
   </div>
 
   <!-- Department Form Modal -->
-  <div class="modal-overlay" *ngIf="showDeptModal" (click)="closeDeptModal()">
+  <div class="modal-overlay" *ngIf="showDeptModal">
     <div class="modal-box" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>{{ isEditingDept ? 'Edit Department' : 'Create Operational Department' }}</h3>
@@ -289,4 +289,12 @@
     </div>
   </div>
 
+  <!-- Success Modal Overlay -->
+  <div class="modal-overlay" *ngIf="showSuccessModal" style="z-index: 1000;" (click)="showSuccessModal = false">
+    <div class="modal-box compact-modal" style="text-align: center; padding: 32px;" (click)="$event.stopPropagation()">
+      <div style="font-size: 48px; margin-bottom: 16px;">✅</div>
+      <h3 style="color: #10b981; margin-bottom: 8px;">Success</h3>
+      <p style="color: #64748b; margin-bottom: 0;">{{ successMessage }}</p>
+    </div>
+  </div>
 </div>
