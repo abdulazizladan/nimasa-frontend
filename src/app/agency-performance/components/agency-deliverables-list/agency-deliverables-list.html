@@ -149,9 +149,10 @@
               + Add Quarterly Report
             </button>
           </div>
-          <div class="performance-grid" *ngIf="d.yearlyPerformance && (d.yearlyPerformance | keyvalue).length > 0">
-            <div class="performance-year-block" *ngFor="let year of (d.yearlyPerformance | keyvalue)">
-              <div class="year-label">{{ year.key }}</div>
+          <div class="performance-grid" *ngIf="d.yearlyPerformance && d.yearlyPerformance[globalYear]">
+            <ng-container *ngFor="let year of (d.yearlyPerformance | keyvalue)">
+              <div class="performance-year-block" *ngIf="year.key.toString() === globalYear.toString()">
+                <div class="year-label">{{ year.key }}</div>
               <div class="quarter-row" *ngFor="let q of (year.value | keyvalue)">
                 <span class="q-label">{{ q.key.toString() | uppercase }}</span>
                 <div class="progress-bar-wrapper">
@@ -164,10 +165,11 @@
                 <span class="progress-values">{{ q.value['actual'] }} / {{ q.value['target'] }}</span>
                 <span class="status-dot" [ngClass]="getStatusClass(q.value['actual'], q.value['target'])"></span>
               </div>
-            </div>
+              </div>
+            </ng-container>
           </div>
-          <div class="empty-performance-state" *ngIf="!d.yearlyPerformance || (d.yearlyPerformance | keyvalue).length === 0">
-            <p>No quarterly performance reports have been recorded for this agency deliverable yet.</p>
+          <div class="empty-performance-state" *ngIf="!d.yearlyPerformance || !d.yearlyPerformance[globalYear]">
+            <p>No quarterly performance reports have been recorded for {{ globalYear }} yet.</p>
           </div>
         </div>
 

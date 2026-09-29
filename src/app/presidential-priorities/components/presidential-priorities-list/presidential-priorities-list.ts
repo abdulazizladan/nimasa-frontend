@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, computed, signal } from '@angular/core';
 import { PresidentialPrioritiesStore } from '../../store/presidential-priorities.store';
 import { PresidentialPriority } from '../../services/presidential-priorities.service';
 import { GlobalStateService } from '../../../core/services/global-state.service';
@@ -17,7 +17,7 @@ export class PresidentialPrioritiesList implements OnInit {
   searchDepartment = '';
   activeTab: 'priorities' | 'areas' = 'priorities';
   expandedId: string | null = null;
-  globalYear = '2025';
+  globalYear = signal(new Date().getFullYear().toString());
   private sub?: Subscription;
   private globalState = inject(GlobalStateService);
 
@@ -31,6 +31,7 @@ export class PresidentialPrioritiesList implements OnInit {
   isEditingArea = false;
   editingAreaId = '';
   newPriority: Partial<PresidentialPriority> = this.getEmptyForm();
+  currentYearDisplay: number = new Date().getFullYear();
 
   // Quarterly Report Modal State
   showReportModal = false;
@@ -63,7 +64,7 @@ export class PresidentialPrioritiesList implements OnInit {
     const dept = this.store.filterDepartment().toLowerCase();
     
     // Convert global year to number for comparison
-    const selectedYearNum = parseInt(this.globalYear, 10);
+    const selectedYearNum = parseInt(this.globalYear(), 10);
     
     return all.filter(p => {
       const matchArea = !area || p.priorityArea.toLowerCase().includes(area);
@@ -83,7 +84,7 @@ export class PresidentialPrioritiesList implements OnInit {
     this.store.loadDepartments();
     
     this.sub = this.globalState.selectedYear$.subscribe(year => {
-      this.globalYear = year.toString();
+      this.globalYear.set(year.toString());
     });
   }
 
@@ -93,6 +94,11 @@ export class PresidentialPrioritiesList implements OnInit {
   
   onGlobalYearChange(year: string): void {
     this.globalState.setYear(parseInt(year, 10));
+  }
+
+  onCurrentYearChange(year: number): void {
+    this.currentYearDisplay = year;
+    this.newPriority.baselineYear = year - 1;
   }
 
   onPriorityAreaChange(area: string): void {
@@ -151,6 +157,7 @@ export class PresidentialPrioritiesList implements OnInit {
 
   openAddModal(): void {
     this.newPriority = this.getEmptyForm();
+    this.currentYearDisplay = new Date().getFullYear();
     this.showAddModal = true;
   }
 
@@ -246,7 +253,7 @@ export class PresidentialPrioritiesList implements OnInit {
   openReportModal(id: string): void {
     this.selectedPriorityId = id;
     this.newReport = {
-      year: new Date().getFullYear(),
+      year: parseInt(this.globalYear(), 10),
       quarter: 'Q1',
       targetValue: undefined,
       actualValue: undefined,
@@ -294,6 +301,7 @@ export class PresidentialPrioritiesList implements OnInit {
 
   editPriority(priority: PresidentialPriority): void {
     this.newPriority = { ...priority };
+    this.currentYearDisplay = priority.baselineYear ? priority.baselineYear + 1 : new Date().getFullYear();
     this.showAddModal = true;
   }
 

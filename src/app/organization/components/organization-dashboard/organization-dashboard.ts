@@ -190,10 +190,29 @@ export class OrganizationDashboard implements OnInit {
     if (!this.deptForm.code || !this.deptForm.name || !this.deptForm.head || !this.deptForm.organizationCode) {
       return;
     }
+
+    // Build a clean payload — strip empty strings from optional fields
+    // so backend validators (@IsEmail, @Matches) don't reject them
+    const cleanPayload: any = {
+      code: this.deptForm.code,
+      name: this.deptForm.name,
+      head: this.deptForm.head,
+      organizationCode: this.deptForm.organizationCode,
+    };
+    if (this.deptForm.description && this.deptForm.description.trim()) {
+      cleanPayload.description = this.deptForm.description.trim();
+    }
+    if (this.deptForm.directorEmail && this.deptForm.directorEmail.trim()) {
+      cleanPayload.directorEmail = this.deptForm.directorEmail.trim();
+    }
+    if (this.deptForm.contactPhone && this.deptForm.contactPhone.trim()) {
+      cleanPayload.contactPhone = this.deptForm.contactPhone.trim();
+    }
+
     if (this.isEditingDept) {
       this.store.updateDepartment({
         id: this.editingDeptId,
-        payload: this.deptForm,
+        payload: cleanPayload,
         successCb: () => {
           this.closeDeptModal();
           this.showSuccess('Department saved successfully.');
@@ -201,7 +220,7 @@ export class OrganizationDashboard implements OnInit {
       });
     } else {
       this.store.createDepartment({
-        payload: this.deptForm,
+        payload: cleanPayload,
         successCb: () => {
           this.closeDeptModal();
           this.showSuccess('Department created successfully.');

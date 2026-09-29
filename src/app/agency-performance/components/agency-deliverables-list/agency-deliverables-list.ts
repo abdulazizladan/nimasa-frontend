@@ -1,6 +1,8 @@
-import { Component, OnInit, inject, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, computed } from '@angular/core';
 import { AgencyDeliverablesStore } from '../../store/agency-deliverables.store';
 import { AgencyDeliverable, AgencyDeliverablesService } from '../../services/agency-deliverables.service';
+import { GlobalStateService } from '../../../core/services/global-state.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-agency-deliverables-list',
@@ -16,6 +18,10 @@ export class AgencyDeliverablesList implements OnInit {
   searchDepartment = '';
   expandedId: string | null = null;
   priorityAreas: { id: string; name: string }[] = [];
+  globalYear = '2025';
+  years = ['2023', '2024', '2025', '2026'];
+  private sub?: Subscription;
+  private globalState = inject(GlobalStateService);
 
   // Add modal state variables
   showAddModal = false;
@@ -71,6 +77,18 @@ export class AgencyDeliverablesList implements OnInit {
       next: (areas) => this.priorityAreas = areas,
       error: () => {}
     });
+
+    this.sub = this.globalState.selectedYear$.subscribe(year => {
+      this.globalYear = year.toString();
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.sub) this.sub.unsubscribe();
+  }
+
+  onGlobalYearChange(year: string): void {
+    this.globalState.setYear(parseInt(year, 10));
   }
 
   applyAgencyFilter(): void {

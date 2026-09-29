@@ -136,44 +136,46 @@
               + Add Quarterly Report
             </button>
           </div>
-          <div class="years-grid" *ngIf="d.yearlyPerformance && (d.yearlyPerformance | keyvalue).length > 0">
-            <div class="year-block" *ngFor="let year of (d.yearlyPerformance | keyvalue)">
-              <div class="year-header">{{ year.key }}</div>
-              <div class="quarters-grid">
-                <div class="quarter-card" *ngFor="let q of (year.value | keyvalue)">
-                  <div class="quarter-label">{{ q.key.toString() | uppercase }}</div>
-                  <div class="quarter-metrics">
-                    <div class="metric">
-                      <span class="metric-label">Target</span>
-                      <span class="metric-value">{{ q.value['target'] ?? '—' }}</span>
+          <div class="performance-grid" *ngIf="d.yearlyPerformance && d.yearlyPerformance[globalYear]">
+            <ng-container *ngFor="let year of (d.yearlyPerformance | keyvalue)">
+              <div class="year-block" *ngIf="year.key.toString() === globalYear.toString()">
+                <div class="year-header">{{ year.key }}</div>
+                <div class="quarters-grid">
+                  <div class="quarter-card" *ngFor="let q of (year.value | keyvalue)">
+                    <div class="quarter-label">{{ q.key.toString() | uppercase }}</div>
+                    <div class="quarter-metrics">
+                      <div class="metric">
+                        <span class="metric-label">Target</span>
+                        <span class="metric-value">{{ q.value['target'] ?? '—' }}</span>
+                      </div>
+                      <div class="metric">
+                        <span class="metric-label">Actual</span>
+                        <span class="metric-value actual">{{ q.value['actual'] ?? '—' }}</span>
+                      </div>
+                      <div class="metric" *ngIf="q.value['cumulative'] !== undefined">
+                        <span class="metric-label">Cumulative</span>
+                        <span class="metric-value">{{ q.value['cumulative'] }}</span>
+                      </div>
                     </div>
-                    <div class="metric">
-                      <span class="metric-label">Actual</span>
-                      <span class="metric-value actual">{{ q.value['actual'] ?? '—' }}</span>
+                    <div class="quarter-progress">
+                      <div class="progress-bar-wrapper">
+                        <div
+                          class="progress-bar-fill"
+                          [style.width.%]="(q.value['actual'] / (q.value['target'] || 1)) * 100"
+                          [ngClass]="getQuarterStatus(q.value['actual'], q.value['target'])"
+                        ></div>
+                      </div>
+                      <span class="q-status-badge" [ngClass]="getQuarterStatus(q.value['actual'], q.value['target'])">
+                        {{ getQuarterLabel(q.value['actual'], q.value['target']) }}
+                      </span>
                     </div>
-                    <div class="metric" *ngIf="q.value['cumulative'] !== undefined">
-                      <span class="metric-label">Cumulative</span>
-                      <span class="metric-value">{{ q.value['cumulative'] }}</span>
-                    </div>
-                  </div>
-                  <div class="quarter-progress">
-                    <div class="progress-bar-wrapper">
-                      <div
-                        class="progress-bar-fill"
-                        [style.width.%]="(q.value['actual'] / (q.value['target'] || 1)) * 100"
-                        [ngClass]="getQuarterStatus(q.value['actual'], q.value['target'])"
-                      ></div>
-                    </div>
-                    <span class="q-status-badge" [ngClass]="getQuarterStatus(q.value['actual'], q.value['target'])">
-                      {{ getQuarterLabel(q.value['actual'], q.value['target']) }}
-                    </span>
                   </div>
                 </div>
               </div>
-            </div>
+            </ng-container>
           </div>
-          <div class="empty-performance-state" *ngIf="!d.yearlyPerformance || (d.yearlyPerformance | keyvalue).length === 0">
-            <p>No quarterly performance reports have been recorded for this ministerial deliverable yet.</p>
+          <div class="empty-performance" *ngIf="!d.yearlyPerformance || !d.yearlyPerformance[globalYear]">
+            <p>No quarterly performance reports have been recorded for {{ globalYear }} yet.</p>
           </div>
         </div>
 

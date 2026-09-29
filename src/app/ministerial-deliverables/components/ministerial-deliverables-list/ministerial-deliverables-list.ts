@@ -1,6 +1,8 @@
-import { Component, OnInit, inject, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, computed } from '@angular/core';
 import { MinisterialDeliverablesStore } from '../../store/ministerial-deliverables.store';
 import { MinisterialDeliverable } from '../../services/ministerial-deliverables.service';
+import { GlobalStateService } from '../../../core/services/global-state.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-ministerial-deliverables-list',
@@ -14,6 +16,10 @@ export class MinisterialDeliverablesList implements OnInit {
   searchText = '';
   searchPriorityArea = '';
   expandedId: string | null = null;
+  globalYear = '2025';
+  years = ['2023', '2024', '2025', '2026'];
+  private sub?: Subscription;
+  private globalState = inject(GlobalStateService);
 
   // Add modal state variables
   showAddModal = false;
@@ -66,7 +72,20 @@ export class MinisterialDeliverablesList implements OnInit {
   ngOnInit(): void {
     this.store.loadDeliverables();
     this.store.loadPriorityAreas();
+
+    this.sub = this.globalState.selectedYear$.subscribe(year => {
+      this.globalYear = year.toString();
+    });
+
     this.store.loadDepartments();
+  }
+
+  ngOnDestroy(): void {
+    if (this.sub) this.sub.unsubscribe();
+  }
+
+  onGlobalYearChange(year: string): void {
+    this.globalState.setYear(parseInt(year, 10));
   }
 
   onSearchChange(): void {
