@@ -12,19 +12,19 @@
         <label style="font-weight: bold; margin-right: 8px;">Global Year:</label>
         <select [ngModel]="globalYear()" (ngModelChange)="onGlobalYearChange($event)"
           style="padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1;">
-          <option *ngFor="let y of years" [value]="y">{{ y }}</option>
+          <option *ngFor="let y of years()" [value]="y">{{ y }}</option>
         </select>
       </div>
-      <button class="btn-secondary" (click)="openAddAreaModal()">
+      <button class="btn-secondary" *ngIf="canEdit" (click)="openAddAreaModal()">
         <span class="btn-icon">+</span> Add Priority Area
       </button>
-      <button class="btn-primary" (click)="openAddModal()">
+      <button class="btn-primary" *ngIf="canEdit" (click)="openAddModal()">
         <span class="btn-icon">+</span> Add Deliverable
       </button>
       <div class="header-stats">
         <div class="stat-chip">
-          <span class="stat-value">{{ store.priorities().length }}</span>
-          <span class="stat-label">Total Deliverables</span>
+          <span class="stat-value">{{ yearPriorities().length }}</span>
+          <span class="stat-label">Deliverables in {{ globalYear() }}</span>
         </div>
         <div class="stat-chip stat-chip-gold">
           <span class="stat-value">{{ store.priorityAreas().length }}</span>
@@ -68,7 +68,7 @@
     </button>
     <span class="result-count">
       Showing <strong>{{ filteredPriorities().length }}</strong> of
-      <strong>{{ store.priorities().length }}</strong> priorities
+      <strong>{{ yearPriorities().length }}</strong> priorities for {{ globalYear() }}
     </span>
   </div>
 
@@ -82,8 +82,9 @@
   <div *ngIf="!store.loading() && activeTab === 'priorities' && filteredPriorities().length === 0" class="empty-state">
     <div class="empty-icon">⭐</div>
     <h3>No priorities found</h3>
-    <p>{{ store.priorities().length === 0 ? 'No presidential priorities have been created yet.' : 'No results match your
-      current filters.' }}</p>
+    <p *ngIf="store.priorities().length === 0">No presidential priorities have been created yet.</p>
+    <p *ngIf="store.priorities().length > 0 && yearPriorities().length === 0">No priorities are active in {{ globalYear() }}.</p>
+    <p *ngIf="yearPriorities().length > 0">No results match your current filters.</p>
     <button *ngIf="hasActiveFilter()" class="btn-primary" (click)="clearFilters()">Clear Filters</button>
   </div>
 
@@ -116,12 +117,18 @@
         <div class="card-right">
           <div class="baseline-block" *ngIf="p.baselineYear">
             <span class="baseline-label">Report Year</span>
-            <span class="baseline-value">{{ p.baselineYear + 1 }}</span>
+            <span class="baseline-value">{{ getReportYear(p) }}</span>
           </div>
-          <button class="btn-ghost" (click)="editPriority(p); $event.stopPropagation()" style="margin-right: 8px;">✏️
-            Edit</button>
-          <button class="btn-ghost" (click)="deletePriority(p.id); $event.stopPropagation()"
-            style="color: #ef4444; margin-right: 8px;">🗑️ Delete</button>
+          <div class="baseline-block" *ngIf="getAnnualTarget(p, globalYear()) !== null">
+            <span class="baseline-label">{{ globalYear() }} Target</span>
+            <span class="baseline-value">{{ getAnnualTarget(p, globalYear()) }}</span>
+          </div>
+          <ng-container *ngIf="canEdit">
+            <button class="btn-ghost" (click)="editPriority(p); $event.stopPropagation()" style="margin-right: 8px;">✏️
+              Edit</button>
+            <button class="btn-ghost" (click)="deletePriority(p); $event.stopPropagation()"
+              [disabled]="store.saving()" style="color: #ef4444; margin-right: 8px;">🗑️ Delete</button>
+          </ng-container>
           <button class="expand-btn" [class.rotated]="expandedId === p.id">▾</button>
         </div>
       </div>
@@ -146,8 +153,40 @@
             <span class="detail-value">{{ p.baselineType }}</span>
           </div>
           <div class="detail-item">
+            <span class="detail-label">Strategic Priority Area</span>
+            <span class="detail-value">{{ p.priorityArea || '—' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Deliverable Type</span>
+            <span class="detail-value">{{ getCategoryLabel(p.category) }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Report Year</span>
+            <span class="detail-value">{{ getReportYear(p) || '—' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Baseline{{ p.baselineYear ? ' (' + p.baselineYear + ')' : '' }}</span>
+            <span class="detail-value">{{ p.baseline2023 ?? '—' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Responsible Department</span>
+            <span class="detail-value">{{ p.responsibleDepartment || '—' }}</span>
+          </div>
+          <div class="detail-item">
             <span class="detail-label">Supporting Evidence</span>
-            <span class="detail-value">{{ p.supportingEvidence }}</span>
+            <span class="detail-value">{{ p.supportingEvidence || '—' }}</span>
+          </div>
+        </div>
+
+        <!-- Annual Targets -->
+        <div class="projections-section" *ngIf="p.projections && (p.projections | keyvalue).length > 0">
+          <h4 class="section-title">Annual Targets</h4>
+          <div class="projections-chips">
+            <div class="proj-chip" *ngFor="let proj of (p.projections | keyvalue)"
+              [style.border-color]="proj.key === globalYear() ? '#0369a1' : null">
+              <span class="proj-year">{{ proj.key }}</span>
+              <span class="proj-value">{{ proj.value }}</span>
+            </div>
           </div>
         </div>
 
@@ -155,44 +194,52 @@
         <div class="performance-section">
           <div class="performance-header">
             <h4 class="section-title">Quarterly Performance Reports</h4>
-            <button class="btn-report-action" (click)="openReportModal(p.id)">
+            <button class="btn-report-action" *ngIf="canEdit" (click)="openReportModal(p)">
               + Add Quarterly Report
             </button>
           </div>
-          <div class="performance-grid" *ngIf="p.yearlyPerformance && p.yearlyPerformance[globalYear()]">
-            <ng-container *ngFor="let year of (p.yearlyPerformance | keyvalue)">
-              <div class="performance-year-block" *ngIf="year.key.toString() === globalYear().toString()">
-                <div class="year-label">{{ year.key }}</div>
-                <div class="quarter-row" *ngFor="let q of (year.value | keyvalue)">
-                  <span class="q-label">{{ q.key.toString() | uppercase }}</span>
-                  <div class="progress-bar-wrapper">
-                    <div class="progress-bar-fill"
-                      [style.width.%]="(q.value['actual'] / (q.value['target'] || 1)) * 100"
-                      [ngClass]="getStatusClass(q.value['actual'], q.value['target'])"></div>
-                  </div>
-                  <span class="progress-values">{{ q.value['actual'] }} / {{ q.value['target'] }}</span>
-                  <span class="status-badge-sm" [ngClass]="getStatusClass(q.value['actual'], q.value['target'])">
-                    {{ getStatusLabel(q.value['actual'], q.value['target']) }}
-                  </span>
-                </div>
+
+          <!-- Year-to-date against the annual target -->
+          <ng-container *ngIf="getYearSummary(p, globalYear()) as summary">
+            <div class="quarter-row" style="font-weight: 600; margin-bottom: 8px;">
+              <span class="q-label">{{ globalYear() }}</span>
+              <div class="progress-bar-wrapper">
+                <div class="progress-bar-fill" [style.width.%]="getProgressWidth(summary.actual, summary.target)"
+                  [ngClass]="getStatusClass(summary.actual, summary.target)"></div>
               </div>
-            </ng-container>
+              <span class="progress-values"
+                [title]="summary.basis === 'annual' ? 'Annual figure' : 'Year to date (' + summary.basis + ') vs annual target'">
+                {{ summary.actual ?? '—' }} / {{ summary.target ?? 'no target' }}
+              </span>
+              <span class="status-badge-sm" [ngClass]="getStatusClass(summary.actual, summary.target)">
+                {{ getStatusLabel(summary.actual, summary.target) }}
+              </span>
+            </div>
+          </ng-container>
+
+          <div class="performance-grid" *ngIf="getQuarters(p, globalYear()).length > 0">
+            <div class="performance-year-block">
+              <div class="year-label">{{ globalYear() }}</div>
+              <div class="quarter-row" *ngFor="let q of getQuarters(p, globalYear())">
+                <span class="q-label">{{ q.key | uppercase }}</span>
+                <div class="progress-bar-wrapper">
+                  <div class="progress-bar-fill" [style.width.%]="getProgressWidth(q.actual, q.target)"
+                    [ngClass]="getStatusClass(q.actual, q.target)"></div>
+                </div>
+                <span class="progress-values">{{ q.actual }} / {{ q.target }}</span>
+                <span class="status-badge-sm" [ngClass]="getStatusClass(q.actual, q.target)">
+                  {{ getStatusLabel(q.actual, q.target) }}
+                </span>
+                <button class="btn-ghost" *ngIf="canEdit" (click)="editReport(p, globalYear(), q.key)"
+                  [disabled]="loadingReport" title="Edit report" style="padding: 2px 6px;">✏️</button>
+              </div>
+            </div>
           </div>
-          <div class="empty-performance-state" *ngIf="!p.yearlyPerformance || !p.yearlyPerformance[globalYear()]">
+          <div class="empty-performance-state" *ngIf="getQuarters(p, globalYear()).length === 0">
             <p>No quarterly performance reports have been recorded for {{ globalYear() }} yet.</p>
           </div>
         </div>
 
-        <!-- Projections -->
-        <div class="projections-section" *ngIf="p.projections && (p.projections | keyvalue).length > 0">
-          <h4 class="section-title">Projections</h4>
-          <div class="projections-chips">
-            <div class="proj-chip" *ngFor="let proj of (p.projections | keyvalue)">
-              <span class="proj-year">{{ proj.key }}</span>
-              <span class="proj-value">{{ proj.value }}</span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -213,10 +260,10 @@
       <div>
         <h4 style="margin: 0; font-size: 16px; color: #0f172a;">{{ area.name }}</h4>
       </div>
-      <div style="display: flex; gap: 8px;">
+      <div style="display: flex; gap: 8px;" *ngIf="canEdit">
         <button class="btn-ghost" (click)="editArea(area)"
           style="color: #64748b; background: none; border: none; cursor: pointer; padding: 4px;">✏️</button>
-        <button class="btn-ghost" (click)="deleteArea(area.id)"
+        <button class="btn-ghost" (click)="deleteArea(area)"
           style="color: #ef4444; background: none; border: none; cursor: pointer; padding: 4px;">🗑️</button>
       </div>
     </div>
@@ -226,7 +273,7 @@
   <div class="modal-overlay" *ngIf="showAddModal">
     <div class="modal-card" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>Create Presidential Deliverable</h3>
+        <h3>{{ newPriority.id ? 'Edit Presidential Deliverable' : 'Create Presidential Deliverable' }}</h3>
         <button class="close-modal-btn" (click)="closeAddModal()">✕</button>
       </div>
       <form (ngSubmit)="submitAdd()" #addForm="ngForm">
@@ -279,9 +326,23 @@
                 placeholder="e.g. 2026" />
             </div>
             <div class="form-group">
-              <label for="baseline">Baseline Value</label>
+              <label for="baseline">Baseline Value ({{ currentYearDisplay - 1 }})</label>
               <input id="baseline" type="number" [(ngModel)]="newPriority.baseline2023" name="baseline2023" />
             </div>
+          </div>
+
+          <div class="form-group">
+            <label>Annual Targets</label>
+            <div *ngFor="let t of annualTargets; let i = index"
+              style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+              <input type="number" [(ngModel)]="t.year" [name]="'targetYear' + i" placeholder="Year"
+                min="2000" max="2100" style="flex: 0 0 110px;" />
+              <input type="number" [(ngModel)]="t.value" [name]="'targetValue' + i" placeholder="Target value"
+                style="flex: 1;" />
+              <button type="button" class="btn-ghost" (click)="removeAnnualTargetRow(i)"
+                style="color: #ef4444;" title="Remove target">✕</button>
+            </div>
+            <button type="button" class="btn-ghost" (click)="addAnnualTargetRow()">+ Add Year Target</button>
           </div>
 
           <div class="form-group">
@@ -308,16 +369,16 @@
         </div>
 
         <!-- Error message inside form -->
-        <div class="form-error-banner" *ngIf="store.error()">
-          ⚠️ {{ store.error() }}
+        <div class="form-error-banner" *ngIf="formError || store.error()">
+          ⚠️ {{ formError || store.error() }}
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn-cancel" (click)="closeAddModal()" [disabled]="store.loading()">
+          <button type="button" class="btn-cancel" (click)="closeAddModal()" [disabled]="store.saving()">
             Cancel
           </button>
-          <button type="submit" class="btn-submit" [disabled]="store.loading() || !addForm.form.valid">
-            <span *ngIf="store.loading()" class="spinner-sm"></span>
+          <button type="submit" class="btn-submit" [disabled]="store.saving() || !addForm.form.valid">
+            <span *ngIf="store.saving()" class="spinner-sm"></span>
             Save Priority
           </button>
         </div>
@@ -341,16 +402,16 @@
         </div>
 
         <!-- Error message inside form -->
-        <div class="form-error-banner" *ngIf="store.error()">
-          ⚠️ {{ store.error() }}
+        <div class="form-error-banner" *ngIf="formError || store.error()">
+          ⚠️ {{ formError || store.error() }}
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn-cancel" (click)="closeAddAreaModal()" [disabled]="store.loading()">
+          <button type="button" class="btn-cancel" (click)="closeAddAreaModal()" [disabled]="store.saving()">
             Cancel
           </button>
-          <button type="submit" class="btn-submit" [disabled]="store.loading() || !addAreaForm.form.valid">
-            <span *ngIf="store.loading()" class="spinner-sm"></span>
+          <button type="submit" class="btn-submit" [disabled]="store.saving() || !addAreaForm.form.valid">
+            <span *ngIf="store.saving()" class="spinner-sm"></span>
             Save Area
           </button>
         </div>
@@ -362,7 +423,7 @@
   <div class="modal-overlay" *ngIf="showReportModal">
     <div class="modal-card scrollable-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>Submit Quarterly Performance Report</h3>
+        <h3>{{ editingReportId ? 'Edit Quarterly Performance Report' : 'Submit Quarterly Performance Report' }}</h3>
         <button class="close-modal-btn" (click)="closeReportModal()">✕</button>
       </div>
       <form (ngSubmit)="submitReport()" #reportForm="ngForm">
@@ -370,9 +431,9 @@
           <div class="form-row">
             <div class="form-group">
               <label for="repYear">Year *</label>
-              <input id="repYear" type="number" [(ngModel)]="newReport.year" name="year" required disabled
-                style="background-color: #f1f5f9; color: #94a3b8; cursor: not-allowed;" placeholder="e.g. 2024"
-                min="2000" max="2100" />
+              <select id="repYear" [(ngModel)]="newReport.year" name="year" required>
+                <option *ngFor="let y of reportYearOptions" [ngValue]="y">{{ y }}</option>
+              </select>
             </div>
             <div class="form-group">
               <label for="repQuarter">Quarter *</label>
@@ -424,22 +485,43 @@
         </div>
 
         <!-- Error message inside form -->
-        <div class="form-error-banner" *ngIf="store.error()">
-          ⚠️ {{ store.error() }}
+        <div class="form-error-banner" *ngIf="formError || store.error()">
+          ⚠️ {{ formError || store.error() }}
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn-cancel" (click)="closeReportModal()" [disabled]="store.loading()">
+          <button type="button" class="btn-cancel" *ngIf="editingReportId" (click)="deleteReport()"
+            [disabled]="store.saving()" style="color: #ef4444; margin-right: auto;">
+            🗑️ Delete Report
+          </button>
+          <button type="button" class="btn-cancel" (click)="closeReportModal()" [disabled]="store.saving()">
             Cancel
           </button>
-          <button type="submit" class="btn-submit" [disabled]="store.loading() || !reportForm.form.valid">
-            <span *ngIf="store.loading()" class="spinner-sm"></span>
-            Submit Report
+          <button type="submit" class="btn-submit" [disabled]="store.saving() || !reportForm.form.valid">
+            <span *ngIf="store.saving()" class="spinner-sm"></span>
+            {{ editingReportId ? 'Update Report' : 'Submit Report' }}
           </button>
         </div>
       </form>
     </div>
   </div>
+  <!-- Confirmation Modal Overlay -->
+  <div class="modal-overlay" *ngIf="confirmDialog" style="z-index: 1000;" (click)="confirmDialog = null">
+    <div class="modal-card compact-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ confirmDialog.title }}</h3>
+        <button class="close-modal-btn" (click)="confirmDialog = null">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin: 0; color: #334155;">{{ confirmDialog.message }}</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="confirmDialog = null">Cancel</button>
+        <button type="button" class="btn-submit" style="background: #ef4444;" (click)="confirmAction()">Delete</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Success Modal Overlay -->
   <div class="modal-overlay" *ngIf="showSuccessModal" style="z-index: 1000;" (click)="showSuccessModal = false">
     <div class="modal-card compact-modal" style="text-align: center; padding: 32px;" (click)="$event.stopPropagation()">

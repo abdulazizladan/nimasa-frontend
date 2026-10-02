@@ -9,19 +9,37 @@ export interface PresidentialPriority {
   /** ministry field in the entity — used here as the responsible ministry name */
   ministry: string;
   priorityArea: string;
+  /** Shown in the UI as "Deliverable" */
   outcome: string;
+  /** Shown in the UI as "Description" */
   deliverable: string;
   baselineType: string;
   indicator: string;
+  /** Year the baseline was measured; the KPI's report year is baselineYear + 1 */
   baselineYear?: number;
+  /** Baseline value for baselineYear (column name is historical, not tied to 2023) */
   baseline2023?: number;
+  /** Quarterly results keyed by year then q1..q4, synced by the backend from quarterly reports */
   yearlyPerformance?: Record<string, any>;
+  /** Annual targets keyed by year */
   projections?: Record<string, number>;
   responsibleDepartment: string;
   supportingEvidence: string;
   category: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface QuarterlyReport {
+  id: string;
+  year: number;
+  quarter: string;
+  targetValue?: number;
+  actualValue?: number;
+  progress?: string;
+  keyIssues?: string;
+  mdaEfforts?: string;
+  comments?: string;
 }
 
 export interface PriorityArea {
@@ -53,6 +71,7 @@ export class PresidentialPrioritiesService {
   private readonly base = `${environment.baseUrl}/presidential-priorities`;
   private readonly deptBase = `${environment.baseUrl}/departments`;
   private readonly agencyBase = `${environment.baseUrl}/agency-deliverables`;
+  private readonly reportsBase = `${environment.baseUrl}/quarterly-reports`;
 
   constructor(private http: HttpClient) {}
 
@@ -104,6 +123,21 @@ export class PresidentialPrioritiesService {
 
   createSubmission(deliverableId: string, submission: any): Observable<any> {
     const payload = { ...submission, deliverableId };
-    return this.http.post<any>(`${environment.baseUrl}/quarterly-reports`, payload);
+    return this.http.post<any>(this.reportsBase, payload);
+  }
+
+  getSubmissions(deliverableId: string, year?: number, quarter?: string): Observable<QuarterlyReport[]> {
+    let params = new HttpParams().set('deliverableId', deliverableId);
+    if (year) params = params.set('year', year.toString());
+    if (quarter) params = params.set('quarter', quarter);
+    return this.http.get<QuarterlyReport[]>(this.reportsBase, { params });
+  }
+
+  updateSubmission(id: string, submission: Partial<QuarterlyReport>): Observable<QuarterlyReport> {
+    return this.http.patch<QuarterlyReport>(`${this.reportsBase}/${id}`, submission);
+  }
+
+  deleteSubmission(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.reportsBase}/${id}`);
   }
 }

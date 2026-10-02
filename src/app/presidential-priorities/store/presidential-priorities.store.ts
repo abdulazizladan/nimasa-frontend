@@ -1,14 +1,20 @@
 import { signalStore, withState, withMethods, patchState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { inject } from '@angular/core';
-import { pipe, tap, switchMap, catchError, of } from 'rxjs';
+import { pipe, tap, switchMap, concatMap, catchError, of, Observable } from 'rxjs';
 import {
   PresidentialPrioritiesService,
   PresidentialPriority,
   PriorityArea,
   Department,
-  QueryPrioritiesParams
+  QueryPrioritiesParams,
+  QuarterlyReport
 } from '../services/presidential-priorities.service';
+
+/** Optional callback run once a save/delete has succeeded (e.g. to close a modal). */
+type WithCallback<T> = T & { onSuccess?: () => void };
+
+const toList = (data: any) => (Array.isArray(data) ? data : (data?.data ?? []));
 
 export const PresidentialPrioritiesStore = signalStore(
   { providedIn: 'root' },
@@ -17,249 +23,188 @@ export const PresidentialPrioritiesStore = signalStore(
     selectedPriority: null as PresidentialPriority | null,
     priorityAreas: [] as PriorityArea[],
     departments: [] as Department[],
+    /** True while the priorities list is being fetched */
     loading: false,
     loadingMeta: false,
+    /** True while a create/update/delete is in flight; does not hide the list */
+    saving: false,
     error: null as string | null,
     filterPriorityArea: '' as string,
     filterDepartment: '' as string,
   }),
-  withMethods((store, service = inject(PresidentialPrioritiesService)) => ({
-    loadPriorities: rxMethod<QueryPrioritiesParams | void>(
-      pipe(
-        tap(() => patchState(store, { loading: true, error: null })),
-        switchMap((query) =>
-          service.getAll(query || undefined).pipe(
-            tap((data: any) => {
-              const list = Array.isArray(data) ? data : (data?.data ?? []);
-              patchState(store, { priorities: list, loading: false });
-            }),
-            catchError((err) => {
-              patchState(store, {
-                error: err.error?.message || 'Failed to load presidential priorities.',
-                loading: false
-              });
-              return of(null);
-            })
+  withMethods((store, service = inject(PresidentialPrioritiesService)) => {
+    /** Runs a write request, tracking `saving`/`error` and invoking onSuccess when it completes. */
+    const save = <T>(
+      request: Observable<T>,
+      errorMessage: string,
+      onSuccess: ((result: T) => void) | undefined,
+      callback?: () => void
+    ) => {
+      patchState(store, { saving: true, error: null });
+      return request.pipe(
+        tap((result) => {
+          onSuccess?.(result);
+          patchState(store, { saving: false });
+          callback?.();
+        }),
+        catchError((err) => {
+          const message = err.error?.message;
+          patchState(store, {
+            error: (Array.isArray(message) ? message.join(', ') : message) || errorMessage,
+            saving: false
+          });
+          return of(null);
+        })
+      );
+    };
+
+    /** Reloads the priorities list after a quarterly report change (the backend updates yearlyPerformance). */
+    const reloadPriorities = () =>
+      service.getAll().pipe(tap((data: any) => patchState(store, { priorities: toList(data) })));
+
+    return {
+      loadPriorities: rxMethod<QueryPrioritiesParams | void>(
+        pipe(
+          tap(() => patchState(store, { loading: true, error: null })),
+          switchMap((query) =>
+            service.getAll(query || undefined).pipe(
+              tap((data: any) => patchState(store, { priorities: toList(data), loading: false })),
+              catchError((err) => {
+                patchState(store, {
+                  error: err.error?.message || 'Failed to load presidential priorities.',
+                  loading: false
+                });
+                return of(null);
+              })
+            )
           )
         )
-      )
-    ),
-    loadOne: rxMethod<string>(
-      pipe(
-        tap(() => patchState(store, { loading: true, error: null, selectedPriority: null })),
-        switchMap((id) =>
-          service.getOne(id).pipe(
-            tap((d) => patchState(store, { selectedPriority: d, loading: false })),
-            catchError((err) => {
-              patchState(store, {
-                error: err.error?.message || 'Failed to load priority.',
-                loading: false
-              });
-              return of(null);
-            })
+      ),
+      loadOne: rxMethod<string>(
+        pipe(
+          tap(() => patchState(store, { loading: true, error: null, selectedPriority: null })),
+          switchMap((id) =>
+            service.getOne(id).pipe(
+              tap((d) => patchState(store, { selectedPriority: d, loading: false })),
+              catchError((err) => {
+                patchState(store, {
+                  error: err.error?.message || 'Failed to load priority.',
+                  loading: false
+                });
+                return of(null);
+              })
+            )
           )
         )
-      )
-    ),
-    loadPriorityAreas: rxMethod<void>(
-      pipe(
-        tap(() => patchState(store, { loadingMeta: true })),
-        switchMap(() =>
-          service.getPriorityAreas().pipe(
-            tap((data: any) => {
-              const list = Array.isArray(data) ? data : (data?.data ?? []);
-              patchState(store, { priorityAreas: list, loadingMeta: false });
-            }),
-            catchError(() => {
-              patchState(store, { loadingMeta: false });
-              return of(null);
-            })
+      ),
+      loadPriorityAreas: rxMethod<void>(
+        pipe(
+          tap(() => patchState(store, { loadingMeta: true })),
+          switchMap(() =>
+            service.getPriorityAreas().pipe(
+              tap((data: any) => patchState(store, { priorityAreas: toList(data), loadingMeta: false })),
+              catchError(() => {
+                patchState(store, { loadingMeta: false });
+                return of(null);
+              })
+            )
           )
         )
-      )
-    ),
-    loadDepartments: rxMethod<void>(
-      pipe(
-        switchMap(() =>
-          service.getDepartments().pipe(
-            tap((data: any) => {
-              const list = Array.isArray(data) ? data : (data?.data ?? []);
-              patchState(store, { departments: list });
-            }),
-            catchError(() => of(null))
+      ),
+      loadDepartments: rxMethod<void>(
+        pipe(
+          switchMap(() =>
+            service.getDepartments().pipe(
+              tap((data: any) => patchState(store, { departments: toList(data) })),
+              catchError(() => of(null))
+            )
           )
         )
-      )
-    ),
-    createPriority: rxMethod<Partial<PresidentialPriority>>(
-      pipe(
-        tap(() => patchState(store, { loading: true, error: null })),
-        switchMap((dto) =>
-          service.create(dto).pipe(
-            tap((newPriority) => {
-              patchState(store, {
-                priorities: [newPriority, ...store.priorities()],
-                loading: false
-              });
-            }),
-            catchError((err) => {
-              patchState(store, {
-                error: err.error?.message || 'Failed to create presidential priority.',
-                loading: false
-              });
-              return of(null);
-            })
+      ),
+      createPriority: rxMethod<WithCallback<{ priority: Partial<PresidentialPriority> }>>(
+        pipe(
+          concatMap(({ priority, onSuccess }) =>
+            save(service.create(priority), 'Failed to create presidential priority.', (created) =>
+              patchState(store, { priorities: [...store.priorities(), created] }), onSuccess)
           )
         )
-      )
-    ),
-    updatePriority: rxMethod<{ id: string; priority: Partial<PresidentialPriority> }>(
-      pipe(
-        tap(() => patchState(store, { loading: true, error: null })),
-        switchMap(({ id, priority }) =>
-          service.update(id, priority).pipe(
-            tap((updatedPriority) => {
-              const updatedList = store.priorities().map(p => 
-                p.id === id ? updatedPriority : p
-              );
-              patchState(store, {
-                priorities: updatedList,
-                loading: false
-              });
-            }),
-            catchError((err) => {
-              patchState(store, {
-                error: err.error?.message || 'Failed to update priority.',
-                loading: false
-              });
-              return of(null);
-            })
+      ),
+      updatePriority: rxMethod<WithCallback<{ id: string; priority: Partial<PresidentialPriority> }>>(
+        pipe(
+          concatMap(({ id, priority, onSuccess }) =>
+            save(service.update(id, priority), 'Failed to update priority.', (updated) =>
+              patchState(store, { priorities: store.priorities().map(p => (p.id === id ? updated : p)) }), onSuccess)
           )
         )
-      )
-    ),
-    deletePriority: rxMethod<string>(
-      pipe(
-        tap(() => patchState(store, { loading: true, error: null })),
-        switchMap((id) =>
-          service.delete(id).pipe(
-            tap(() => {
-              const updatedList = store.priorities().filter(p => p.id !== id);
-              patchState(store, {
-                priorities: updatedList,
-                loading: false
-              });
-            }),
-            catchError((err) => {
-              patchState(store, {
-                error: err.error?.message || 'Failed to delete priority.',
-                loading: false
-              });
-              return of(null);
-            })
+      ),
+      deletePriority: rxMethod<WithCallback<{ id: string }>>(
+        pipe(
+          concatMap(({ id, onSuccess }) =>
+            save(service.delete(id), 'Failed to delete priority.', () =>
+              patchState(store, { priorities: store.priorities().filter(p => p.id !== id) }), onSuccess)
           )
         )
-      )
-    ),
-    createPriorityArea: rxMethod<string>(
-      pipe(
-        tap(() => patchState(store, { loading: true, error: null })),
-        switchMap((name) =>
-          service.createPriorityArea(name).pipe(
-            tap((newArea) => {
-              patchState(store, {
-                priorityAreas: [...store.priorityAreas(), newArea],
-                loading: false
-              });
-            }),
-            catchError((err) => {
-              patchState(store, {
-                error: err.error?.message || 'Failed to create priority area.',
-                loading: false
-              });
-              return of(null);
-            })
+      ),
+      createPriorityArea: rxMethod<WithCallback<{ name: string }>>(
+        pipe(
+          concatMap(({ name, onSuccess }) =>
+            save(service.createPriorityArea(name), 'Failed to create priority area.', (area) =>
+              patchState(store, { priorityAreas: [...store.priorityAreas(), area] }), onSuccess)
           )
         )
-      )
-    ),
-    updatePriorityArea: rxMethod<{ id: string; name: string }>(
-      pipe(
-        tap(() => patchState(store, { loading: true, error: null })),
-        switchMap(({ id, name }) =>
-          service.updatePriorityArea(id, name).pipe(
-            tap((updatedArea) => {
-              const updatedList = store.priorityAreas().map(a => 
-                a.id === id ? updatedArea : a
-              );
-              patchState(store, {
-                priorityAreas: updatedList,
-                loading: false
-              });
-            }),
-            catchError((err) => {
-              patchState(store, {
-                error: err.error?.message || 'Failed to update priority area.',
-                loading: false
-              });
-              return of(null);
-            })
+      ),
+      updatePriorityArea: rxMethod<WithCallback<{ id: string; name: string }>>(
+        pipe(
+          concatMap(({ id, name, onSuccess }) =>
+            save(service.updatePriorityArea(id, name), 'Failed to update priority area.', (updated) =>
+              patchState(store, { priorityAreas: store.priorityAreas().map(a => (a.id === id ? updated : a)) }), onSuccess)
           )
         )
-      )
-    ),
-    deletePriorityArea: rxMethod<string>(
-      pipe(
-        tap(() => patchState(store, { loading: true, error: null })),
-        switchMap((id) =>
-          service.deletePriorityArea(id).pipe(
-            tap(() => {
-              const updatedList = store.priorityAreas().filter(a => a.id !== id);
-              patchState(store, {
-                priorityAreas: updatedList,
-                loading: false
-              });
-            }),
-            catchError((err) => {
-              patchState(store, {
-                error: err.error?.message || 'Failed to delete priority area.',
-                loading: false
-              });
-              return of(null);
-            })
+      ),
+      deletePriorityArea: rxMethod<WithCallback<{ id: string }>>(
+        pipe(
+          concatMap(({ id, onSuccess }) =>
+            save(service.deletePriorityArea(id), 'Failed to delete priority area.', () =>
+              patchState(store, { priorityAreas: store.priorityAreas().filter(a => a.id !== id) }), onSuccess)
           )
         )
-      )
-    ),
-    createSubmission: rxMethod<{ id: string; submission: any }>(
-      pipe(
-        tap(() => patchState(store, { loading: true, error: null })),
-        switchMap(({ id, submission }) =>
-          service.createSubmission(id, submission).pipe(
-            switchMap(() => service.getAll()),
-            tap((data: any) => {
-              const list = Array.isArray(data) ? data : (data?.data ?? []);
-              patchState(store, { priorities: list, loading: false });
-            }),
-            catchError((err) => {
-              patchState(store, {
-                error: err.error?.message || 'Failed to submit quarterly report.',
-                loading: false
-              });
-              return of(null);
-            })
+      ),
+      createSubmission: rxMethod<WithCallback<{ id: string; submission: Partial<QuarterlyReport> }>>(
+        pipe(
+          concatMap(({ id, submission, onSuccess }) =>
+            save(service.createSubmission(id, submission).pipe(switchMap(reloadPriorities)),
+              'Failed to submit quarterly report.', undefined, onSuccess)
           )
         )
-      )
-    ),
-    setFilterPriorityArea(area: string) {
-      patchState(store, { filterPriorityArea: area });
-    },
-    setFilterDepartment(department: string) {
-      patchState(store, { filterDepartment: department });
-    },
-    clearError() {
-      patchState(store, { error: null });
-    }
-  }))
+      ),
+      updateSubmission: rxMethod<WithCallback<{ reportId: string; submission: Partial<QuarterlyReport> }>>(
+        pipe(
+          concatMap(({ reportId, submission, onSuccess }) =>
+            save(service.updateSubmission(reportId, submission).pipe(switchMap(reloadPriorities)),
+              'Failed to update quarterly report.', undefined, onSuccess)
+          )
+        )
+      ),
+      deleteSubmission: rxMethod<WithCallback<{ reportId: string }>>(
+        pipe(
+          concatMap(({ reportId, onSuccess }) =>
+            save(service.deleteSubmission(reportId).pipe(switchMap(reloadPriorities)),
+              'Failed to delete quarterly report.', undefined, onSuccess)
+          )
+        )
+      ),
+      setFilterPriorityArea(area: string) {
+        patchState(store, { filterPriorityArea: area });
+      },
+      setFilterDepartment(department: string) {
+        patchState(store, { filterDepartment: department });
+      },
+      setError(error: string | null) {
+        patchState(store, { error });
+      },
+      clearError() {
+        patchState(store, { error: null });
+      }
+    };
+  })
 );
