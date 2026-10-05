@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, inject, computed, signal } from '@angular/core';
 import { PresidentialPrioritiesStore } from '../../store/presidential-priorities.store';
-import { PresidentialPriority, PresidentialPrioritiesService } from '../../services/presidential-priorities.service';
+import { PresidentialPriority, PresidentialPrioritiesService, AnnualTarget } from '../../services/presidential-priorities.service';
 import { GlobalStateService } from '../../../core/services/global-state.service';
 import { Auth } from '../../../auth/services/auth';
 import { Subscription } from 'rxjs';
@@ -11,8 +11,18 @@ const EDITOR_ROLES = ['admin', 'director', 'manager'];
 /** Fields of a priority the user can edit; everything else (id, timestamps, yearlyPerformance) is server-owned. */
 const EDITABLE_FIELDS: (keyof PresidentialPriority)[] = [
   'serialNumber', 'ministry', 'priorityArea', 'outcome', 'deliverable', 'baselineType', 'indicator',
-  'baselineYear', 'baseline2023', 'projections', 'responsibleDepartment', 'supportingEvidence', 'category'
+  'baselineYear', 'baseline2023', 'projections', 'annualTargets', 'responsibleDepartment', 'supportingEvidence', 'category'
 ];
+
+/** One editable annual target row in the create/edit form (inputs may be empty while typing). */
+interface AnnualTargetRow {
+  baselineYear: number | null;
+  baselineValue: number | null;
+  targetYear: number | null;
+  targetValue: number | null;
+}
+
+const isBlank = (v: any) => v === null || v === undefined || v === '';
 
 const QUARTER_KEYS = ['q1', 'q2', 'q3', 'q4'];
 
@@ -63,7 +73,7 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
   editingAreaId = '';
   newPriority: Partial<PresidentialPriority> = this.getEmptyForm();
   currentYearDisplay: number = new Date().getFullYear();
-  annualTargets: { year: number | null; value: number | null }[] = [];
+  annualTargets: AnnualTargetRow[] = [];
   /** Client-side validation message shown inside the open modal */
   formError = '';
 
@@ -124,6 +134,7 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
     const reportYear = this.getReportYear(p);
     if (reportYear) years.add(reportYear);
     Object.keys(p.projections || {}).forEach(y => years.add(Number(y)));
+    (p.annualTargets || []).forEach(t => years.add(Number(t.targetYear)));
     Object.keys(p.yearlyPerformance || {}).forEach(y => years.add(Number(y)));
     return [...years].filter(y => !isNaN(y)).sort((a, b) => a - b);
   }
@@ -134,8 +145,29 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
   }
 
   getAnnualTarget(p: PresidentialPriority, year: string | number): number | null {
+    const target = (p.annualTargets || []).find(t => Number(t.targetYear) === Number(year));
+    if (target) return target.targetValue;
     const value = p.projections?.[year.toString()];
     return value === undefined || value === null ? null : value;
+  }
+
+  /** Annual targets for display; older records that only have projections get their baseline inferred where possible. */
+  getAnnualTargets(p: PresidentialPriority): AnnualTarget[] {
+    if (p.annualTargets?.length) {
+      return [...p.annualTargets].sort((a, b) => a.targetYear - b.targetYear);
+    }
+    return Object.entries(p.projections || {})
+      .map(([year, value]) => {
+        const targetYear = Number(year);
+        const baselineYear = targetYear - 1;
+        return {
+          baselineYear,
+          baselineValue: baselineYear === p.baselineYear ? p.baseline2023 ?? null : null,
+          targetYear,
+          targetValue: value
+        };
+      })
+      .sort((a, b) => a.targetYear - b.targetYear);
   }
 
   /** Quarter entries (q1..q4) reported for a year, in quarter order. */
@@ -194,36 +226,66 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
     const previous = this.currentYearDisplay;
     this.currentYearDisplay = year;
     this.newPriority.baselineYear = year - 1;
-    // Keep the first annual target row in step with the current year if the user hasn't changed it
-    if (this.annualTargets[0] && this.annualTargets[0].year === previous) {
-      this.annualTargets[0].year = year;
+    // Keep the first annual target row in step with the current year if the user hasn't changed its years
+    const first = this.annualTargets[0];
+    if (first && first.targetYear === previous && first.baselineYear === previous - 1) {
+      first.targetYear = year;
+      first.baselineYear = year - 1;
     }
   }
 
+  private newTargetRow(targetYear: number, baselineValue: number | null = null): AnnualTargetRow {
+    return { baselineYear: targetYear - 1, baselineValue, targetYear, targetValue: null };
+  }
+
+  /** Adds the next year's target; its baseline year defaults to the previous row's target year. */
   addAnnualTargetRow(): void {
-    const used = this.annualTargets.map(t => Number(t.year)).filter(y => !isNaN(y) && y > 0);
+    const used = this.annualTargets.map(t => Number(t.targetYear)).filter(y => !isNaN(y) && y > 0);
     const nextYear = used.length ? Math.max(...used) + 1 : this.currentYearDisplay;
-    this.annualTargets.push({ year: nextYear, value: null });
+    this.annualTargets.push(this.newTargetRow(nextYear));
   }
 
   removeAnnualTargetRow(index: number): void {
     this.annualTargets.splice(index, 1);
   }
 
-  private targetsFromProjections(projections?: Record<string, number>): { year: number | null; value: number | null }[] {
-    return Object.entries(projections || {})
-      .map(([year, value]) => ({ year: Number(year), value }))
-      .sort((a, b) => a.year - b.year);
+  /** Rows the user has filled in (a row with neither a baseline nor a target value is ignored). */
+  private filledTargetRows(): AnnualTargetRow[] {
+    return this.annualTargets.filter(t => !isBlank(t.targetValue) || !isBlank(t.baselineValue));
   }
 
-  private targetsToProjections(): Record<string, number> {
-    const projections: Record<string, number> = {};
-    for (const t of this.annualTargets) {
-      if (t.year && t.value !== null && t.value !== undefined && (t.value as any) !== '') {
-        projections[Number(t.year).toString()] = Number(t.value);
+  private rowsToAnnualTargets(): AnnualTarget[] {
+    return this.filledTargetRows()
+      .map(t => ({
+        baselineYear: Number(t.baselineYear),
+        baselineValue: isBlank(t.baselineValue) ? null : Number(t.baselineValue),
+        targetYear: Number(t.targetYear),
+        targetValue: Number(t.targetValue)
+      }))
+      .sort((a, b) => a.targetYear - b.targetYear);
+  }
+
+  /** Returns an error message for the first invalid annual target row, or '' if all are valid. */
+  private validateTargetRows(currentYear: number): string {
+    const seen = new Set<number>();
+    for (const t of this.filledTargetRows()) {
+      const baselineYear = Number(t.baselineYear);
+      const targetYear = Number(t.targetYear);
+      if (isBlank(t.baselineYear) || isBlank(t.targetYear) || isBlank(t.targetValue)) {
+        return 'Each annual target needs a Baseline Year, Target Year and Target Value.';
       }
+      if (targetYear < currentYear) {
+        return `Target year ${targetYear} must be ${currentYear} or later.`;
+      }
+      if (targetYear <= baselineYear) {
+        return `Target year ${targetYear} must be after its baseline year ${baselineYear}.`;
+      }
+      if (seen.has(targetYear)) {
+        return `Only one annual target is allowed for ${targetYear}.`;
+      }
+      seen.add(targetYear);
     }
-    return projections;
+    return '';
   }
 
   /** Switch the page to the given year if it isn't already showing it. */
@@ -301,7 +363,7 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
   openAddModal(): void {
     this.newPriority = this.getEmptyForm();
     this.currentYearDisplay = new Date().getFullYear();
-    this.annualTargets = [{ year: this.currentYearDisplay, value: null }];
+    this.annualTargets = [this.newTargetRow(this.currentYearDisplay)];
     this.formError = '';
     this.store.clearError();
     this.showAddModal = true;
@@ -322,9 +384,14 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
     }
     payload.serialNumber = Number(payload.serialNumber);
     payload.baselineYear = Number(this.currentYearDisplay) - 1;
-    const baseline = this.newPriority.baseline2023 as any;
-    payload.baseline2023 = baseline === null || baseline === undefined || baseline === '' ? undefined : Number(baseline);
-    payload.projections = this.targetsToProjections();
+    payload.annualTargets = this.rowsToAnnualTargets();
+    payload.projections = Object.fromEntries(payload.annualTargets.map(t => [t.targetYear.toString(), t.targetValue]));
+    // The KPI-level baseline is the one measured in the year before the report year (else the earliest given)
+    const baselineTarget = payload.annualTargets.find(t => t.baselineYear === payload.baselineYear)
+      ?? payload.annualTargets.find(t => t.baselineValue !== null);
+    if (baselineTarget && baselineTarget.baselineValue !== null && baselineTarget.baselineValue !== undefined) {
+      payload.baseline2023 = baselineTarget.baselineValue;
+    }
     // Required strings on the backend; send empty strings rather than nulls
     payload.outcome = payload.outcome ?? '';
     payload.deliverable = payload.deliverable ?? '';
@@ -342,13 +409,9 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
       this.formError = 'Please enter a valid Current Year.';
       return;
     }
-    const targetYears = this.annualTargets.filter(t => t.value !== null && (t.value as any) !== '').map(t => Number(t.year));
-    if (targetYears.some(y => !y || y < year)) {
-      this.formError = `Annual target years must be ${year} or later.`;
-      return;
-    }
-    if (new Set(targetYears).size !== targetYears.length) {
-      this.formError = 'Each year can only have one annual target.';
+    const targetError = this.validateTargetRows(year);
+    if (targetError) {
+      this.formError = targetError;
       return;
     }
     this.formError = '';
@@ -578,9 +641,14 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
   editPriority(priority: PresidentialPriority): void {
     this.newPriority = { ...priority };
     this.currentYearDisplay = priority.baselineYear ? priority.baselineYear + 1 : new Date().getFullYear();
-    this.annualTargets = this.targetsFromProjections(priority.projections);
+    this.annualTargets = this.getAnnualTargets(priority).map(t => ({
+      baselineYear: t.baselineYear,
+      baselineValue: t.baselineValue ?? null,
+      targetYear: t.targetYear,
+      targetValue: t.targetValue
+    }));
     if (this.annualTargets.length === 0) {
-      this.annualTargets = [{ year: this.currentYearDisplay, value: null }];
+      this.annualTargets = [this.newTargetRow(this.currentYearDisplay, priority.baseline2023 ?? null)];
     }
     this.formError = '';
     this.store.clearError();

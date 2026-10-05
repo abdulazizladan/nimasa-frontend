@@ -21,13 +21,22 @@ export interface PresidentialPriority {
   baseline2023?: number;
   /** Quarterly results keyed by year then q1..q4, synced by the backend from quarterly reports */
   yearlyPerformance?: Record<string, any>;
-  /** Annual targets keyed by year */
+  /** Annual targets keyed by target year; derived by the backend from annualTargets */
   projections?: Record<string, number>;
+  /** Annual targets, each with its own baseline */
+  annualTargets?: AnnualTarget[];
   responsibleDepartment: string;
   supportingEvidence: string;
   category: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AnnualTarget {
+  baselineYear: number;
+  baselineValue?: number | null;
+  targetYear: number;
+  targetValue: number;
 }
 
 export interface QuarterlyReport {

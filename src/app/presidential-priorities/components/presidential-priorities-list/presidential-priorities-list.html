@@ -179,14 +179,27 @@
         </div>
 
         <!-- Annual Targets -->
-        <div class="projections-section" *ngIf="p.projections && (p.projections | keyvalue).length > 0">
+        <div class="projections-section" *ngIf="getAnnualTargets(p).length > 0">
           <h4 class="section-title">Annual Targets</h4>
-          <div class="projections-chips">
-            <div class="proj-chip" *ngFor="let proj of (p.projections | keyvalue)"
-              [style.border-color]="proj.key === globalYear() ? '#0369a1' : null">
-              <span class="proj-year">{{ proj.key }}</span>
-              <span class="proj-value">{{ proj.value }}</span>
-            </div>
+          <div style="overflow-x: auto;">
+            <table class="targets-table">
+              <thead>
+                <tr>
+                  <th>Baseline Year</th>
+                  <th>Baseline Value</th>
+                  <th>Target Year</th>
+                  <th>Target Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let t of getAnnualTargets(p)" [class.current-target]="t.targetYear.toString() === globalYear()">
+                  <td>{{ t.baselineYear }}</td>
+                  <td>{{ t.baselineValue ?? '—' }}</td>
+                  <td>{{ t.targetYear }}</td>
+                  <td>{{ t.targetValue }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -325,24 +338,30 @@
               <input id="currentYear" type="number" [ngModel]="currentYearDisplay" (ngModelChange)="onCurrentYearChange($event)" name="currentYear" required
                 placeholder="e.g. 2026" />
             </div>
-            <div class="form-group">
-              <label for="baseline">Baseline Value ({{ currentYearDisplay - 1 }})</label>
-              <input id="baseline" type="number" [(ngModel)]="newPriority.baseline2023" name="baseline2023" />
-            </div>
           </div>
 
           <div class="form-group">
             <label>Annual Targets</label>
-            <div *ngFor="let t of annualTargets; let i = index"
-              style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
-              <input type="number" [(ngModel)]="t.year" [name]="'targetYear' + i" placeholder="Year"
-                min="2000" max="2100" style="flex: 0 0 110px;" />
-              <input type="number" [(ngModel)]="t.value" [name]="'targetValue' + i" placeholder="Target value"
-                style="flex: 1;" />
+            <div class="target-row target-row-head" *ngIf="annualTargets.length > 0">
+              <span>Baseline Year</span>
+              <span>Baseline Value</span>
+              <span>Target Year</span>
+              <span>Target Value</span>
+              <span></span>
+            </div>
+            <div class="target-row" *ngFor="let t of annualTargets; let i = index">
+              <input type="number" [(ngModel)]="t.baselineYear" [name]="'baselineYear' + i" placeholder="Baseline year"
+                aria-label="Baseline year" min="2000" max="2100" />
+              <input type="number" [(ngModel)]="t.baselineValue" [name]="'baselineValue' + i" placeholder="Baseline value"
+                aria-label="Baseline value" />
+              <input type="number" [(ngModel)]="t.targetYear" [name]="'targetYear' + i" placeholder="Target year"
+                aria-label="Target year" min="2000" max="2100" />
+              <input type="number" [(ngModel)]="t.targetValue" [name]="'targetValue' + i" placeholder="Target value"
+                aria-label="Target value" />
               <button type="button" class="btn-ghost" (click)="removeAnnualTargetRow(i)"
                 style="color: #ef4444;" title="Remove target">✕</button>
             </div>
-            <button type="button" class="btn-ghost" (click)="addAnnualTargetRow()">+ Add Year Target</button>
+            <button type="button" class="btn-ghost" (click)="addAnnualTargetRow()">+ Add Annual Target</button>
           </div>
 
           <div class="form-group">

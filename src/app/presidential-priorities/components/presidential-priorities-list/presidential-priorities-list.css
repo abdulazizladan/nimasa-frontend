@@ -670,3 +670,60 @@
 
 
 
+
+/* Annual target rows in the create/edit form */
+.target-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.target-row input {
+  min-width: 0;
+}
+
+.target-row-head {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+@media (max-width: 560px) {
+  .target-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  }
+  .target-row-head {
+    display: none;
+  }
+}
+
+/* Annual targets table in the expanded card */
+.targets-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.targets-table th,
+.targets-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.targets-table th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.targets-table tr.current-target td {
+  background: #f0f9ff;
+  font-weight: 600;
+  color: #0369a1;
+}
