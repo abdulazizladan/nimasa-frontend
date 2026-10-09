@@ -25,12 +25,16 @@ export interface PresidentialPriority {
   projections?: Record<string, number>;
   /** Annual targets, each with its own baseline */
   annualTargets?: AnnualTarget[];
+  /** How quarterly results combine into the annual figure (null/undefined = sum) */
+  annualAggregation?: AnnualAggregation | null;
   responsibleDepartment: string;
   supportingEvidence: string;
   category: string;
   createdAt: string;
   updatedAt: string;
 }
+
+export type AnnualAggregation = 'sum' | 'average' | 'latest';
 
 export interface AnnualTarget {
   baselineYear: number;

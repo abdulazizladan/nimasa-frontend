@@ -727,3 +727,17 @@
   font-weight: 600;
   color: #0369a1;
 }
+
+.muted-note {
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
+.report-period-note {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #f0f9ff;
+  color: #0369a1;
+  font-size: 0.85rem;
+}

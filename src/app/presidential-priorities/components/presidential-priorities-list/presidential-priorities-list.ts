@@ -1,6 +1,8 @@
 import { Component, OnInit, OnDestroy, inject, computed, signal } from '@angular/core';
 import { PresidentialPrioritiesStore } from '../../store/presidential-priorities.store';
-import { PresidentialPriority, PresidentialPrioritiesService, AnnualTarget } from '../../services/presidential-priorities.service';
+import {
+  PresidentialPriority, PresidentialPrioritiesService, AnnualTarget, AnnualAggregation, QuarterlyReport
+} from '../../services/presidential-priorities.service';
 import { GlobalStateService } from '../../../core/services/global-state.service';
 import { Auth } from '../../../auth/services/auth';
 import { Subscription } from 'rxjs';
@@ -11,7 +13,8 @@ const EDITOR_ROLES = ['admin', 'director', 'manager'];
 /** Fields of a priority the user can edit; everything else (id, timestamps, yearlyPerformance) is server-owned. */
 const EDITABLE_FIELDS: (keyof PresidentialPriority)[] = [
   'serialNumber', 'ministry', 'priorityArea', 'outcome', 'deliverable', 'baselineType', 'indicator',
-  'baselineYear', 'baseline2023', 'projections', 'annualTargets', 'responsibleDepartment', 'supportingEvidence', 'category'
+  'baselineYear', 'baseline2023', 'projections', 'annualTargets', 'annualAggregation', 'responsibleDepartment',
+  'supportingEvidence', 'category'
 ];
 
 /** One editable annual target row in the create/edit form (inputs may be empty while typing). */
@@ -26,11 +29,29 @@ const isBlank = (v: any) => v === null || v === undefined || v === '';
 
 const QUARTER_KEYS = ['q1', 'q2', 'q3', 'q4'];
 
+export const AGGREGATION_LABELS: Record<AnnualAggregation, string> = {
+  sum: 'Sum of quarters',
+  average: 'Average of quarters',
+  latest: 'Latest quarter'
+};
+
 interface YearSummary {
   actual: number | null;
   target: number | null;
-  /** How actual was derived from the quarterly figures */
-  basis: 'latest quarter' | 'sum of quarters' | 'annual';
+  /** Quarters that make up the actual, e.g. "Q1–Q2" */
+  quarters: string;
+  method: AnnualAggregation;
+}
+
+interface ReportForm {
+  year: number;
+  quarter: string;
+  targetValue: number | undefined;
+  actualValue: number | undefined;
+  progress: string;
+  keyIssues: string;
+  mdaEfforts: string;
+  comments: string;
 }
 
 @Component({
@@ -77,14 +98,23 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
   /** Client-side validation message shown inside the open modal */
   formError = '';
 
+  aggregationOptions = Object.entries(AGGREGATION_LABELS) as [AnnualAggregation, string][];
+
   // Quarterly Report Modal State
   showReportModal = false;
   selectedPriorityId = '';
+  private reportPriority: PresidentialPriority | null = null;
   reportYearOptions: number[] = [];
-  /** Set when editing an existing report rather than creating one */
+  readonly quarterOptions = ['Q1', 'Q2', 'Q3', 'Q4'];
+  /** Set when the selected year/quarter already has a saved report (the form then updates it) */
   editingReportId: string | null = null;
   loadingReport = false;
-  newReport = this.getEmptyReport(new Date().getFullYear());
+  newReport: ReportForm = this.getEmptyReport(new Date().getFullYear());
+  /** Saved reports for the KPI being reported on */
+  private periodReports: QuarterlyReport[] = [];
+  /** Unsaved entries per "year-quarter", kept while switching periods in the open form */
+  private reportDrafts: Record<string, ReportForm> = {};
+  private reportPeriodKey = '';
 
   showSuccessModal = false;
   successMessage = '';
@@ -171,33 +201,65 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
   }
 
   /** Quarter entries (q1..q4) reported for a year, in quarter order. */
-  getQuarters(p: PresidentialPriority, year: string): { key: string; target: number; actual: number }[] {
-    const perf = p.yearlyPerformance?.[year] || {};
+  getQuarters(p: PresidentialPriority, year: string | number): { key: string; target: number; actual: number }[] {
+    const perf = p.yearlyPerformance?.[year.toString()] || {};
     return QUARTER_KEYS.filter(k => perf[k]).map(k => ({ key: k, target: perf[k].target, actual: perf[k].actual }));
   }
 
-  /**
-   * Year-to-date result against the annual target. Percentage/rate KPIs use the latest
-   * reported quarter; count KPIs add the quarters up. An explicit "annual" entry wins.
-   */
-  getYearSummary(p: PresidentialPriority, year: string): YearSummary | null {
-    const target = this.getAnnualTarget(p, year);
-    const annual = p.yearlyPerformance?.[year]?.annual;
-    if (annual && annual.actual !== undefined) {
-      return { actual: annual.actual, target: target ?? annual.target ?? null, basis: 'annual' };
-    }
-    const quarters = this.getQuarters(p, year);
-    if (quarters.length === 0) {
-      return target === null ? null : { actual: null, target, basis: 'sum of quarters' };
-    }
-    if (this.isRateKpi(p)) {
-      return { actual: quarters[quarters.length - 1].actual, target, basis: 'latest quarter' };
-    }
-    return { actual: quarters.reduce((sum, q) => sum + (Number(q.actual) || 0), 0), target, basis: 'sum of quarters' };
+  getAggregation(p: Partial<PresidentialPriority>): AnnualAggregation {
+    return p.annualAggregation || 'sum';
   }
 
-  private isRateKpi(p: PresidentialPriority): boolean {
-    return /percent|%|rate|ratio|index|score/i.test(`${p.baselineType} ${p.indicator}`);
+  getAggregationLabel(p: Partial<PresidentialPriority>): string {
+    return AGGREGATION_LABELS[this.getAggregation(p)];
+  }
+
+  /** Combines quarterly values into an annual figure using the KPI's method (mirrors the backend). */
+  private combine(method: AnnualAggregation, values: number[]): number {
+    if (method === 'latest') return values[values.length - 1];
+    const total = values.reduce((sum, v) => sum + (Number(v) || 0), 0);
+    return method === 'average' ? Math.round((total / values.length) * 100) / 100 : total;
+  }
+
+  /**
+   * The year's result built from its quarterly reports, against the annual target
+   * (or, when no annual target is set, the quarterly targets combined the same way).
+   */
+  getYearSummary(p: PresidentialPriority, year: string | number): YearSummary | null {
+    const method = this.getAggregation(p);
+    const target = this.getAnnualTarget(p, year);
+    const quarters = this.getQuarters(p, year);
+    if (quarters.length === 0) {
+      return target === null ? null : { actual: null, target, quarters: '', method };
+    }
+    const first = quarters[0].key.toUpperCase();
+    const last = quarters[quarters.length - 1].key.toUpperCase();
+    return {
+      actual: this.combine(method, quarters.map(q => q.actual)),
+      target: target ?? this.combine(method, quarters.map(q => q.target)),
+      quarters: first === last ? first : `${first}–${last}`,
+      method
+    };
+  }
+
+  /**
+   * Baseline that applies to the selected year: the annual target row for that year, else the
+   * previous year's actual, else the KPI's original baseline if it was measured the year before.
+   */
+  getBaselineForYear(p: PresidentialPriority, year: string | number): { label: string; value: number | null } | null {
+    const y = Number(year);
+    const row = this.getAnnualTargets(p).find(t => t.targetYear === y);
+    if (row && row.baselineValue !== null && row.baselineValue !== undefined) {
+      return { label: `${row.baselineYear}`, value: row.baselineValue };
+    }
+    const previousActual = this.getYearSummary(p, y - 1)?.actual;
+    if (previousActual !== null && previousActual !== undefined) {
+      return { label: `${y - 1} actual`, value: previousActual };
+    }
+    if (p.baselineYear === y - 1 && p.baseline2023 !== null && p.baseline2023 !== undefined) {
+      return { label: `${p.baselineYear}`, value: p.baseline2023 };
+    }
+    return row ? { label: `${row.baselineYear}`, value: null } : null;
   }
 
   getCategoryLabel(category: string): string {
@@ -356,7 +418,8 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
       baseline2023: undefined,
       responsibleDepartment: '',
       supportingEvidence: '',
-      category: 'PRESIDENTIAL_PRIORITY'
+      category: 'PRESIDENTIAL_PRIORITY',
+      annualAggregation: 'sum'
     };
   }
 
@@ -402,7 +465,7 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
   submitAdd(): void {
     const year = Number(this.currentYearDisplay);
     if (!this.newPriority.priorityArea || !this.newPriority.indicator || !this.newPriority.responsibleDepartment) {
-      this.formError = 'Please fill in all required fields (Priority Area, KPI/Indicator, Department).';
+      this.formError = 'Please fill in all required fields (Strategic Priority Area, KPI/Indicator, Department).';
       return;
     }
     if (!year || year < 2000 || year > 2100) {
@@ -422,9 +485,9 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
       // Show the KPI under the year it was registered for, not whatever year the page was on
       if (year.toString() !== this.globalYear()) {
         this.showYear(year);
-        this.showSuccess(`Priority saved successfully. Showing ${year}.`);
+        this.showSuccess(`Deliverable saved successfully. Showing ${year}.`);
       } else {
-        this.showSuccess('Priority saved successfully.');
+        this.showSuccess('Deliverable saved successfully.');
       }
     };
 
@@ -490,12 +553,12 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
     }
   }
 
-  private getEmptyReport(year: number) {
+  private getEmptyReport(year: number, quarter = 'Q1'): ReportForm {
     return {
       year,
-      quarter: 'Q1',
-      targetValue: undefined as number | undefined,
-      actualValue: undefined as number | undefined,
+      quarter,
+      targetValue: undefined,
+      actualValue: undefined,
       progress: '',
       keyIssues: '',
       mdaEfforts: '',
@@ -507,8 +570,9 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
   private buildReportYearOptions(p: PresidentialPriority): number {
     const reportYear = this.getReportYear(p) ?? parseInt(this.globalYear(), 10);
     const lastYear = Math.max(new Date().getFullYear() + 1, ...this.getActiveYears(p));
+    const first = Math.min(reportYear, ...this.getActiveYears(p));
     this.reportYearOptions = [];
-    for (let y = reportYear; y <= lastYear; y++) this.reportYearOptions.push(y);
+    for (let y = first; y <= lastYear; y++) this.reportYearOptions.push(y);
     return reportYear;
   }
 
@@ -519,73 +583,116 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
     return (open || 'q1').toUpperCase();
   }
 
-  openReportModal(p: PresidentialPriority): void {
+  /** Whether a report has been saved for this year and quarter of the KPI being reported on. */
+  hasReport(year: number, quarter: string): boolean {
+    return !!this.reportPriority?.yearlyPerformance?.[year.toString()]?.[quarter.toLowerCase()];
+  }
+
+  /**
+   * Opens the quarterly report form. The form follows the selected year and quarter: it shows the
+   * saved report for that period (and updates it on save) or a blank entry for a new one.
+   */
+  openReportModal(p: PresidentialPriority, year?: number, quarter?: string): void {
+    this.reportPriority = p;
     this.selectedPriorityId = p.id;
-    this.editingReportId = null;
     const reportYear = this.buildReportYearOptions(p);
 
     // Default to the year being viewed when it applies to this KPI, otherwise the KPI's own report year
     const viewed = parseInt(this.globalYear(), 10);
-    const defaultYear = this.reportYearOptions.includes(viewed) ? viewed : reportYear;
+    const startYear = year ?? (this.reportYearOptions.includes(viewed) ? viewed : reportYear);
+    if (!this.reportYearOptions.includes(startYear)) {
+      this.reportYearOptions = [...this.reportYearOptions, startYear].sort((a, b) => a - b);
+    }
 
-    this.newReport = this.getEmptyReport(defaultYear);
-    this.newReport.quarter = this.nextOpenQuarter(p, defaultYear);
-    this.newReport.targetValue = this.suggestedQuarterTarget(p, defaultYear);
+    this.periodReports = [];
+    this.reportDrafts = {};
+    this.newReport = this.getEmptyReport(startYear, quarter ?? this.nextOpenQuarter(p, startYear));
+    this.reportPeriodKey = this.periodKey(this.newReport);
+    this.loadReportPeriod();
     this.formError = '';
     this.store.clearError();
     this.showReportModal = true;
-  }
 
-  /** For count KPIs, suggest a quarter's share of the annual target; for rate KPIs, the annual target itself. */
-  private suggestedQuarterTarget(p: PresidentialPriority, year: number): number | undefined {
-    const annual = this.getAnnualTarget(p, year);
-    if (annual === null) return undefined;
-    return this.isRateKpi(p) ? annual : Math.round((annual / 4) * 100) / 100;
-  }
-
-  /** Opens an existing quarterly report for editing. */
-  editReport(p: PresidentialPriority, year: string, quarterKey: string): void {
-    this.selectedPriorityId = p.id;
-    this.buildReportYearOptions(p);
-    const quarter = quarterKey.toUpperCase();
+    // Load the saved reports so each period shows its full entry (comments, issues, etc.)
     this.loadingReport = true;
-    this.formError = '';
-    this.store.clearError();
-
-    this.service.getSubmissions(p.id, Number(year), quarter).subscribe({
+    this.service.getSubmissions(p.id).subscribe({
       next: (reports) => {
         this.loadingReport = false;
-        const report = reports.find(r => r.year === Number(year) && r.quarter === quarter);
-        if (!report) {
-          this.store.setError(`Could not find the ${quarter} ${year} report to edit.`);
-          return;
-        }
-        this.editingReportId = report.id;
-        if (!this.reportYearOptions.includes(report.year)) {
-          this.reportYearOptions = [...this.reportYearOptions, report.year].sort((a, b) => a - b);
-        }
-        this.newReport = {
-          year: report.year,
-          quarter: report.quarter,
-          targetValue: report.targetValue ?? undefined,
-          actualValue: report.actualValue ?? undefined,
-          progress: report.progress || '',
-          keyIssues: report.keyIssues || '',
-          mdaEfforts: report.mdaEfforts || '',
-          comments: report.comments || ''
-        };
-        this.showReportModal = true;
+        this.periodReports = reports || [];
+        this.loadReportPeriod();
       },
       error: (err) => {
         this.loadingReport = false;
-        this.store.setError(err.error?.message || 'Failed to load quarterly report.');
+        this.formError = err.error?.message || 'Could not load saved reports; showing summary figures only.';
       }
     });
+  }
+
+  private periodKey(r: { year: number; quarter: string }): string {
+    return `${r.year}-${r.quarter}`;
+  }
+
+  /** Called when the Year or Quarter changes: keep what was typed, then show the newly selected period. */
+  onReportPeriodChange(field: 'year' | 'quarter', value: number | string): void {
+    this.reportDrafts[this.reportPeriodKey] = { ...this.newReport };
+    this.newReport = { ...this.newReport, [field]: field === 'year' ? Number(value) : value };
+    this.reportPeriodKey = this.periodKey(this.newReport);
+    this.loadReportPeriod();
+  }
+
+  /** Fills the form for the selected period: unsaved draft, else saved report, else a new entry. */
+  private loadReportPeriod(): void {
+    const p = this.reportPriority;
+    if (!p) return;
+    const { year, quarter } = this.newReport;
+    const saved = this.periodReports.find(r => Number(r.year) === Number(year) && r.quarter === quarter);
+    this.editingReportId = saved?.id ?? null;
+
+    const draft = this.reportDrafts[this.periodKey(this.newReport)];
+    if (draft) {
+      this.newReport = { ...draft };
+      return;
+    }
+    if (saved) {
+      this.newReport = {
+        year,
+        quarter,
+        targetValue: saved.targetValue ?? undefined,
+        actualValue: saved.actualValue ?? undefined,
+        progress: saved.progress || '',
+        keyIssues: saved.keyIssues || '',
+        mdaEfforts: saved.mdaEfforts || '',
+        comments: saved.comments || ''
+      };
+      return;
+    }
+    // Figures recorded without a full report (older data): show them so they aren't re-entered blind
+    const summary = p.yearlyPerformance?.[year.toString()]?.[quarter.toLowerCase()];
+    this.newReport = {
+      ...this.getEmptyReport(year, quarter),
+      targetValue: summary?.target ?? this.suggestedQuarterTarget(p, year),
+      actualValue: summary?.actual ?? undefined
+    };
+  }
+
+  /** Suggests a quarterly target from the annual target: a quarter's share when summed, else the target itself. */
+  private suggestedQuarterTarget(p: PresidentialPriority, year: number): number | undefined {
+    const annual = this.getAnnualTarget(p, year);
+    if (annual === null) return undefined;
+    return this.getAggregation(p) === 'sum' ? Math.round((annual / 4) * 100) / 100 : annual;
+  }
+
+  /** Opens the report form on an existing quarter. */
+  editReport(p: PresidentialPriority, year: string, quarterKey: string): void {
+    this.openReportModal(p, Number(year), quarterKey.toUpperCase());
   }
 
   closeReportModal(): void {
     this.showReportModal = false;
     this.editingReportId = null;
+    this.reportPriority = null;
+    this.periodReports = [];
+    this.reportDrafts = {};
     this.formError = '';
     this.store.clearError();
   }
@@ -593,7 +700,7 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
   submitReport(): void {
     const target = this.newReport.targetValue as any;
     const actual = this.newReport.actualValue as any;
-    if (target === undefined || target === null || target === '' || actual === undefined || actual === null || actual === '') {
+    if (isBlank(target) || isBlank(actual)) {
       this.formError = 'Please fill in required Target and Actual values.';
       return;
     }
@@ -639,7 +746,7 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
   }
 
   editPriority(priority: PresidentialPriority): void {
-    this.newPriority = { ...priority };
+    this.newPriority = { ...priority, annualAggregation: this.getAggregation(priority) };
     this.currentYearDisplay = priority.baselineYear ? priority.baselineYear + 1 : new Date().getFullYear();
     this.annualTargets = this.getAnnualTargets(priority).map(t => ({
       baselineYear: t.baselineYear,
@@ -657,11 +764,11 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
 
   deletePriority(p: PresidentialPriority): void {
     this.confirmDialog = {
-      title: 'Delete Priority',
+      title: 'Delete Deliverable',
       message: `Are you sure you want to delete #${p.serialNumber} "${p.outcome || p.indicator}" and all its quarterly reports?`,
       action: () => this.store.deletePriority({
         id: p.id,
-        onSuccess: () => this.showSuccess('Priority deleted successfully.')
+        onSuccess: () => this.showSuccess('Deliverable deleted successfully.')
       })
     };
   }

@@ -71,7 +71,7 @@ export const PresidentialPrioritiesStore = signalStore(
               tap((data: any) => patchState(store, { priorities: toList(data), loading: false })),
               catchError((err) => {
                 patchState(store, {
-                  error: err.error?.message || 'Failed to load presidential priorities.',
+                  error: err.error?.message || 'Failed to load presidential deliverables.',
                   loading: false
                 });
                 return of(null);
@@ -88,7 +88,7 @@ export const PresidentialPrioritiesStore = signalStore(
               tap((d) => patchState(store, { selectedPriority: d, loading: false })),
               catchError((err) => {
                 patchState(store, {
-                  error: err.error?.message || 'Failed to load priority.',
+                  error: err.error?.message || 'Failed to load deliverable.',
                   loading: false
                 });
                 return of(null);
@@ -124,7 +124,7 @@ export const PresidentialPrioritiesStore = signalStore(
       createPriority: rxMethod<WithCallback<{ priority: Partial<PresidentialPriority> }>>(
         pipe(
           concatMap(({ priority, onSuccess }) =>
-            save(service.create(priority), 'Failed to create presidential priority.', (created) =>
+            save(service.create(priority), 'Failed to create deliverable.', (created) =>
               patchState(store, { priorities: [...store.priorities(), created] }), onSuccess)
           )
         )
@@ -132,7 +132,7 @@ export const PresidentialPrioritiesStore = signalStore(
       updatePriority: rxMethod<WithCallback<{ id: string; priority: Partial<PresidentialPriority> }>>(
         pipe(
           concatMap(({ id, priority, onSuccess }) =>
-            save(service.update(id, priority), 'Failed to update priority.', (updated) =>
+            save(service.update(id, priority), 'Failed to update deliverable.', (updated) =>
               patchState(store, { priorities: store.priorities().map(p => (p.id === id ? updated : p)) }), onSuccess)
           )
         )
@@ -140,7 +140,7 @@ export const PresidentialPrioritiesStore = signalStore(
       deletePriority: rxMethod<WithCallback<{ id: string }>>(
         pipe(
           concatMap(({ id, onSuccess }) =>
-            save(service.delete(id), 'Failed to delete priority.', () =>
+            save(service.delete(id), 'Failed to delete deliverable.', () =>
               patchState(store, { priorities: store.priorities().filter(p => p.id !== id) }), onSuccess)
           )
         )

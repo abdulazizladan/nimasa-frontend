@@ -68,22 +68,22 @@
     </button>
     <span class="result-count">
       Showing <strong>{{ filteredPriorities().length }}</strong> of
-      <strong>{{ yearPriorities().length }}</strong> priorities for {{ globalYear() }}
+      <strong>{{ yearPriorities().length }}</strong> deliverables for {{ globalYear() }}
     </span>
   </div>
 
   <!-- Loading -->
   <div *ngIf="store.loading()" class="loading-wrapper">
     <div class="spinner"></div>
-    <p>Loading presidential priorities...</p>
+    <p>Loading presidential deliverables...</p>
   </div>
 
   <!-- Empty State Priorities -->
   <div *ngIf="!store.loading() && activeTab === 'priorities' && filteredPriorities().length === 0" class="empty-state">
     <div class="empty-icon">⭐</div>
-    <h3>No priorities found</h3>
-    <p *ngIf="store.priorities().length === 0">No presidential priorities have been created yet.</p>
-    <p *ngIf="store.priorities().length > 0 && yearPriorities().length === 0">No priorities are active in {{ globalYear() }}.</p>
+    <h3>No deliverables found</h3>
+    <p *ngIf="store.priorities().length === 0">No presidential deliverables have been created yet.</p>
+    <p *ngIf="store.priorities().length > 0 && yearPriorities().length === 0">No deliverables are active in {{ globalYear() }}.</p>
     <p *ngIf="yearPriorities().length > 0">No results match your current filters.</p>
     <button *ngIf="hasActiveFilter()" class="btn-primary" (click)="clearFilters()">Clear Filters</button>
   </div>
@@ -115,14 +115,22 @@
           </div>
         </div>
         <div class="card-right">
-          <div class="baseline-block" *ngIf="p.baselineYear">
-            <span class="baseline-label">Report Year</span>
-            <span class="baseline-value">{{ getReportYear(p) }}</span>
-          </div>
-          <div class="baseline-block" *ngIf="getAnnualTarget(p, globalYear()) !== null">
-            <span class="baseline-label">{{ globalYear() }} Target</span>
-            <span class="baseline-value">{{ getAnnualTarget(p, globalYear()) }}</span>
-          </div>
+          <ng-container *ngIf="getBaselineForYear(p, globalYear()) as b">
+            <div class="baseline-block" *ngIf="b.value !== null">
+              <span class="baseline-label">Baseline ({{ b.label }})</span>
+              <span class="baseline-value">{{ b.value }}</span>
+            </div>
+          </ng-container>
+          <ng-container *ngIf="getYearSummary(p, globalYear()) as summary">
+            <div class="baseline-block" *ngIf="summary.target !== null">
+              <span class="baseline-label">{{ globalYear() }} Target</span>
+              <span class="baseline-value">{{ summary.target }}</span>
+            </div>
+            <div class="baseline-block" *ngIf="summary.actual !== null">
+              <span class="baseline-label">{{ globalYear() }} Actual</span>
+              <span class="baseline-value">{{ summary.actual }}</span>
+            </div>
+          </ng-container>
           <ng-container *ngIf="canEdit">
             <button class="btn-ghost" (click)="editPriority(p); $event.stopPropagation()" style="margin-right: 8px;">✏️
               Edit</button>
@@ -161,12 +169,24 @@
             <span class="detail-value">{{ getCategoryLabel(p.category) }}</span>
           </div>
           <div class="detail-item">
-            <span class="detail-label">Report Year</span>
-            <span class="detail-value">{{ getReportYear(p) || '—' }}</span>
+            <span class="detail-label">
+              Baseline for {{ globalYear() }}{{ getBaselineForYear(p, globalYear()) ? ' (' + getBaselineForYear(p, globalYear())!.label + ')' : '' }}
+            </span>
+            <span class="detail-value">{{ getBaselineForYear(p, globalYear())?.value ?? '—' }}</span>
           </div>
           <div class="detail-item">
-            <span class="detail-label">Baseline{{ p.baselineYear ? ' (' + p.baselineYear + ')' : '' }}</span>
-            <span class="detail-value">{{ p.baseline2023 ?? '—' }}</span>
+            <span class="detail-label">{{ globalYear() }} Target</span>
+            <span class="detail-value">{{ getYearSummary(p, globalYear())?.target ?? '—' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">
+              {{ globalYear() }} Actual{{ getYearSummary(p, globalYear())?.quarters ? ' (' + getYearSummary(p, globalYear())!.quarters + ')' : '' }}
+            </span>
+            <span class="detail-value">{{ getYearSummary(p, globalYear())?.actual ?? 'No reports yet' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Annual Figure</span>
+            <span class="detail-value">{{ getAggregationLabel(p) }}</span>
           </div>
           <div class="detail-item">
             <span class="detail-label">Responsible Department</span>
@@ -189,6 +209,8 @@
                   <th>Baseline Value</th>
                   <th>Target Year</th>
                   <th>Target Value</th>
+                  <th>Actual</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -197,6 +219,14 @@
                   <td>{{ t.baselineValue ?? '—' }}</td>
                   <td>{{ t.targetYear }}</td>
                   <td>{{ t.targetValue }}</td>
+                  <ng-container *ngIf="getYearSummary(p, t.targetYear) as s">
+                    <td>{{ s.actual ?? '—' }}<span *ngIf="s.quarters" class="muted-note"> ({{ s.quarters }})</span></td>
+                    <td>
+                      <span class="status-badge-sm" [ngClass]="getStatusClass(s.actual, t.targetValue)">
+                        {{ getStatusLabel(s.actual, t.targetValue) }}
+                      </span>
+                    </td>
+                  </ng-container>
                 </tr>
               </tbody>
             </table>
@@ -221,7 +251,7 @@
                   [ngClass]="getStatusClass(summary.actual, summary.target)"></div>
               </div>
               <span class="progress-values"
-                [title]="summary.basis === 'annual' ? 'Annual figure' : 'Year to date (' + summary.basis + ') vs annual target'">
+                [title]="getAggregationLabel(p) + (summary.quarters ? ' (' + summary.quarters + ')' : '') + ' vs annual target'">
                 {{ summary.actual ?? '—' }} / {{ summary.target ?? 'no target' }}
               </span>
               <span class="status-badge-sm" [ngClass]="getStatusClass(summary.actual, summary.target)">
@@ -334,6 +364,13 @@
                 placeholder="e.g. Percentage, Number" />
             </div>
             <div class="form-group">
+              <label for="aggregation">Annual Figure *</label>
+              <select id="aggregation" [(ngModel)]="newPriority.annualAggregation" name="annualAggregation" required
+                title="How quarterly results combine into the annual figure">
+                <option *ngFor="let o of aggregationOptions" [value]="o[0]">{{ o[1] }}</option>
+              </select>
+            </div>
+            <div class="form-group">
               <label for="currentYear">Current Year *</label>
               <input id="currentYear" type="number" [ngModel]="currentYearDisplay" (ngModelChange)="onCurrentYearChange($event)" name="currentYear" required
                 placeholder="e.g. 2026" />
@@ -398,7 +435,7 @@
           </button>
           <button type="submit" class="btn-submit" [disabled]="store.saving() || !addForm.form.valid">
             <span *ngIf="store.saving()" class="spinner-sm"></span>
-            Save Priority
+            Save Deliverable
           </button>
         </div>
       </form>
@@ -450,20 +487,26 @@
           <div class="form-row">
             <div class="form-group">
               <label for="repYear">Year *</label>
-              <select id="repYear" [(ngModel)]="newReport.year" name="year" required>
+              <select id="repYear" [ngModel]="newReport.year" (ngModelChange)="onReportPeriodChange('year', $event)"
+                name="year" required [disabled]="loadingReport">
                 <option *ngFor="let y of reportYearOptions" [ngValue]="y">{{ y }}</option>
               </select>
             </div>
             <div class="form-group">
               <label for="repQuarter">Quarter *</label>
-              <select id="repQuarter" [(ngModel)]="newReport.quarter" name="quarter" required>
-                <option value="Q1">Q1</option>
-                <option value="Q2">Q2</option>
-                <option value="Q3">Q3</option>
-                <option value="Q4">Q4</option>
+              <select id="repQuarter" [ngModel]="newReport.quarter" (ngModelChange)="onReportPeriodChange('quarter', $event)"
+                name="quarter" required [disabled]="loadingReport">
+                <option *ngFor="let q of quarterOptions" [value]="q">
+                  {{ q }}{{ hasReport(newReport.year, q) ? ' (reported)' : '' }}
+                </option>
               </select>
             </div>
           </div>
+
+          <p class="report-period-note" *ngIf="loadingReport">Loading saved reports…</p>
+          <p class="report-period-note" *ngIf="!loadingReport && editingReportId">
+            A {{ newReport.quarter }} {{ newReport.year }} report already exists. Saving will update it.
+          </p>
 
           <div class="form-row">
             <div class="form-group">
@@ -516,7 +559,7 @@
           <button type="button" class="btn-cancel" (click)="closeReportModal()" [disabled]="store.saving()">
             Cancel
           </button>
-          <button type="submit" class="btn-submit" [disabled]="store.saving() || !reportForm.form.valid">
+          <button type="submit" class="btn-submit" [disabled]="store.saving() || loadingReport || !reportForm.form.valid">
             <span *ngIf="store.saving()" class="spinner-sm"></span>
             {{ editingReportId ? 'Update Report' : 'Submit Report' }}
           </button>
