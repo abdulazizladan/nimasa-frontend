@@ -1,7 +1,8 @@
 import { Component, OnInit, OnDestroy, inject, computed, signal } from '@angular/core';
 import { PresidentialPrioritiesStore } from '../../store/presidential-priorities.store';
 import {
-  PresidentialPriority, PresidentialPrioritiesService, AnnualTarget, AnnualAggregation, QuarterlyReport
+  PresidentialPriority, PresidentialPrioritiesService, AnnualTarget, AnnualAggregation, QuarterlyReport,
+  PerformanceDirection
 } from '../../services/presidential-priorities.service';
 import { GlobalStateService } from '../../../core/services/global-state.service';
 import { Auth } from '../../../auth/services/auth';
@@ -13,7 +14,7 @@ const EDITOR_ROLES = ['admin', 'director', 'manager'];
 /** Fields of a priority the user can edit; everything else (id, timestamps, yearlyPerformance) is server-owned. */
 const EDITABLE_FIELDS: (keyof PresidentialPriority)[] = [
   'serialNumber', 'ministry', 'priorityArea', 'outcome', 'deliverable', 'baselineType', 'indicator',
-  'baselineYear', 'baseline2023', 'projections', 'annualTargets', 'annualAggregation', 'responsibleDepartment',
+  'baselineYear', 'baseline2023', 'projections', 'annualTargets', 'annualAggregation', 'performanceDirection', 'responsibleDepartment',
   'supportingEvidence', 'category'
 ];
 
@@ -34,6 +35,21 @@ export const AGGREGATION_LABELS: Record<AnnualAggregation, string> = {
   average: 'Average of quarters',
   latest: 'Latest quarter'
 };
+
+export const DIRECTION_LABELS: Record<PerformanceDirection, string> = {
+  higher: 'Higher is better',
+  lower: 'Lower is better (e.g. incidents)'
+};
+
+/** Result of comparing an actual against its target, for badges and progress bars. */
+interface Assessment {
+  cls: string;
+  label: string;
+  /** Progress bar width: progress towards target, or for missed lower-is-better targets, how far off */
+  width: number;
+  /** e.g. "+3 above target" when a lower-is-better target is missed */
+  deviation: string;
+}
 
 interface YearSummary {
   actual: number | null;
@@ -99,6 +115,7 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
   formError = '';
 
   aggregationOptions = Object.entries(AGGREGATION_LABELS) as [AnnualAggregation, string][];
+  directionOptions = Object.entries(DIRECTION_LABELS) as [PerformanceDirection, string][];
 
   // Quarterly Report Modal State
   showReportModal = false;
@@ -378,25 +395,51 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
     this.expandedId = this.expandedId === id ? null : id;
   }
 
-  getStatusClass(actual: number | null, target: number | null): string {
-    if (!target || actual === null) return 'status-na';
-    const pct = (actual / target) * 100;
-    if (pct >= 90) return 'status-on-track';
-    if (pct >= 60) return 'status-at-risk';
-    return 'status-off-track';
+  isLowerBetter(p: Partial<PresidentialPriority>): boolean {
+    return p.performanceDirection === 'lower';
   }
 
-  getStatusLabel(actual: number | null, target: number | null): string {
-    if (!target || actual === null) return 'N/A';
-    const pct = (actual / target) * 100;
-    if (pct >= 90) return 'On Track';
-    if (pct >= 60) return 'At Risk';
-    return 'Off Track';
+  getDirectionLabel(p: Partial<PresidentialPriority>): string {
+    return DIRECTION_LABELS[this.isLowerBetter(p) ? 'lower' : 'higher'];
   }
 
-  getProgressWidth(actual: number | null, target: number | null): number {
-    if (!target || actual === null) return 0;
-    return Math.min(100, Math.max(0, (actual / target) * 100));
+  /**
+   * Compares an actual with its target for a year (or one quarter of it).
+   * Higher is better: % of target achieved (≥90% on track, ≥60% at risk, else off track).
+   * Lower is better: at or below target is met; anything above is missed, graded by the excess
+   * as a share of the gap between baseline and target (≤25% minor, ≤50% moderate, else severe).
+   */
+  assess(p: PresidentialPriority, actual: number | null | undefined, target: number | null | undefined,
+         year: string | number, quarter = false): Assessment {
+    const na: Assessment = { cls: 'status-na', label: 'N/A', width: 0, deviation: '' };
+    if (actual === null || actual === undefined || target === null || target === undefined) return na;
+
+    if (!this.isLowerBetter(p)) {
+      if (!target) return na;
+      const pct = (actual / target) * 100;
+      const width = Math.min(100, Math.max(0, pct));
+      if (pct >= 90) return { cls: 'status-on-track', label: 'On Track', width, deviation: '' };
+      if (pct >= 60) return { cls: 'status-at-risk', label: 'At Risk', width, deviation: '' };
+      return { cls: 'status-off-track', label: 'Off Track', width, deviation: '' };
+    }
+
+    if (actual <= target) return { cls: 'status-on-track', label: 'Met', width: 100, deviation: '' };
+
+    const excess = Math.round((actual - target) * 100) / 100;
+    const deviation = `+${excess} above target`;
+    let baseline = this.getBaselineForYear(p, year)?.value ?? null;
+    // A quarter is measured against a quarter's share of an annual baseline when quarters are summed
+    if (quarter && baseline !== null && this.getAggregation(p) === 'sum') baseline = baseline / 4;
+    const range = baseline !== null && baseline > target ? baseline - target : (target > 0 ? target : null);
+    if (range === null) {
+      // No baseline to scale against: any excess counts as a severe miss
+      return { cls: 'status-severe', label: 'Missed – Severe', width: 100, deviation };
+    }
+    const share = excess / range;
+    const width = Math.min(100, Math.max(8, share * 100));
+    if (share <= 0.25) return { cls: 'status-at-risk', label: 'Missed – Minor', width, deviation };
+    if (share <= 0.5) return { cls: 'status-off-track', label: 'Missed – Moderate', width, deviation };
+    return { cls: 'status-severe', label: 'Missed – Severe', width, deviation };
   }
 
   /** Next free serial number (max + 1, so deletions don't cause duplicates). */
@@ -419,7 +462,8 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
       responsibleDepartment: '',
       supportingEvidence: '',
       category: 'PRESIDENTIAL_PRIORITY',
-      annualAggregation: 'sum'
+      annualAggregation: 'sum',
+      performanceDirection: 'higher'
     };
   }
 
@@ -746,7 +790,11 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
   }
 
   editPriority(priority: PresidentialPriority): void {
-    this.newPriority = { ...priority, annualAggregation: this.getAggregation(priority) };
+    this.newPriority = {
+      ...priority,
+      annualAggregation: this.getAggregation(priority),
+      performanceDirection: this.isLowerBetter(priority) ? 'lower' : 'higher'
+    };
     this.currentYearDisplay = priority.baselineYear ? priority.baselineYear + 1 : new Date().getFullYear();
     this.annualTargets = this.getAnnualTargets(priority).map(t => ({
       baselineYear: t.baselineYear,

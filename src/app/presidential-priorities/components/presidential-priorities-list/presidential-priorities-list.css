@@ -357,6 +357,7 @@
 .progress-bar-fill.status-on-track  { background: #22c55e; }
 .progress-bar-fill.status-at-risk   { background: #f59e0b; }
 .progress-bar-fill.status-off-track { background: #ef4444; }
+.progress-bar-fill.status-severe    { background: #991b1b; }
 .progress-bar-fill.status-na        { background: #d1d5db; }
 
 .progress-values { font-size: 11px; color: #666; white-space: nowrap; }
@@ -371,6 +372,7 @@
 .status-badge-sm.status-on-track  { background: #dcfce7; color: #166534; }
 .status-badge-sm.status-at-risk   { background: #fef9c3; color: #713f12; }
 .status-badge-sm.status-off-track { background: #fee2e2; color: #991b1b; }
+.status-badge-sm.status-severe    { background: #991b1b; color: #ffffff; }
 .status-badge-sm.status-na        { background: #f1f5f9; color: #64748b; }
 
 /* ── Projections ── */

@@ -189,6 +189,10 @@
             <span class="detail-value">{{ getAggregationLabel(p) }}</span>
           </div>
           <div class="detail-item">
+            <span class="detail-label">Performance Direction</span>
+            <span class="detail-value">{{ getDirectionLabel(p) }}</span>
+          </div>
+          <div class="detail-item">
             <span class="detail-label">Responsible Department</span>
             <span class="detail-value">{{ p.responsibleDepartment || '—' }}</span>
           </div>
@@ -221,10 +225,9 @@
                   <td>{{ t.targetValue }}</td>
                   <ng-container *ngIf="getYearSummary(p, t.targetYear) as s">
                     <td>{{ s.actual ?? '—' }}<span *ngIf="s.quarters" class="muted-note"> ({{ s.quarters }})</span></td>
-                    <td>
-                      <span class="status-badge-sm" [ngClass]="getStatusClass(s.actual, t.targetValue)">
-                        {{ getStatusLabel(s.actual, t.targetValue) }}
-                      </span>
+                    <td *ngIf="assess(p, s.actual, t.targetValue, t.targetYear) as a">
+                      <span class="status-badge-sm" [ngClass]="a.cls">{{ a.label }}</span>
+                      <span *ngIf="a.deviation" class="muted-note"> {{ a.deviation }}</span>
                     </td>
                   </ng-container>
                 </tr>
@@ -247,15 +250,16 @@
             <div class="quarter-row" style="font-weight: 600; margin-bottom: 8px;">
               <span class="q-label">{{ globalYear() }}</span>
               <div class="progress-bar-wrapper">
-                <div class="progress-bar-fill" [style.width.%]="getProgressWidth(summary.actual, summary.target)"
-                  [ngClass]="getStatusClass(summary.actual, summary.target)"></div>
+                <div class="progress-bar-fill" [style.width.%]="assess(p, summary.actual, summary.target, globalYear()).width"
+                  [ngClass]="assess(p, summary.actual, summary.target, globalYear()).cls"></div>
               </div>
               <span class="progress-values"
                 [title]="getAggregationLabel(p) + (summary.quarters ? ' (' + summary.quarters + ')' : '') + ' vs annual target'">
                 {{ summary.actual ?? '—' }} / {{ summary.target ?? 'no target' }}
               </span>
-              <span class="status-badge-sm" [ngClass]="getStatusClass(summary.actual, summary.target)">
-                {{ getStatusLabel(summary.actual, summary.target) }}
+              <span class="status-badge-sm" [ngClass]="assess(p, summary.actual, summary.target, globalYear()).cls"
+                [title]="assess(p, summary.actual, summary.target, globalYear()).deviation">
+                {{ assess(p, summary.actual, summary.target, globalYear()).label }}
               </span>
             </div>
           </ng-container>
@@ -266,12 +270,13 @@
               <div class="quarter-row" *ngFor="let q of getQuarters(p, globalYear())">
                 <span class="q-label">{{ q.key | uppercase }}</span>
                 <div class="progress-bar-wrapper">
-                  <div class="progress-bar-fill" [style.width.%]="getProgressWidth(q.actual, q.target)"
-                    [ngClass]="getStatusClass(q.actual, q.target)"></div>
+                  <div class="progress-bar-fill" [style.width.%]="assess(p, q.actual, q.target, globalYear(), true).width"
+                    [ngClass]="assess(p, q.actual, q.target, globalYear(), true).cls"></div>
                 </div>
                 <span class="progress-values">{{ q.actual }} / {{ q.target }}</span>
-                <span class="status-badge-sm" [ngClass]="getStatusClass(q.actual, q.target)">
-                  {{ getStatusLabel(q.actual, q.target) }}
+                <span class="status-badge-sm" [ngClass]="assess(p, q.actual, q.target, globalYear(), true).cls"
+                  [title]="assess(p, q.actual, q.target, globalYear(), true).deviation">
+                  {{ assess(p, q.actual, q.target, globalYear(), true).label }}
                 </span>
                 <button class="btn-ghost" *ngIf="canEdit" (click)="editReport(p, globalYear(), q.key)"
                   [disabled]="loadingReport" title="Edit report" style="padding: 2px 6px;">✏️</button>
@@ -368,6 +373,13 @@
               <select id="aggregation" [(ngModel)]="newPriority.annualAggregation" name="annualAggregation" required
                 title="How quarterly results combine into the annual figure">
                 <option *ngFor="let o of aggregationOptions" [value]="o[0]">{{ o[1] }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="direction">Performance Direction *</label>
+              <select id="direction" [(ngModel)]="newPriority.performanceDirection" name="performanceDirection" required
+                title="Choose 'Lower is better' when the target is to reduce something, e.g. piracy incidents">
+                <option *ngFor="let o of directionOptions" [value]="o[0]">{{ o[1] }}</option>
               </select>
             </div>
             <div class="form-group">

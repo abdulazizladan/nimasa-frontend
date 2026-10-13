@@ -27,6 +27,8 @@ export interface PresidentialPriority {
   annualTargets?: AnnualTarget[];
   /** How quarterly results combine into the annual figure (null/undefined = sum) */
   annualAggregation?: AnnualAggregation | null;
+  /** 'lower' when fewer is better, e.g. incident counts (null/undefined = higher) */
+  performanceDirection?: PerformanceDirection | null;
   responsibleDepartment: string;
   supportingEvidence: string;
   category: string;
@@ -35,6 +37,7 @@ export interface PresidentialPriority {
 }
 
 export type AnnualAggregation = 'sum' | 'average' | 'latest';
+export type PerformanceDirection = 'higher' | 'lower';
 
 export interface AnnualTarget {
   baselineYear: number;
