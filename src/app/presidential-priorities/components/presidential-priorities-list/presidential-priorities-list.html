@@ -267,7 +267,10 @@
           <div class="performance-grid" *ngIf="getQuarters(p, globalYear()).length > 0">
             <div class="performance-year-block">
               <div class="year-label">{{ globalYear() }}</div>
-              <div class="quarter-row" *ngFor="let q of getQuarters(p, globalYear())">
+              <div class="quarter-row quarter-row-link" *ngFor="let q of getQuarters(p, globalYear())"
+                role="link" tabindex="0" [title]="'View ' + (q.key | uppercase) + ' ' + globalYear() + ' report details'"
+                (click)="openReportDetails(p, globalYear(), q.key)"
+                (keydown.enter)="openReportDetails(p, globalYear(), q.key)">
                 <span class="q-label">{{ q.key | uppercase }}</span>
                 <div class="progress-bar-wrapper">
                   <div class="progress-bar-fill" [style.width.%]="assess(p, q.actual, q.target, globalYear(), true).width"
@@ -278,8 +281,10 @@
                   [title]="assess(p, q.actual, q.target, globalYear(), true).deviation">
                   {{ assess(p, q.actual, q.target, globalYear(), true).label }}
                 </span>
-                <button class="btn-ghost" *ngIf="canEdit" (click)="editReport(p, globalYear(), q.key)"
+                <button class="btn-ghost" *ngIf="canEdit" (click)="editReport(p, globalYear(), q.key); $event.stopPropagation()"
+                  (keydown.enter)="$event.stopPropagation()"
                   [disabled]="loadingReport" title="Edit report" style="padding: 2px 6px;">✏️</button>
+                <span class="row-chevron" aria-hidden="true">›</span>
               </div>
             </div>
           </div>

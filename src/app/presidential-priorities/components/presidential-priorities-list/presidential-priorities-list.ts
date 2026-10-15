@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, computed, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, computed, signal, effect, untracked } from '@angular/core';
 import { PresidentialPrioritiesStore } from '../../store/presidential-priorities.store';
 import {
   PresidentialPriority, PresidentialPrioritiesService, AnnualTarget, AnnualAggregation, QuarterlyReport,
@@ -7,6 +7,9 @@ import {
 import { GlobalStateService } from '../../../core/services/global-state.service';
 import { Auth } from '../../../auth/services/auth';
 import { Subscription } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
+import * as KPI from '../../utils/kpi-performance';
+import { QUARTER_KEYS, AGGREGATION_LABELS, DIRECTION_LABELS } from '../../utils/kpi-performance';
 
 /** Roles allowed to create, edit and delete (mirrors the backend @Roles guards). */
 const EDITOR_ROLES = ['admin', 'director', 'manager'];
@@ -27,37 +30,6 @@ interface AnnualTargetRow {
 }
 
 const isBlank = (v: any) => v === null || v === undefined || v === '';
-
-const QUARTER_KEYS = ['q1', 'q2', 'q3', 'q4'];
-
-export const AGGREGATION_LABELS: Record<AnnualAggregation, string> = {
-  sum: 'Sum of quarters',
-  average: 'Average of quarters',
-  latest: 'Latest quarter'
-};
-
-export const DIRECTION_LABELS: Record<PerformanceDirection, string> = {
-  higher: 'Higher is better',
-  lower: 'Lower is better (e.g. incidents)'
-};
-
-/** Result of comparing an actual against its target, for badges and progress bars. */
-interface Assessment {
-  cls: string;
-  label: string;
-  /** Progress bar width: progress towards target, or for missed lower-is-better targets, how far off */
-  width: number;
-  /** e.g. "+3 above target" when a lower-is-better target is missed */
-  deviation: string;
-}
-
-interface YearSummary {
-  actual: number | null;
-  target: number | null;
-  /** Quarters that make up the actual, e.g. "Q1–Q2" */
-  quarters: string;
-  method: AnnualAggregation;
-}
 
 interface ReportForm {
   year: number;
@@ -81,6 +53,8 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
   private service = inject(PresidentialPrioritiesService);
   private globalState = inject(GlobalStateService);
   private auth = inject(Auth);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   searchPriorityArea = '';
   searchDepartment = '';
@@ -136,6 +110,21 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
   showSuccessModal = false;
   successMessage = '';
 
+  /** Report form to open once deliverables load (from the details page's Edit button) */
+  private pendingReportEdit = signal<{ id: string; year: number; quarter: string } | null>(null);
+
+  constructor() {
+    effect(() => {
+      const pending = this.pendingReportEdit();
+      const priority = pending && this.store.priorities().find(p => p.id === pending.id);
+      if (!pending || !priority) return;
+      untracked(() => {
+        this.pendingReportEdit.set(null);
+        if (this.canEdit) this.openReportModal(priority, pending.year, pending.quarter);
+      });
+    });
+  }
+
   /** In-page confirmation dialog (replaces window.confirm) */
   confirmDialog: { title: string; message: string; action: () => void } | null = null;
 
@@ -170,117 +159,24 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
     !!this.store.filterPriorityArea() || !!this.store.filterDepartment()
   );
 
-  /** The year the KPI was registered for (the "Current Year" entered on creation). */
-  getReportYear(p: Partial<PresidentialPriority>): number | null {
-    return p.baselineYear ? Number(p.baselineYear) + 1 : null;
-  }
-
-  /** Years a KPI is active in: its report year, any year with an annual target, and any year with reports. */
-  getActiveYears(p: PresidentialPriority): number[] {
-    const years = new Set<number>();
-    const reportYear = this.getReportYear(p);
-    if (reportYear) years.add(reportYear);
-    Object.keys(p.projections || {}).forEach(y => years.add(Number(y)));
-    (p.annualTargets || []).forEach(t => years.add(Number(t.targetYear)));
-    Object.keys(p.yearlyPerformance || {}).forEach(y => years.add(Number(y)));
-    return [...years].filter(y => !isNaN(y)).sort((a, b) => a - b);
-  }
+  // Performance helpers (shared with the report details page)
+  getReportYear = KPI.getReportYear;
+  getActiveYears = KPI.getActiveYears;
+  getAnnualTarget = KPI.getAnnualTarget;
+  getAnnualTargets = KPI.getAnnualTargets;
+  getQuarters = KPI.getQuarters;
+  getAggregation = KPI.getAggregation;
+  getAggregationLabel = KPI.getAggregationLabel;
+  getYearSummary = KPI.getYearSummary;
+  getBaselineForYear = KPI.getBaselineForYear;
+  getCategoryLabel = KPI.getCategoryLabel;
+  isLowerBetter = KPI.isLowerBetter;
+  getDirectionLabel = KPI.getDirectionLabel;
+  assess = KPI.assess;
 
   isActiveInYear(p: PresidentialPriority, year: number): boolean {
     const active = this.getActiveYears(p);
     return active.length === 0 || active.includes(year);
-  }
-
-  getAnnualTarget(p: PresidentialPriority, year: string | number): number | null {
-    const target = (p.annualTargets || []).find(t => Number(t.targetYear) === Number(year));
-    if (target) return target.targetValue;
-    const value = p.projections?.[year.toString()];
-    return value === undefined || value === null ? null : value;
-  }
-
-  /** Annual targets for display; older records that only have projections get their baseline inferred where possible. */
-  getAnnualTargets(p: PresidentialPriority): AnnualTarget[] {
-    if (p.annualTargets?.length) {
-      return [...p.annualTargets].sort((a, b) => a.targetYear - b.targetYear);
-    }
-    return Object.entries(p.projections || {})
-      .map(([year, value]) => {
-        const targetYear = Number(year);
-        const baselineYear = targetYear - 1;
-        return {
-          baselineYear,
-          baselineValue: baselineYear === p.baselineYear ? p.baseline2023 ?? null : null,
-          targetYear,
-          targetValue: value
-        };
-      })
-      .sort((a, b) => a.targetYear - b.targetYear);
-  }
-
-  /** Quarter entries (q1..q4) reported for a year, in quarter order. */
-  getQuarters(p: PresidentialPriority, year: string | number): { key: string; target: number; actual: number }[] {
-    const perf = p.yearlyPerformance?.[year.toString()] || {};
-    return QUARTER_KEYS.filter(k => perf[k]).map(k => ({ key: k, target: perf[k].target, actual: perf[k].actual }));
-  }
-
-  getAggregation(p: Partial<PresidentialPriority>): AnnualAggregation {
-    return p.annualAggregation || 'sum';
-  }
-
-  getAggregationLabel(p: Partial<PresidentialPriority>): string {
-    return AGGREGATION_LABELS[this.getAggregation(p)];
-  }
-
-  /** Combines quarterly values into an annual figure using the KPI's method (mirrors the backend). */
-  private combine(method: AnnualAggregation, values: number[]): number {
-    if (method === 'latest') return values[values.length - 1];
-    const total = values.reduce((sum, v) => sum + (Number(v) || 0), 0);
-    return method === 'average' ? Math.round((total / values.length) * 100) / 100 : total;
-  }
-
-  /**
-   * The year's result built from its quarterly reports, against the annual target
-   * (or, when no annual target is set, the quarterly targets combined the same way).
-   */
-  getYearSummary(p: PresidentialPriority, year: string | number): YearSummary | null {
-    const method = this.getAggregation(p);
-    const target = this.getAnnualTarget(p, year);
-    const quarters = this.getQuarters(p, year);
-    if (quarters.length === 0) {
-      return target === null ? null : { actual: null, target, quarters: '', method };
-    }
-    const first = quarters[0].key.toUpperCase();
-    const last = quarters[quarters.length - 1].key.toUpperCase();
-    return {
-      actual: this.combine(method, quarters.map(q => q.actual)),
-      target: target ?? this.combine(method, quarters.map(q => q.target)),
-      quarters: first === last ? first : `${first}–${last}`,
-      method
-    };
-  }
-
-  /**
-   * Baseline that applies to the selected year: the annual target row for that year, else the
-   * previous year's actual, else the KPI's original baseline if it was measured the year before.
-   */
-  getBaselineForYear(p: PresidentialPriority, year: string | number): { label: string; value: number | null } | null {
-    const y = Number(year);
-    const row = this.getAnnualTargets(p).find(t => t.targetYear === y);
-    if (row && row.baselineValue !== null && row.baselineValue !== undefined) {
-      return { label: `${row.baselineYear}`, value: row.baselineValue };
-    }
-    const previousActual = this.getYearSummary(p, y - 1)?.actual;
-    if (previousActual !== null && previousActual !== undefined) {
-      return { label: `${y - 1} actual`, value: previousActual };
-    }
-    if (p.baselineYear === y - 1 && p.baseline2023 !== null && p.baseline2023 !== undefined) {
-      return { label: `${p.baselineYear}`, value: p.baseline2023 };
-    }
-    return row ? { label: `${row.baselineYear}`, value: null } : null;
-  }
-
-  getCategoryLabel(category: string): string {
-    return category === 'BOTH' ? 'Ministerial and Presidential' : 'Presidential';
   }
 
   ngOnInit(): void {
@@ -291,6 +187,25 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
     this.sub = this.globalState.selectedYear$.subscribe(year => {
       this.globalYear.set(year.toString());
     });
+
+    // Returning from a report's details page: restore its year and expand its deliverable
+    const params = this.route.snapshot.queryParamMap;
+    const year = Number(params.get('year'));
+    if (year) this.globalState.setYear(year);
+    this.expandedId = params.get('expand') || this.expandedId;
+    const editQuarter = params.get('editReport');
+    if (this.expandedId && year && editQuarter) {
+      this.pendingReportEdit.set({ id: this.expandedId, year, quarter: editQuarter.toUpperCase() });
+    }
+    // Drop the one-off params so a refresh doesn't reopen the form
+    if (params.keys.length) {
+      this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+    }
+  }
+
+  /** Opens the details page for one quarterly report. */
+  openReportDetails(p: PresidentialPriority, year: string | number, quarterKey: string): void {
+    this.router.navigate([p.id, 'reports', year, quarterKey.toUpperCase()], { relativeTo: this.route });
   }
 
   ngOnDestroy(): void {
@@ -393,53 +308,6 @@ export class PresidentialPrioritiesList implements OnInit, OnDestroy {
 
   toggleExpand(id: string): void {
     this.expandedId = this.expandedId === id ? null : id;
-  }
-
-  isLowerBetter(p: Partial<PresidentialPriority>): boolean {
-    return p.performanceDirection === 'lower';
-  }
-
-  getDirectionLabel(p: Partial<PresidentialPriority>): string {
-    return DIRECTION_LABELS[this.isLowerBetter(p) ? 'lower' : 'higher'];
-  }
-
-  /**
-   * Compares an actual with its target for a year (or one quarter of it).
-   * Higher is better: % of target achieved (≥90% on track, ≥60% at risk, else off track).
-   * Lower is better: at or below target is met; anything above is missed, graded by the excess
-   * as a share of the gap between baseline and target (≤25% minor, ≤50% moderate, else severe).
-   */
-  assess(p: PresidentialPriority, actual: number | null | undefined, target: number | null | undefined,
-         year: string | number, quarter = false): Assessment {
-    const na: Assessment = { cls: 'status-na', label: 'N/A', width: 0, deviation: '' };
-    if (actual === null || actual === undefined || target === null || target === undefined) return na;
-
-    if (!this.isLowerBetter(p)) {
-      if (!target) return na;
-      const pct = (actual / target) * 100;
-      const width = Math.min(100, Math.max(0, pct));
-      if (pct >= 90) return { cls: 'status-on-track', label: 'On Track', width, deviation: '' };
-      if (pct >= 60) return { cls: 'status-at-risk', label: 'At Risk', width, deviation: '' };
-      return { cls: 'status-off-track', label: 'Off Track', width, deviation: '' };
-    }
-
-    if (actual <= target) return { cls: 'status-on-track', label: 'Met', width: 100, deviation: '' };
-
-    const excess = Math.round((actual - target) * 100) / 100;
-    const deviation = `+${excess} above target`;
-    let baseline = this.getBaselineForYear(p, year)?.value ?? null;
-    // A quarter is measured against a quarter's share of an annual baseline when quarters are summed
-    if (quarter && baseline !== null && this.getAggregation(p) === 'sum') baseline = baseline / 4;
-    const range = baseline !== null && baseline > target ? baseline - target : (target > 0 ? target : null);
-    if (range === null) {
-      // No baseline to scale against: any excess counts as a severe miss
-      return { cls: 'status-severe', label: 'Missed – Severe', width: 100, deviation };
-    }
-    const share = excess / range;
-    const width = Math.min(100, Math.max(8, share * 100));
-    if (share <= 0.25) return { cls: 'status-at-risk', label: 'Missed – Minor', width, deviation };
-    if (share <= 0.5) return { cls: 'status-off-track', label: 'Missed – Moderate', width, deviation };
-    return { cls: 'status-severe', label: 'Missed – Severe', width, deviation };
   }
 
   /** Next free serial number (max + 1, so deletions don't cause duplicates). */

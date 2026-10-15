@@ -5,9 +5,10 @@ import { HttpClientModule } from '@angular/common/http';
 
 import { PresidentialPrioritiesRoutingModule } from './presidential-priorities-routing-module';
 import { PresidentialPrioritiesList } from './components/presidential-priorities-list/presidential-priorities-list';
+import { QuarterlyReportDetail } from './components/quarterly-report-detail/quarterly-report-detail';
 
 @NgModule({
-  declarations: [PresidentialPrioritiesList],
+  declarations: [PresidentialPrioritiesList, QuarterlyReportDetail],
   imports: [CommonModule, FormsModule, HttpClientModule, PresidentialPrioritiesRoutingModule],
 })
 export class PresidentialPrioritiesModule {}

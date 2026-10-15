@@ -743,3 +743,22 @@
   color: #0369a1;
   font-size: 0.85rem;
 }
+
+/* Quarter rows open the report details page */
+.quarter-row-link {
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.quarter-row-link:hover,
+.quarter-row-link:focus-visible {
+  background: #f1f5f9;
+  outline: none;
+}
+
+.row-chevron {
+  color: #94a3b8;
+  font-size: 1.1rem;
+  padding: 0 4px;
+}

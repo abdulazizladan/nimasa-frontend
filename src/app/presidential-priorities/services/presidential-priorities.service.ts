@@ -21,6 +21,8 @@ export interface PresidentialPriority {
   baseline2023?: number;
   /** Quarterly results keyed by year then q1..q4, synced by the backend from quarterly reports */
   yearlyPerformance?: Record<string, any>;
+  /** Saved quarterly reports; included when fetching a single deliverable */
+  monthlySubmissions?: QuarterlyReport[];
   /** Annual targets keyed by target year; derived by the backend from annualTargets */
   projections?: Record<string, number>;
   /** Annual targets, each with its own baseline */
@@ -56,6 +58,9 @@ export interface QuarterlyReport {
   keyIssues?: string;
   mdaEfforts?: string;
   comments?: string;
+  supportingDocType?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface PriorityArea {
