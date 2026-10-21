@@ -177,6 +177,7 @@
   white-space: nowrap;
 }
 .status-badge.status-on-track  { background: #dcfce7; color: #166534; }
+.status-badge.status-surpassed { background: #166534; color: #ffffff; }
 .status-badge.status-at-risk   { background: #fef9c3; color: #713f12; }
 .status-badge.status-off-track { background: #fee2e2; color: #991b1b; }
 .status-badge.status-severe    { background: #991b1b; color: #ffffff; }
@@ -185,6 +186,7 @@
 .progress-bar-wrapper { height: 8px; background: #f0f4f8; border-radius: 4px; overflow: hidden; }
 .progress-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; max-width: 100%; }
 .progress-bar-fill.status-on-track  { background: #22c55e; }
+.progress-bar-fill.status-surpassed { background: #15803d; }
 .progress-bar-fill.status-at-risk   { background: #f59e0b; }
 .progress-bar-fill.status-off-track { background: #ef4444; }
 .progress-bar-fill.status-severe    { background: #991b1b; }

@@ -22,7 +22,7 @@ export interface StatusClassInfo {
 
 /** Display order: best to worst, then no data */
 export const STATUS_CLASSES: StatusClassInfo[] = [
-  { key: 'good', label: 'On track / met', icon: '✓' },
+  { key: 'good', label: 'Surpassed, met or on track', icon: '✓' },
   { key: 'warning', label: 'At risk / minor miss', icon: '!' },
   { key: 'critical', label: 'Off track / missed', icon: '✕' },
   // No results yet, or results that can't be scored (no target, or a zero target on a "higher is better" KPI)
@@ -31,7 +31,7 @@ export const STATUS_CLASSES: StatusClassInfo[] = [
 
 /** Status class for an assessment's CSS class (see kpi-performance assess()). */
 export function statusClassOf(cls: string): StatusClass {
-  if (cls === 'status-on-track') return 'good';
+  if (cls === 'status-surpassed' || cls === 'status-on-track') return 'good';
   if (cls === 'status-at-risk') return 'warning';
   if (cls === 'status-off-track' || cls === 'status-severe') return 'critical';
   return 'none';
@@ -71,7 +71,7 @@ export interface FamilySummary {
   withData: number;
   /** Deliverables that have reported figures for the year, whether or not they could be scored */
   reported: number;
-  /** Share of deliverables with data that are on track / met; null when none have data */
+  /** Share of deliverables with data that surpassed, met or are on track for their target; null when none have data */
   onTrackShare: number | null;
 }
 

@@ -33,7 +33,7 @@
       <span class="tile-value">{{ percent(f.onTrackShare) }}</span>
       <span class="tile-caption">
         <ng-container *ngIf="f.withData; else noResults">
-          on track / met · {{ f.counts.good }} of {{ f.withData }} with results
+          surpassed, met or on track · {{ f.counts.good }} of {{ f.withData }} with results
         </ng-container>
         <ng-template #noResults>
           <ng-container *ngIf="f.reported; else nothingReported">

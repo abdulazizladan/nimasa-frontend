@@ -166,27 +166,40 @@ export function getCategoryLabel(category: string): string {
 
 /**
  * Compares an actual with its target for a year (or one quarter of it).
- * Higher is better: % of target achieved (≥90% on track, ≥60% at risk, else off track).
- * Lower is better: at or below target is met; anything above is missed, graded by the excess
- * as a share of the gap between baseline and target (≤25% minor, ≤50% moderate, else severe).
+ * Better than target is "Target Surpassed" and exactly on target is "Target Met", in either
+ * direction (for "lower is better", 0 or 1 against a target of 2 is surpassed).
+ * Short of target:
+ * - Higher is better: % of target achieved (>=90% on track, >=60% at risk, else off track).
+ * - Lower is better: graded by the excess as a share of the gap between baseline and target
+ *   (<=25% minor, <=50% moderate, else severe).
  */
 export function assess(p: StrategicDeliverable, actual: number | null | undefined, target: number | null | undefined,
                        year: string | number, quarter = false): Assessment {
   const na: Assessment = { cls: 'status-na', label: 'N/A', width: 0, deviation: '' };
   if (actual === null || actual === undefined || target === null || target === undefined) return na;
 
-  if (!isLowerBetter(p)) {
-    if (!target) return na;
-    const pct = (actual / target) * 100;
+  const lower = isLowerBetter(p);
+  const round = (n: number) => Math.round(n * 100) / 100;
+  // How much better than target the result is: positive = better, negative = worse
+  const margin = round(lower ? target - actual : actual - target);
+
+  if (margin > 0) {
+    const deviation = lower ? `${margin} below target` : `+${margin} above target`;
+    return { cls: 'status-surpassed', label: 'Target Surpassed', width: 100, deviation };
+  }
+  if (margin === 0) return { cls: 'status-on-track', label: 'Target Met', width: 100, deviation: '' };
+
+  if (!lower) {
+    // Short of a positive target (a target of 0 or less is always met or surpassed above)
+    const deviation = `${-margin} short of target`;
+    const pct = target > 0 ? (actual / target) * 100 : 0;
     const width = Math.min(100, Math.max(0, pct));
-    if (pct >= 90) return { cls: 'status-on-track', label: 'On Track', width, deviation: '' };
-    if (pct >= 60) return { cls: 'status-at-risk', label: 'At Risk', width, deviation: '' };
-    return { cls: 'status-off-track', label: 'Off Track', width, deviation: '' };
+    if (pct >= 90) return { cls: 'status-on-track', label: 'On Track', width, deviation };
+    if (pct >= 60) return { cls: 'status-at-risk', label: 'At Risk', width, deviation };
+    return { cls: 'status-off-track', label: 'Off Track', width, deviation };
   }
 
-  if (actual <= target) return { cls: 'status-on-track', label: 'Met', width: 100, deviation: '' };
-
-  const excess = Math.round((actual - target) * 100) / 100;
+  const excess = -margin;
   const deviation = `+${excess} above target`;
   let baseline = getBaselineForYear(p, year)?.value ?? null;
   // A quarter is measured against a quarter's share of an annual baseline when quarters are summed
