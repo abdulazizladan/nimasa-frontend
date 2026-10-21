@@ -1,16 +1,10 @@
 import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
-import { AgencyDeliverablesList } from './components/agency-deliverables-list/agency-deliverables-list';
-
-const routes: Routes = [
-  {
-    path: '',
-    component: AgencyDeliverablesList
-  }
-];
+import { RouterModule } from '@angular/router';
+import { deliverablesRoutes } from '../strategic-deliverables/strategic-deliverables-shared-module';
+import { AGENCY_CONFIG } from '../strategic-deliverables/deliverables-config';
 
 @NgModule({
-  imports: [RouterModule.forChild(routes)],
+  imports: [RouterModule.forChild(deliverablesRoutes(AGENCY_CONFIG))],
   exports: [RouterModule],
 })
 export class AgencyPerformanceRoutingModule {}

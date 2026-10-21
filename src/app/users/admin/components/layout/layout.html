@@ -45,7 +45,7 @@
         
         <div class="sidenav-divider"></div>
         
-        <a href="javascript:void(0)" (click)="logout()" class="sidenav-item logout-btn">
+        <a href="javascript:void(0)" (click)="logout()" class="sidenav-item logout-btn" aria-haspopup="dialog">
           <span class="icon">🚪</span>
           <span class="text">Logout</span>
         </a>
@@ -58,3 +58,6 @@
     </main>
   </div>
 </div>
+
+<app-confirm-dialog *ngIf="confirmingLogout" title="Log out?" message="Are you sure you want to log out?"
+  confirmLabel="Log out" (confirmed)="confirmLogout()" (cancelled)="confirmingLogout = false"></app-confirm-dialog>

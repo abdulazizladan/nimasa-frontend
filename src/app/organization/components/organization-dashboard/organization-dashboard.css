@@ -578,3 +578,8 @@
   color: #1a1a2e;
   margin: 0 0 16px 0;
 }
+
+/* Department rows open the department's page */
+.clickable-row { cursor: pointer; transition: background 0.15s; }
+.clickable-row:hover,
+.clickable-row:focus-visible { background: #f8fafc; outline: none; }

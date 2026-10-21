@@ -24,9 +24,9 @@
         <p class="stat-label">Total Users</p>
         <h3 class="stat-value">{{ dashboardStore.stats().users }}</h3>
       </div>
-      <div class="stat-trend positive">
+      <div class="stat-trend neutral">
         <span *ngIf="dashboardStore.loading()">Loading...</span>
-        <span *ngIf="!dashboardStore.loading()">+12%</span> <span *ngIf="!dashboardStore.loading()">vs last month</span>
+        <span *ngIf="!dashboardStore.loading()">Manage users →</span>
       </div>
     </div>
 
@@ -43,7 +43,7 @@
       </div>
       <div class="stat-trend neutral">
         <span *ngIf="dashboardStore.loading()">Loading...</span>
-        <span *ngIf="!dashboardStore.loading()">Active Focus</span>
+        <span *ngIf="!dashboardStore.loading()">View all →</span>
       </div>
     </div>
 
@@ -58,9 +58,9 @@
         <p class="stat-label">Ministerial Deliverables</p>
         <h3 class="stat-value">{{ dashboardStore.stats().ministerialDeliverables }}</h3>
       </div>
-      <div class="stat-trend positive">
+      <div class="stat-trend neutral">
         <span *ngIf="dashboardStore.loading()">Loading...</span>
-        <span *ngIf="!dashboardStore.loading()">72%</span> <span *ngIf="!dashboardStore.loading()">Completion</span>
+        <span *ngIf="!dashboardStore.loading()">View all →</span>
       </div>
     </div>
 
@@ -72,229 +72,16 @@
         </svg>
       </div>
       <div class="stat-content">
-        <p class="stat-label">Agency KPIs</p>
+        <p class="stat-label">Agency Deliverables</p>
         <h3 class="stat-value">{{ dashboardStore.stats().agencyKPIs }}</h3>
       </div>
-      <div class="stat-trend negative">
+      <div class="stat-trend neutral">
         <span *ngIf="dashboardStore.loading()">Loading...</span>
-        <span *ngIf="!dashboardStore.loading()">-2</span> <span *ngIf="!dashboardStore.loading()">Off track</span>
+        <span *ngIf="!dashboardStore.loading()">View all →</span>
       </div>
     </div>
   </div>
 
-  <!-- Quarterly Performance Charts Section -->
-  <div class="performance-section">
-    <div class="section-title-row">
-      <h2>Quarterly Performance Tracking</h2>
-      <p class="subtitle">Direct comparison of set operational targets against actual registered scores</p>
-    </div>
-
-    <div class="charts-grid">
-      <!-- Presidential Priorities Chart Card -->
-      <div class="chart-card card-presidential" (click)="navigateTo('priorities')">
-        <div class="chart-header">
-          <div class="title-with-info">
-            <h3>Presidential Priorities</h3>
-            <div class="info-tooltip-container" (click)="$event.stopPropagation()">
-              <span class="info-icon">ℹ️</span>
-              <div class="tooltip-box">
-                Tracks high impact priority areas aligned directly with national strategy deliverables.
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Vertical CSS Bars Chart -->
-        <div class="chart-body">
-          <div class="chart-y-axis">
-            <span>100%</span>
-            <span>75%</span>
-            <span>50%</span>
-            <span>25%</span>
-            <span>0%</span>
-          </div>
-          <div class="chart-canvas">
-            <!-- Gridlines background -->
-            <div class="chart-gridlines">
-              <div class="gridline"></div>
-              <div class="gridline"></div>
-              <div class="gridline"></div>
-              <div class="gridline"></div>
-              <div class="gridline"></div>
-            </div>
-            
-            <div class="chart-bars-wrapper">
-              <div class="quarter-column" *ngFor="let q of presidentialQuarterly">
-                <div class="bar-pair">
-                  <!-- Target Bar -->
-                  <div
-                    class="bar target-bar"
-                    [style.height.%]="q.target"
-                    [attr.data-tooltip]="'Target: ' + q.target + '%'"
-                  >
-                    <span class="bar-label">{{ q.target }}%</span>
-                  </div>
-                  <!-- Actual Bar -->
-                  <div
-                    class="bar actual-bar"
-                    [style.height.%]="q.actual"
-                    [attr.data-tooltip]="'Actual: ' + q.actual + '%'"
-                  >
-                    <span class="bar-label">{{ q.actual }}%</span>
-                  </div>
-                </div>
-                <span class="quarter-label">{{ q.label }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Chart Legend -->
-        <div class="chart-legend">
-          <div class="legend-item">
-            <span class="legend-dot target-dot"></span>
-            <span>Target</span>
-          </div>
-          <div class="legend-item">
-            <span class="legend-dot actual-dot"></span>
-            <span>Actual</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Ministerial Deliverables Chart Card -->
-      <div class="chart-card card-ministerial" (click)="navigateTo('deliverables')">
-        <div class="chart-header">
-          <div class="title-with-info">
-            <h3>Ministerial Deliverables</h3>
-            <div class="info-tooltip-container" (click)="$event.stopPropagation()">
-              <span class="info-icon">ℹ️</span>
-              <div class="tooltip-box">
-                Tracks KPI progress metrics established under the Ministerial performance-bonds.
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="chart-body">
-          <div class="chart-y-axis">
-            <span>100%</span>
-            <span>75%</span>
-            <span>50%</span>
-            <span>25%</span>
-            <span>0%</span>
-          </div>
-          <div class="chart-canvas">
-            <div class="chart-gridlines">
-              <div class="gridline"></div>
-              <div class="gridline"></div>
-              <div class="gridline"></div>
-              <div class="gridline"></div>
-              <div class="gridline"></div>
-            </div>
-            
-            <div class="chart-bars-wrapper">
-              <div class="quarter-column" *ngFor="let q of ministerialQuarterly">
-                <div class="bar-pair">
-                  <div
-                    class="bar target-bar"
-                    [style.height.%]="q.target"
-                    [attr.data-tooltip]="'Target: ' + q.target + '%'"
-                  >
-                    <span class="bar-label">{{ q.target }}%</span>
-                  </div>
-                  <div
-                    class="bar actual-bar"
-                    [style.height.%]="q.actual"
-                    [attr.data-tooltip]="'Actual: ' + q.actual + '%'"
-                  >
-                    <span class="bar-label">{{ q.actual }}%</span>
-                  </div>
-                </div>
-                <span class="quarter-label">{{ q.label }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="chart-legend">
-          <div class="legend-item">
-            <span class="legend-dot target-dot"></span>
-            <span>Target</span>
-          </div>
-          <div class="legend-item">
-            <span class="legend-dot actual-dot"></span>
-            <span>Actual</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Agency Deliverables Chart Card -->
-      <div class="chart-card card-agency" (click)="navigateTo('agency-deliverables')">
-        <div class="chart-header">
-          <div class="title-with-info">
-            <h3>Agency Deliverables</h3>
-            <div class="info-tooltip-container" (click)="$event.stopPropagation()">
-              <span class="info-icon">ℹ️</span>
-              <div class="tooltip-box">
-                Tracks monthly and quarterly metrics for individual NIMASA operational departments.
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="chart-body">
-          <div class="chart-y-axis">
-            <span>100%</span>
-            <span>75%</span>
-            <span>50%</span>
-            <span>25%</span>
-            <span>0%</span>
-          </div>
-          <div class="chart-canvas">
-            <div class="chart-gridlines">
-              <div class="gridline"></div>
-              <div class="gridline"></div>
-              <div class="gridline"></div>
-              <div class="gridline"></div>
-              <div class="gridline"></div>
-            </div>
-            
-            <div class="chart-bars-wrapper">
-              <div class="quarter-column" *ngFor="let q of agencyQuarterly">
-                <div class="bar-pair">
-                  <div
-                    class="bar target-bar"
-                    [style.height.%]="q.target"
-                    [attr.data-tooltip]="'Target: ' + q.target + '%'"
-                  >
-                    <span class="bar-label">{{ q.target }}%</span>
-                  </div>
-                  <div
-                    class="bar actual-bar"
-                    [style.height.%]="q.actual"
-                    [attr.data-tooltip]="'Actual: ' + q.actual + '%'"
-                  >
-                    <span class="bar-label">{{ q.actual }}%</span>
-                  </div>
-                </div>
-                <span class="quarter-label">{{ q.label }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="chart-legend">
-          <div class="legend-item">
-            <span class="legend-dot target-dot"></span>
-            <span>Target</span>
-          </div>
-          <div class="legend-item">
-            <span class="legend-dot actual-dot"></span>
-            <span>Actual</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- Presidential, ministerial and agency deliverables: status, reporting, attention list -->
+  <app-deliverables-overview [year]="globalYear"></app-deliverables-overview>
 </div>

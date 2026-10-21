@@ -10,7 +10,15 @@ import { AuthStore } from '../../../../auth/store/auth.store';
 export class Layout {
   private authStore = inject(AuthStore);
 
+  /** Whether the "log out?" confirmation is showing */
+  confirmingLogout = false;
+
   logout() {
+    this.confirmingLogout = true;
+  }
+
+  confirmLogout() {
+    this.confirmingLogout = false;
     this.authStore.logout();
   }
 }

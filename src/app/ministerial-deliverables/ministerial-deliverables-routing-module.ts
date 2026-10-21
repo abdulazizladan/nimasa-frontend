@@ -1,14 +1,10 @@
 import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
-import { MinisterialDeliverablesList } from './components/ministerial-deliverables-list/ministerial-deliverables-list';
-
-const routes: Routes = [
-  { path: '', component: MinisterialDeliverablesList }
-];
+import { RouterModule } from '@angular/router';
+import { deliverablesRoutes } from '../strategic-deliverables/strategic-deliverables-shared-module';
+import { MINISTERIAL_CONFIG } from '../strategic-deliverables/deliverables-config';
 
 @NgModule({
-  imports: [RouterModule.forChild(routes)],
+  imports: [RouterModule.forChild(deliverablesRoutes(MINISTERIAL_CONFIG))],
   exports: [RouterModule],
 })
 export class MinisterialDeliverablesRoutingModule {}
-

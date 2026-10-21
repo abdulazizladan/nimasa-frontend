@@ -1,0 +1,39 @@
+<div class="layout-wrapper">
+  <!-- Top Navbar -->
+  <header class="top-navbar">
+    <div class="navbar-brand">
+      <img src="/logo.webp" alt="NIMASA Logo" class="brand-logo" />
+      <span class="brand-text">Guest Portal</span>
+    </div>
+    <div class="navbar-profile">
+      <div class="profile-icon">G</div>
+    </div>
+  </header>
+
+  <div class="layout-body">
+    <!-- Side Navigation -->
+    <aside class="sidenav">
+      <nav class="sidenav-menu">
+        <a routerLink="/guest/dashboard" routerLinkActive="active" class="sidenav-item">
+          <span class="icon">📊</span>
+          <span class="text">Dashboard</span>
+        </a>
+
+        <div class="sidenav-divider"></div>
+
+        <a href="javascript:void(0)" (click)="logout()" class="sidenav-item logout-btn" aria-haspopup="dialog">
+          <span class="icon">🚪</span>
+          <span class="text">Logout</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>
+
+<app-confirm-dialog *ngIf="confirmingLogout" title="Log out?" message="Are you sure you want to log out?"
+  confirmLabel="Log out" (confirmed)="confirmLogout()" (cancelled)="confirmingLogout = false"></app-confirm-dialog>

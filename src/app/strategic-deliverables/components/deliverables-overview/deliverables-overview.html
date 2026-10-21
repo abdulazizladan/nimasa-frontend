@@ -1,0 +1,228 @@
+<section class="overview" aria-labelledby="overview-title">
+  <div class="overview-header">
+    <h2 id="overview-title">Deliverables overview · {{ year() }}</h2>
+    <p class="subtitle">Status of each deliverable for the year, from its quarterly reports against its annual target.</p>
+  </div>
+
+  <div *ngIf="loading()" class="loading-wrapper">
+    <div class="spinner"></div>
+    <p>Loading deliverables...</p>
+  </div>
+
+  <ng-container *ngIf="!loading()">
+    <div class="alert-warning" *ngIf="failedSources().length">
+      Couldn't load {{ failedSources().join(', ') }}; the figures below leave them out.
+    </div>
+
+    <!-- 1. Headline tiles -->
+    <div class="tiles">
+      <ng-container *ngFor="let f of families()">
+        <button *ngIf="linkToPages(); else staticTile" type="button" class="tile tile-link" (click)="openPage(f.source)">
+          <ng-container *ngTemplateOutlet="tileBody; context: { $implicit: f }"></ng-container>
+        </button>
+        <ng-template #staticTile>
+          <div class="tile">
+            <ng-container *ngTemplateOutlet="tileBody; context: { $implicit: f }"></ng-container>
+          </div>
+        </ng-template>
+      </ng-container>
+    </div>
+
+    <ng-template #tileBody let-f>
+      <span class="tile-label">{{ f.source.title }}</span>
+      <span class="tile-value">{{ percent(f.onTrackShare) }}</span>
+      <span class="tile-caption">
+        <ng-container *ngIf="f.withData; else noResults">
+          on track / met · {{ f.counts.good }} of {{ f.withData }} with results
+        </ng-container>
+        <ng-template #noResults>
+          <ng-container *ngIf="f.reported; else nothingReported">
+            {{ f.reported }} reported but not scored · check targets and direction
+          </ng-container>
+          <ng-template #nothingReported>no results reported for {{ year() }} yet</ng-template>
+        </ng-template>
+      </span>
+      <span class="tile-meta">
+        <span>{{ f.total }} deliverable{{ f.total === 1 ? '' : 's' }} in {{ year() }}</span>
+        <span *ngIf="f.counts.critical" class="tile-flag">
+          <span class="status-icon status-critical" aria-hidden="true">✕</span> {{ f.counts.critical }} off track / missed
+        </span>
+      </span>
+    </ng-template>
+
+    <div class="cards">
+      <!-- 2. Status by type -->
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>Status by type</h3>
+            <p class="card-sub">Share of each page's {{ year() }} deliverables in each status</p>
+          </div>
+          <button type="button" class="link-btn" (click)="showStatusTable.set(!showStatusTable())"
+            [attr.aria-pressed]="showStatusTable()">
+            {{ showStatusTable() ? 'Show chart' : 'Show table' }}
+          </button>
+        </div>
+
+        <ul class="legend" aria-label="Status legend">
+          <li *ngFor="let s of statusClasses">
+            <span class="swatch" [ngClass]="'fill-' + s.key"></span>
+            <span class="status-icon" [ngClass]="'status-' + s.key" aria-hidden="true">{{ s.icon }}</span>
+            {{ s.label }}
+          </li>
+        </ul>
+
+        <div *ngIf="!showStatusTable()" class="status-bars">
+          <div class="bar-row" *ngFor="let f of families()">
+            <button type="button" class="bar-label" [class.static]="!linkToPages()" [disabled]="!linkToPages()"
+              (click)="openPage(f.source)">
+              <span class="bar-title">{{ f.source.title }}</span>
+              <span class="bar-total">{{ f.total }}</span>
+            </button>
+            <div class="bar-track" #barsArea>
+              <ng-container *ngIf="f.total; else emptyBar">
+                <ng-container *ngFor="let s of statusClasses">
+                  <div *ngIf="f.counts[s.key]" class="segment" [class.static]="!linkToPages()" [ngClass]="['fill-' + s.key, inkFor(s.key)]"
+                    [style.flex-grow]="f.counts[s.key]" tabindex="0" role="img"
+                    [attr.aria-label]="f.source.title + ': ' + f.counts[s.key] + ' ' + s.label"
+                    (pointermove)="showStatusTip($event, f, s.key)" (pointerleave)="hideTip()"
+                    (focus)="showStatusTip($event, f, s.key)" (blur)="hideTip()"
+                    (click)="openPage(f.source)">
+                    <span *ngIf="fitsLabel(f.counts[s.key], f.total)" class="segment-label">{{ f.counts[s.key] }}</span>
+                  </div>
+                </ng-container>
+              </ng-container>
+              <ng-template #emptyBar>
+                <span class="empty-bar">No deliverables active in {{ year() }}</span>
+              </ng-template>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="showStatusTable()" class="table-wrap">
+          <table class="data-table status-table">
+            <thead>
+              <tr>
+                <th scope="col">Type</th>
+                <th scope="col" *ngFor="let s of statusClasses" class="num">{{ s.label }}</th>
+                <th scope="col" class="num">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let f of families()">
+                <th scope="row">{{ f.source.title }}</th>
+                <td *ngFor="let s of statusClasses" class="num">
+                  {{ f.counts[s.key] }} <span class="muted">({{ percent(share(f.counts[s.key], f.total)) }})</span>
+                </td>
+                <td class="num">{{ f.total }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 3. Reporting completeness -->
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>Quarterly reporting</h3>
+            <p class="card-sub">Share of {{ year() }} deliverables with a report for each quarter</p>
+          </div>
+        </div>
+
+        <ul class="legend" aria-label="Reporting legend">
+          <li><span class="swatch cell-0"></span>0%</li>
+          <li><span class="swatch cell-low"></span>1–49%</li>
+          <li><span class="swatch cell-mid"></span>50–99%</li>
+          <li><span class="swatch cell-full"></span>100%</li>
+          <li><span class="swatch cell-not-due"></span>Not due yet</li>
+        </ul>
+
+        <div class="table-wrap">
+          <table class="grid-table">
+            <thead>
+              <tr>
+                <th scope="col">Type</th>
+                <th scope="col" *ngFor="let q of ['Q1', 'Q2', 'Q3', 'Q4']">{{ q }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of completeness()">
+                <th scope="row">{{ row.family.source.title }}</th>
+                <td *ngFor="let cell of row.cells" class="grid-cell" [ngClass]="completenessClass(cell)" tabindex="0"
+                  (pointermove)="showCellTip($event, row.family, cell)" (pointerleave)="hideTip()"
+                  (focus)="showCellTip($event, row.family, cell)" (blur)="hideTip()">
+                  <ng-container *ngIf="cell.expected; else none">
+                    <span class="cell-value">{{ cell.due ? percent(cell.share) : 'Not due' }}</span>
+                    <span class="cell-detail">{{ cell.reported }}/{{ cell.expected }}</span>
+                  </ng-container>
+                  <ng-template #none><span class="cell-detail">—</span></ng-template>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Needs attention -->
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h3>Needs attention</h3>
+          <p class="card-sub">Deliverables off track, missed or at risk in {{ year() }}, worst first</p>
+        </div>
+      </div>
+
+      <p *ngIf="attention().length === 0" class="empty-note">
+        Nothing is off track or at risk among {{ year() }} deliverables with reported results.
+      </p>
+
+      <div class="table-wrap" *ngIf="attention().length">
+        <table class="data-table attention-table">
+          <thead>
+            <tr>
+              <th scope="col">Status</th>
+              <th scope="col">Deliverable / KPI</th>
+              <th scope="col">Type</th>
+              <th scope="col">Owner</th>
+              <th scope="col" class="num">Target</th>
+              <th scope="col" class="num">Actual</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of attention()" [class.clickable-row]="linkToPages()"
+              [attr.role]="linkToPages() ? 'link' : null" [attr.tabindex]="linkToPages() ? 0 : null"
+              [attr.title]="linkToPages() ? 'Open on ' + item.source.title : null"
+              (click)="openDeliverable(item)" (keydown.enter)="openDeliverable(item)">
+              <td>
+                <span class="status-badge" [ngClass]="item.assessment.cls">
+                  <span aria-hidden="true">{{ item.status === 'critical' ? '✕' : '!' }}</span> {{ item.assessment.label }}
+                </span>
+                <div class="muted" *ngIf="item.assessment.deviation">{{ item.assessment.deviation }}</div>
+              </td>
+              <td>
+                <div class="item-title">#{{ item.deliverable.serialNumber }} {{ titleOf(item) }}</div>
+                <div class="item-kpi">{{ item.deliverable.indicator }}</div>
+              </td>
+              <td>{{ item.source.badge }}</td>
+              <td>{{ ownerOf(item) }}</td>
+              <td class="num">{{ item.summary?.target === null || item.summary?.target === undefined ? '—' : (item.summary!.target | number: '1.0-2') }}</td>
+              <td class="num">{{ item.summary?.actual === null || item.summary?.actual === undefined ? '—' : (item.summary!.actual | number: '1.0-2') }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p *ngIf="attentionMore()" class="more-note">
+        and {{ attentionMore() }} more<ng-container *ngIf="linkToPages()">; see the deliverables pages for the full lists</ng-container>.
+      </p>
+    </div>
+  </ng-container>
+
+  <!-- Shared tooltip: value first, label second -->
+  <div *ngIf="tip() as t" class="viz-tooltip" [style.left.px]="t.x" [style.top.px]="t.y" role="tooltip">
+    <strong>{{ t.value }}</strong>
+    <span>{{ t.label }}</span>
+    <span *ngIf="t.detail" class="muted">{{ t.detail }}</span>
+  </div>
+</section>

@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, computed } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { OrganizationStore } from '../../store/organization.store';
 import {
   CreateDepartmentPayload,
@@ -13,6 +14,8 @@ import {
 })
 export class OrganizationDashboard implements OnInit {
   store = inject(OrganizationStore);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   searchText = '';
 
@@ -165,6 +168,11 @@ export class OrganizationDashboard implements OnInit {
       organizationCode: this.store.agencies()[0]?.code || ''
     };
     this.showDeptModal = true;
+  }
+
+  /** Opens the department's page listing every deliverable assigned to it. */
+  openDepartment(dept: { code: string }): void {
+    this.router.navigate(['departments', dept.code], { relativeTo: this.route });
   }
 
   openEditDept(dept: any): void {

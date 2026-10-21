@@ -99,7 +99,9 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let d of filteredDepartments()">
+            <tr *ngFor="let d of filteredDepartments()" class="clickable-row" role="link" tabindex="0"
+              [title]="'View ' + d.name + ' and its deliverables'"
+              (click)="openDepartment(d)" (keydown.enter)="openDepartment(d)">
               <td class="bold-code">{{ d.code }}</td>
               <td class="name-td">
                 <div class="dept-title">{{ d.name }}</div>
@@ -112,7 +114,8 @@
                 <span class="agency-tag">{{ d.organization?.name || 'NIMASA' }}</span>
               </td>
               <td class="actions-col">
-                <button class="btn-edit" (click)="openEditDept(d)">✏️ Edit</button>
+                <button class="btn-edit" (click)="openEditDept(d); $event.stopPropagation()"
+                  (keydown.enter)="$event.stopPropagation()">✏️ Edit</button>
               </td>
             </tr>
             <tr *ngIf="filteredDepartments().length === 0">

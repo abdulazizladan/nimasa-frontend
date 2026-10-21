@@ -1,0 +1,11 @@
+<div class="confirm-overlay" (click)="cancelled.emit()">
+  <div class="confirm-box" role="alertdialog" aria-modal="true"
+    aria-labelledby="confirm-title" aria-describedby="confirm-message" (click)="$event.stopPropagation()">
+    <h3 id="confirm-title">{{ title() }}</h3>
+    <p id="confirm-message" *ngIf="message()">{{ message() }}</p>
+    <div class="confirm-actions">
+      <button #cancelButton type="button" class="btn-cancel" (click)="cancelled.emit()">{{ cancelLabel() }}</button>
+      <button type="button" class="btn-confirm" (click)="confirmed.emit()">{{ confirmLabel() }}</button>
+    </div>
+  </div>
+</div>

@@ -12,7 +12,7 @@ export class AddUser {
   userForm = {
     email: '',
     password: '',
-    role: 'director',
+    role: 'guest',
     info: {
       firstName: '',
       lastName: '',

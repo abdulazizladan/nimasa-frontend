@@ -1,0 +1,176 @@
+<div class="page-container">
+
+  <button class="back-link" (click)="backToList()">← Back to {{ config.title }}</button>
+
+  <!-- Loading -->
+  <div *ngIf="loading()" class="loading-wrapper">
+    <div class="spinner"></div>
+    <p>Loading report...</p>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="!loading() && error()" class="alert-error">
+    <span>⚠️ {{ error() }}</span>
+  </div>
+
+  <ng-container *ngIf="!loading() && priority() as p">
+
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-left">
+        <div class="header-badge">Quarterly Report</div>
+        <h2>{{ quarter() }} {{ year() }} Report</h2>
+        <p class="subtitle">#{{ p.serialNumber }} · {{ p.outcome || p.deliverable || p.indicator }}</p>
+        <div class="header-tags">
+          <span class="priority-area-tag">{{ p.priorityArea }}</span>
+          <span class="kpi-tag">📊 KPI: {{ p.indicator }}</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn-ghost" [disabled]="!previousPeriod()"
+          (click)="goToPeriod(previousPeriod()!.year, previousPeriod()!.quarter)">
+          ‹ {{ previousPeriod() ? previousPeriod()!.quarter + ' ' + previousPeriod()!.year : 'Previous' }}
+        </button>
+        <button class="btn-ghost" [disabled]="!nextPeriod()"
+          (click)="goToPeriod(nextPeriod()!.year, nextPeriod()!.quarter)">
+          {{ nextPeriod() ? nextPeriod()!.quarter + ' ' + nextPeriod()!.year : 'Next' }} ›
+        </button>
+        <button class="btn-primary" *ngIf="canEdit && figures()" (click)="editReport()">✏️ Edit Report</button>
+      </div>
+    </div>
+
+    <!-- Quarters of this year -->
+    <nav class="quarter-tabs" aria-label="Quarters of {{ year() }}">
+      <button *ngFor="let q of quarterOptions" class="quarter-tab"
+        [class.active]="q === quarter()" [class.empty]="!hasPeriod(q)" [disabled]="!hasPeriod(q)"
+        [attr.aria-current]="q === quarter() ? 'page' : null"
+        [title]="hasPeriod(q) ? 'View ' + q + ' ' + year() : 'No ' + q + ' ' + year() + ' report'"
+        (click)="goToPeriod(year(), q)">
+        {{ q }}
+      </button>
+    </nav>
+
+    <!-- Not found -->
+    <div *ngIf="!figures()" class="empty-state">
+      <div class="empty-icon">📭</div>
+      <h3>No {{ quarter() }} {{ year() }} report</h3>
+      <p>No quarterly report has been recorded for this period.</p>
+    </div>
+
+    <ng-container *ngIf="figures() as f">
+
+      <!-- Quarter result -->
+      <section class="panel">
+        <h4 class="section-title">{{ quarter() }} Result</h4>
+        <div class="stat-grid">
+          <div class="stat">
+            <span class="detail-label">Target</span>
+            <span class="stat-value">{{ f.target ?? '—' }}</span>
+          </div>
+          <div class="stat">
+            <span class="detail-label">Actual</span>
+            <span class="stat-value">{{ f.actual ?? '—' }}</span>
+          </div>
+          <div class="stat" *ngIf="quarterAssessment() as a">
+            <span class="detail-label">Status</span>
+            <span><span class="status-badge" [ngClass]="a.cls">{{ a.label }}</span></span>
+            <span class="muted-note" *ngIf="a.deviation">{{ a.deviation }}</span>
+          </div>
+        </div>
+        <div class="progress-bar-wrapper" *ngIf="quarterAssessment() as a">
+          <div class="progress-bar-fill" [ngClass]="a.cls" [style.width.%]="a.width"></div>
+        </div>
+      </section>
+
+      <!-- Year context -->
+      <section class="panel">
+        <h4 class="section-title">{{ year() }} So Far</h4>
+        <div class="stat-grid">
+          <div class="stat">
+            <span class="detail-label">Baseline{{ baseline() ? ' (' + baseline()!.label + ')' : '' }}</span>
+            <span class="stat-value">{{ baseline()?.value ?? '—' }}</span>
+          </div>
+          <div class="stat">
+            <span class="detail-label">Annual Target</span>
+            <span class="stat-value">{{ yearSummary()?.target ?? '—' }}</span>
+          </div>
+          <div class="stat">
+            <span class="detail-label">
+              Actual{{ yearSummary()?.quarters ? ' (' + yearSummary()!.quarters + ')' : '' }}
+            </span>
+            <span class="stat-value">{{ yearSummary()?.actual ?? '—' }}</span>
+          </div>
+          <div class="stat" *ngIf="yearAssessment() as a">
+            <span class="detail-label">Year Status</span>
+            <span><span class="status-badge" [ngClass]="a.cls">{{ a.label }}</span></span>
+            <span class="muted-note" *ngIf="a.deviation">{{ a.deviation }}</span>
+          </div>
+        </div>
+        <p class="muted-note">
+          Annual figure: {{ getAggregationLabel(p) }} · {{ getDirectionLabel(p) }}
+        </p>
+      </section>
+
+      <!-- Narrative -->
+      <section class="panel">
+        <h4 class="section-title">Report Details</h4>
+        <p class="notice" *ngIf="!report()">
+          Only the target and actual figures were recorded for this quarter; there are no written details.
+        </p>
+        <div class="narrative" *ngIf="report() as r">
+          <div class="narrative-item">
+            <span class="detail-label">Milestones / Progress Achieved</span>
+            <p class="detail-value" [class.not-provided]="!r.progress">{{ r.progress || 'Not provided' }}</p>
+          </div>
+          <div class="narrative-item">
+            <span class="detail-label">Key Issues / Challenges Faced</span>
+            <p class="detail-value" [class.not-provided]="!r.keyIssues">{{ r.keyIssues || 'Not provided' }}</p>
+          </div>
+          <div class="narrative-item">
+            <span class="detail-label">MDA's Mitigation Efforts</span>
+            <p class="detail-value" [class.not-provided]="!r.mdaEfforts">{{ r.mdaEfforts || 'Not provided' }}</p>
+          </div>
+          <div class="narrative-item">
+            <span class="detail-label">Comments / Stakeholder Support Required</span>
+            <p class="detail-value" [class.not-provided]="!r.comments">{{ r.comments || 'Not provided' }}</p>
+          </div>
+          <div class="narrative-item" *ngIf="r.supportingDocType">
+            <span class="detail-label">Supporting Document</span>
+            <p class="detail-value">{{ r.supportingDocType }}</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Deliverable -->
+      <section class="panel">
+        <h4 class="section-title">Deliverable</h4>
+        <div class="details-grid">
+          <div class="detail-item">
+            <span class="detail-label">Responsible Department</span>
+            <span class="detail-value">{{ getOwnerLabel(p.responsibleDepartment) }}</span>
+          </div>
+          <div class="detail-item" *ngIf="config.showMinistry">
+            <span class="detail-label">Ministry</span>
+            <span class="detail-value">{{ p.ministry || '—' }}</span>
+          </div>
+          <div class="detail-item" *ngIf="config.categoryOptions.length > 1">
+            <span class="detail-label">Deliverable Type</span>
+            <span class="detail-value">{{ getCategoryLabel(p.category) }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Supporting Evidence</span>
+            <span class="detail-value">{{ p.supportingEvidence || '—' }}</span>
+          </div>
+          <div class="detail-item" *ngIf="p.evidenceFile">
+            <span class="detail-label">Evidence File / Template Link</span>
+            <span class="detail-value">{{ p.evidenceFile }}</span>
+          </div>
+        </div>
+        <p class="muted-note" *ngIf="report() as r">
+          Submitted {{ r.createdAt | date: 'medium' }}<ng-container *ngIf="r.updatedAt && r.updatedAt !== r.createdAt">
+            · Last updated {{ r.updatedAt | date: 'medium' }}</ng-container>
+        </p>
+      </section>
+    </ng-container>
+  </ng-container>
+</div>

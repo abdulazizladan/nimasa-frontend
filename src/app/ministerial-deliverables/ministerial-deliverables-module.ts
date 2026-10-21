@@ -1,14 +1,9 @@
 import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { HttpClientModule } from '@angular/common/http';
 
 import { MinisterialDeliverablesRoutingModule } from './ministerial-deliverables-routing-module';
-import { MinisterialDeliverablesList } from './components/ministerial-deliverables-list/ministerial-deliverables-list';
+import { StrategicDeliverablesSharedModule } from '../strategic-deliverables/strategic-deliverables-shared-module';
 
 @NgModule({
-  declarations: [MinisterialDeliverablesList],
-  imports: [CommonModule, FormsModule, HttpClientModule, MinisterialDeliverablesRoutingModule],
+  imports: [StrategicDeliverablesSharedModule, MinisterialDeliverablesRoutingModule],
 })
 export class MinisterialDeliverablesModule {}
-

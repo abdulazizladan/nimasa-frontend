@@ -1,0 +1,131 @@
+<div class="page-container">
+
+  <button class="back-link" (click)="back()">← Back to Organization</button>
+
+  <!-- Loading -->
+  <div *ngIf="loading()" class="loading-wrapper">
+    <div class="spinner"></div>
+    <p>Loading department...</p>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="!loading() && error()" class="alert-error">⚠️ {{ error() }}</div>
+
+  <!-- Unknown department -->
+  <div *ngIf="!loading() && !error() && !department()" class="empty-state">
+    <div class="empty-icon">🏢</div>
+    <h3>Department not found</h3>
+    <p>This department may have been renamed or removed.</p>
+  </div>
+
+  <ng-container *ngIf="!loading() && department() as dept">
+
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-left">
+        <div class="header-badge">Department</div>
+        <h2>{{ dept.name }} <span class="code-tag">{{ dept.code }}</span></h2>
+        <p class="subtitle">{{ dept.description || 'No description' }}</p>
+        <div class="contact-row">
+          <span>🧑‍💼 {{ dept.head || '—' }}</span>
+          <span *ngIf="dept.directorEmail">📧 {{ dept.directorEmail }}</span>
+          <span *ngIf="dept.contactPhone">📞 {{ dept.contactPhone }}</span>
+          <span class="agency-tag">{{ dept.organization?.name || 'NIMASA' }}</span>
+        </div>
+      </div>
+      <div class="year-filter">
+        <label for="dept-year">Year</label>
+        <select id="dept-year" [ngModel]="year()" (ngModelChange)="onYearChange($event)">
+          <option *ngFor="let y of years()" [value]="y">{{ y }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="alert-warning" *ngIf="failedSources().length">
+      Couldn't load {{ failedSources().join(', ') }}, so this list may be incomplete.
+    </div>
+
+    <!-- Summary -->
+    <div class="summary-row" *ngIf="linked().length">
+      <div class="stat-chip">
+        <span class="stat-value">{{ linked().length }}</span>
+        <span class="stat-label">Deliverables</span>
+      </div>
+      <div class="stat-chip" *ngFor="let t of typeCounts()">
+        <span class="stat-value">{{ t.count }}</span>
+        <span class="stat-label">{{ t.label }}</span>
+      </div>
+      <div class="stat-chip status-on-track">
+        <span class="stat-value">{{ statusCounts().good }}</span>
+        <span class="stat-label">On track / met ({{ year() }})</span>
+      </div>
+      <div class="stat-chip status-at-risk">
+        <span class="stat-value">{{ statusCounts().warning }}</span>
+        <span class="stat-label">At risk / minor miss</span>
+      </div>
+      <div class="stat-chip status-off-track">
+        <span class="stat-value">{{ statusCounts().bad }}</span>
+        <span class="stat-label">Off track / missed</span>
+      </div>
+      <div class="stat-chip">
+        <span class="stat-value">{{ statusCounts().none }}</span>
+        <span class="stat-label">No {{ year() }} data</span>
+      </div>
+    </div>
+
+    <!-- Deliverables -->
+    <section class="panel">
+      <h3 class="section-title">Deliverables assigned to {{ dept.name }}</h3>
+
+      <div *ngIf="linked().length === 0" class="empty-state compact">
+        <div class="empty-icon">📋</div>
+        <h3>No deliverables yet</h3>
+        <p>
+          Deliverables appear here when "{{ dept.name }}" is chosen as their Responsible Department
+          on the Presidential Priorities, Ministerial Deliverables or Agency Deliverables pages.
+        </p>
+      </div>
+
+      <div class="table-container" *ngIf="linked().length > 0">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Type</th>
+              <th>Deliverable / KPI</th>
+              <th>Priority Area</th>
+              <th>{{ year() }} Target</th>
+              <th>{{ year() }} Actual</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of linked()" class="clickable-row" role="link" tabindex="0"
+              [title]="'Open on ' + row.source.title"
+              (click)="openDeliverable(row)" (keydown.enter)="openDeliverable(row)">
+              <td class="bold-code">{{ row.deliverable.serialNumber }}</td>
+              <td><span class="type-tag">{{ row.typeLabel }}</span></td>
+              <td>
+                <div class="deliverable-title">
+                  {{ row.deliverable.outcome || row.deliverable.deliverable || row.deliverable.indicator }}
+                </div>
+                <div class="kpi-text">📊 {{ row.deliverable.indicator }}</div>
+              </td>
+              <td>{{ row.deliverable.priorityArea || '—' }}</td>
+              <td>{{ summary(row)?.target ?? '—' }}</td>
+              <td>
+                {{ summary(row)?.actual ?? '—' }}
+                <span class="muted-note" *ngIf="summary(row)?.quarters">({{ summary(row)!.quarters }})</span>
+              </td>
+              <td>
+                <span class="status-badge" [ngClass]="assessYear(row).cls" [title]="assessYear(row).deviation">
+                  {{ assessYear(row).label }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </ng-container>
+</div>
