@@ -1,5 +1,4 @@
-import { Component, inject } from '@angular/core';
-import { ThemeService } from '../../services/theme.service';
+import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-settings',
@@ -7,6 +6,4 @@ import { ThemeService } from '../../services/theme.service';
   templateUrl: './settings.html',
   styleUrl: './settings.css',
 })
-export class Settings {
-  themeService = inject(ThemeService);
-}
+export class Settings {}

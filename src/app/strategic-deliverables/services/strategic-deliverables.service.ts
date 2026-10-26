@@ -94,7 +94,8 @@ export interface QueryPrioritiesParams {
 @Injectable()
 export class StrategicDeliverablesService {
   private http = inject(HttpClient);
-  private readonly base = `${environment.baseUrl}/${inject(DELIVERABLES_CONFIG).apiPath}`;
+  private readonly config = inject(DELIVERABLES_CONFIG);
+  private readonly base = `${environment.baseUrl}/${this.config.apiPath}`;
   private readonly deptBase = `${environment.baseUrl}/departments`;
   private readonly agencyBase = `${environment.baseUrl}/agency-deliverables`;
   private readonly reportsBase = `${environment.baseUrl}/quarterly-reports`;
@@ -114,7 +115,9 @@ export class StrategicDeliverablesService {
   }
 
   getPriorityAreas(): Observable<PriorityArea[]> {
-    return this.http.get<PriorityArea[]>(`${this.agencyBase}/priority-areas`);
+    // Each page sees only its own list (national for presidential/ministerial, agency for agency)
+    const params = new HttpParams().set('scope', this.config.priorityAreaScope);
+    return this.http.get<PriorityArea[]>(`${this.agencyBase}/priority-areas`, { params });
   }
 
   getDepartments(): Observable<Department[]> {
@@ -134,7 +137,7 @@ export class StrategicDeliverablesService {
   }
 
   createPriorityArea(name: string): Observable<PriorityArea> {
-    return this.http.post<PriorityArea>(`${this.agencyBase}/priority-areas`, { name });
+    return this.http.post<PriorityArea>(`${this.agencyBase}/priority-areas`, { name, scope: this.config.priorityAreaScope });
   }
 
   updatePriorityArea(id: string, name: string): Observable<PriorityArea> {

@@ -29,6 +29,8 @@ export interface DeliverablesConfig {
   departmentLabel: string;
   /** Extra owner choice for deliverables that belong to the whole organization rather than one department */
   organizationWide?: { value: string; label: string };
+  /** Which priority-area list the page uses: presidential and ministerial share 'national'; agency has its own */
+  priorityAreaScope: 'national' | 'agency';
 }
 
 export const DELIVERABLES_CONFIG = new InjectionToken<DeliverablesConfig>('DELIVERABLES_CONFIG');
@@ -56,7 +58,8 @@ export const PRESIDENTIAL_CONFIG: DeliverablesConfig = {
   defaultCategory: 'PRESIDENTIAL_PRIORITY',
   showMinistry: true,
   defaultMinistry: 'NIMASA',
-  departmentLabel: 'Responsible NIMASA Department *'
+  departmentLabel: 'Responsible NIMASA Department *',
+  priorityAreaScope: 'national'
 };
 
 export const MINISTERIAL_CONFIG: DeliverablesConfig = {
@@ -75,7 +78,8 @@ export const MINISTERIAL_CONFIG: DeliverablesConfig = {
   defaultCategory: 'MINISTERIAL',
   showMinistry: true,
   defaultMinistry: 'NIMASA',
-  departmentLabel: 'Responsible NIMASA Department *'
+  departmentLabel: 'Responsible NIMASA Department *',
+  priorityAreaScope: 'national'
 };
 
 export const AGENCY_CONFIG: DeliverablesConfig = {
@@ -94,5 +98,6 @@ export const AGENCY_CONFIG: DeliverablesConfig = {
   defaultMinistry: '',
   departmentLabel: 'Responsible Department / Owner *',
   // "NIMASA" is the value existing records already use for organization-wide deliverables
-  organizationWide: { value: 'NIMASA', label: 'Organization-wide (NIMASA)' }
+  organizationWide: { value: 'NIMASA', label: 'Organization-wide (NIMASA)' },
+  priorityAreaScope: 'agency'
 };

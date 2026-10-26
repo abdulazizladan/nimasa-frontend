@@ -4,88 +4,11 @@
     <div class="header-left">
       <div class="header-badge">Preferences</div>
       <h2>System Settings</h2>
-      <p class="subtitle">Personalize your admin dashboard display and settings</p>
+      <p class="subtitle">Admin account and portal information</p>
     </div>
   </div>
 
   <div class="settings-grid">
-    <!-- Theme Selection Card -->
-    <div class="settings-card">
-      <div class="card-header">
-        <span class="card-icon">🎨</span>
-        <div class="card-info">
-          <h3>Display Customization</h3>
-          <p>Choose your preferred interface theme style for daily operational tasks</p>
-        </div>
-      </div>
-
-      <div class="theme-options">
-        <!-- Light Theme Option -->
-        <div
-          class="theme-card"
-          [class.selected]="!themeService.isDark()"
-          (click)="themeService.setDarkTheme(false)"
-        >
-          <div class="theme-preview light-preview">
-            <div class="preview-header"></div>
-            <div class="preview-body">
-              <div class="preview-sidebar"></div>
-              <div class="preview-content">
-                <div class="preview-line"></div>
-                <div class="preview-line short"></div>
-              </div>
-            </div>
-          </div>
-          <div class="theme-details">
-            <span class="theme-icon">☀️</span>
-            <div class="theme-text">
-              <h4>Bright Day Theme</h4>
-              <p>Clean light background with high contrast dark text</p>
-            </div>
-            <div class="radio-indicator"></div>
-          </div>
-        </div>
-
-        <!-- Dark Theme Option -->
-        <div
-          class="theme-card"
-          [class.selected]="themeService.isDark()"
-          (click)="themeService.setDarkTheme(true)"
-        >
-          <div class="theme-preview dark-preview">
-            <div class="preview-header"></div>
-            <div class="preview-body">
-              <div class="preview-sidebar"></div>
-              <div class="preview-content">
-                <div class="preview-line"></div>
-                <div class="preview-line short"></div>
-              </div>
-            </div>
-          </div>
-          <div class="theme-details">
-            <span class="theme-icon">🌙</span>
-            <div class="theme-text">
-              <h4>Deep Midnight Theme</h4>
-              <p>Soothing dark gray background with clear white text</p>
-            </div>
-            <div class="radio-indicator"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Quick Toggle Action -->
-      <div class="toggle-action-row">
-        <span class="toggle-label">Quick Switch Mode</span>
-        <button
-          class="btn-toggle"
-          [class.active]="themeService.isDark()"
-          (click)="themeService.toggleTheme()"
-        >
-          <span class="toggle-knob"></span>
-        </button>
-      </div>
-    </div>
-
     <!-- Administrative Preferences Placeholder Card -->
     <div class="settings-card info-card">
       <div class="card-header">
