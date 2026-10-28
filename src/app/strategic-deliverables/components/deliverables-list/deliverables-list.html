@@ -309,6 +309,12 @@
           <div class="empty-performance-state" *ngIf="getQuarters(p, globalYear()).length === 0">
             <p>No quarterly performance reports have been recorded for {{ globalYear() }} yet.</p>
           </div>
+
+          <!-- Every reported quarter, across years, against its target -->
+          <div class="kpi-chart-block" *ngIf="p.yearlyPerformance && (p.yearlyPerformance | keyvalue).length">
+            <h4 class="section-title">Results over the quarters</h4>
+            <app-kpi-quarter-chart [deliverable]="p" [height]="200"></app-kpi-quarter-chart>
+          </div>
         </div>
 
       </div>

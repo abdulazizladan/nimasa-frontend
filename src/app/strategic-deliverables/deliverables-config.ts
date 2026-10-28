@@ -4,6 +4,8 @@ export type DeliverableCategory = 'PRESIDENTIAL_PRIORITY' | 'MINISTERIAL' | 'BOT
 
 /** What differs between the presidential priorities, ministerial deliverables and agency deliverables pages. */
 export interface DeliverablesConfig {
+  /** Short stable key, e.g. for dashboard filters */
+  id: 'presidential' | 'ministerial' | 'agency';
   /** API path under environment.baseUrl */
   apiPath: string;
   /** Where this page lives in the admin app, for links from other pages */
@@ -43,6 +45,7 @@ export const CATEGORY_LABELS: Record<DeliverableCategory, string> = {
 };
 
 export const PRESIDENTIAL_CONFIG: DeliverablesConfig = {
+  id: 'presidential',
   apiPath: 'presidential-priorities',
   pagePath: '/admin/priorities',
   title: 'Presidential Priorities',
@@ -63,6 +66,7 @@ export const PRESIDENTIAL_CONFIG: DeliverablesConfig = {
 };
 
 export const MINISTERIAL_CONFIG: DeliverablesConfig = {
+  id: 'ministerial',
   apiPath: 'ministerial-deliverables/deliverables',
   pagePath: '/admin/deliverables',
   title: 'Ministerial Deliverables',
@@ -83,6 +87,7 @@ export const MINISTERIAL_CONFIG: DeliverablesConfig = {
 };
 
 export const AGENCY_CONFIG: DeliverablesConfig = {
+  id: 'agency',
   apiPath: 'agency-deliverables',
   pagePath: '/admin/agency-deliverables',
   title: 'Agency Deliverables',

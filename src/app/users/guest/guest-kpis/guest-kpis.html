@@ -1,0 +1,73 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h2>KPIs</h2>
+      <p>Every presidential, ministerial and agency KPI for {{ periodName() }}, worst results first.</p>
+    </div>
+    <app-period-picker></app-period-picker>
+  </div>
+
+  <div class="card">
+    <div class="filters">
+      <div class="field grow">
+        <label for="kpi-search">Search</label>
+        <input id="kpi-search" type="search" placeholder="KPI, deliverable or priority area"
+          [value]="search()" (input)="search.set($any($event.target).value)" />
+      </div>
+      <div class="field">
+        <label for="kpi-type">Type</label>
+        <select id="kpi-type" (change)="type.set($any($event.target).value)">
+          <option value="" [selected]="!type()">All types</option>
+          <option *ngFor="let t of typeOptions" [value]="t.id" [selected]="t.id === type()">{{ t.title }}</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="kpi-area">Priority area</label>
+        <select id="kpi-area" (change)="area.set($any($event.target).value)">
+          <option value="" [selected]="!area()">All priority areas</option>
+          <option *ngFor="let a of areaOptions()" [value]="a" [selected]="a === area()">{{ a }}</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="kpi-owner">Department</label>
+        <select id="kpi-owner" (change)="owner.set($any($event.target).value)">
+          <option value="" [selected]="!owner()">All departments</option>
+          <option *ngFor="let o of ownerOptions()" [value]="o" [selected]="o === owner()">{{ o }}</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="kpi-status">Status</label>
+        <select id="kpi-status" (change)="status.set($any($event.target).value)">
+          <option value="" [selected]="!status()">All statuses</option>
+          <option *ngFor="let s of statusOptions" [value]="s.key" [selected]="s.key === status()">{{ s.label }}</option>
+        </select>
+      </div>
+      <button type="button" class="link-btn" *ngIf="hasFilters()" (click)="clearFilters()">Clear filters</button>
+    </div>
+  </div>
+
+  <div *ngIf="loading()" class="loading">Loading KPIs…</div>
+
+  <div class="card" *ngIf="!loading()">
+    <p class="muted count">Showing {{ shown().length }} of {{ total() }} KPIs</p>
+    <p class="empty" *ngIf="!shown().length">No KPIs match these filters for {{ periodName() }}.</p>
+    <ul class="kpi-list" *ngIf="shown().length">
+      <li *ngFor="let item of shown()">
+        <button type="button" class="kpi-row" (click)="open(item)">
+          <span class="badge" [ngClass]="item.assessment.cls">{{ statusLabel(item) }}</span>
+          <span class="kpi-text">
+            <span class="kpi-title">{{ titleOf(item) }}</span>
+            <span class="kpi-sub">{{ item.deliverable.indicator }}</span>
+            <span class="kpi-meta">{{ item.source.badge }} · {{ item.deliverable.priorityArea || 'No priority area' }} · {{ ownerOf(item) }}</span>
+          </span>
+          <app-quarter-sparkline class="kpi-spark" [deliverable]="item.deliverable" [year]="year()"></app-quarter-sparkline>
+          <span class="kpi-fig">
+            {{ item.summary?.actual === null || item.summary?.actual === undefined ? '—' : (item.summary!.actual | number: '1.0-2') }}
+            / {{ item.summary?.target === null || item.summary?.target === undefined ? '—' : (item.summary!.target | number: '1.0-2') }}
+            <small>actual / target</small>
+          </span>
+        </button>
+      </li>
+    </ul>
+  </div>
+</div>

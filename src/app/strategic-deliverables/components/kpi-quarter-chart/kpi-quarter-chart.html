@@ -1,0 +1,55 @@
+<div *ngIf="points().length; else noData">
+  <div class="chart-head">
+    <ul class="legend" aria-label="Lines">
+      <li><span class="key actual"></span>Actual</li>
+      <li><span class="key target"></span>Target</li>
+      <li class="note">{{ direction() }}</li>
+    </ul>
+    <button type="button" class="link-btn" (click)="showTable.set(!showTable())" [attr.aria-pressed]="showTable()">
+      {{ showTable() ? 'Show chart' : 'Show table' }}
+    </button>
+  </div>
+
+  <div *ngIf="!showTable()" class="chart-wrap" #wrap>
+    <svg class="chart" [attr.viewBox]="'0 0 ' + geometry().width + ' ' + geometry().height" role="img"
+      [attr.aria-label]="'Quarterly results against target from ' + points()[0].label + ' to ' + points()[points().length - 1].label + '. Use Show table for the values.'">
+      <g *ngFor="let t of geometry().ticks">
+        <line class="grid" [attr.x1]="geometry().plot.left" [attr.x2]="geometry().plot.right" [attr.y1]="t.y" [attr.y2]="t.y"></line>
+        <text class="tick" [attr.x]="geometry().plot.left - 8" [attr.y]="t.y + 4" text-anchor="end">{{ t.label }}</text>
+      </g>
+      <text *ngFor="let l of geometry().xLabels" class="tick" [attr.x]="l.x" [attr.y]="geometry().plot.bottom + 20" text-anchor="middle">{{ l.text }}</text>
+
+      <polyline *ngFor="let r of geometry().targetRuns" class="line target" [attr.points]="r"></polyline>
+      <polyline *ngFor="let r of geometry().actualRuns" class="line actual" [attr.points]="r"></polyline>
+      <circle *ngFor="let p of geometry().target" class="dot target" [attr.cx]="p.x" [attr.cy]="p.y" r="3"></circle>
+      <circle *ngFor="let p of geometry().actual; let last = last" class="dot actual" [attr.cx]="p.x" [attr.cy]="p.y"
+        [attr.r]="last ? 6 : 5" tabindex="0"
+        [attr.aria-label]="p.point.label + ': ' + p.value + ' against target ' + (p.point.target ?? 'not set')"
+        (pointerenter)="showTip($event, p.point)" (pointerleave)="hideTip()" (focus)="showTip($event, p.point)" (blur)="hideTip()"></circle>
+
+      <text *ngIf="endLabels().actual as e" class="end-label" [attr.x]="e.x" [attr.y]="e.y">Actual</text>
+      <text *ngIf="endLabels().target as e" class="end-label muted-label" [attr.x]="e.x" [attr.y]="e.y">Target</text>
+    </svg>
+  </div>
+
+  <div *ngIf="showTable()" class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th scope="col">Quarter</th><th scope="col" class="num">Target</th><th scope="col" class="num">Actual</th><th scope="col">Status</th></tr></thead>
+      <tbody>
+        <tr *ngFor="let p of points()">
+          <th scope="row">{{ p.label }}</th>
+          <td class="num">{{ p.target === null ? '—' : (p.target | number: '1.0-2') }}</td>
+          <td class="num">{{ p.actual === null ? 'No report' : (p.actual | number: '1.0-2') }}</td>
+          <td>{{ p.actual === null ? '—' : statusOf(p) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div *ngIf="tip() as t" class="viz-tooltip" [style.left.px]="t.x" [style.top.px]="t.y" role="tooltip">
+    <strong>{{ t.value }}</strong>
+    <span>{{ t.label }}</span>
+    <span class="muted">{{ t.detail }}</span>
+  </div>
+</div>
+<ng-template #noData><p class="empty">No quarterly results reported yet.</p></ng-template>

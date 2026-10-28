@@ -8,11 +8,12 @@ import { QuarterlyReportDetail } from './components/quarterly-report-detail/quar
 import { StrategicDeliverablesService } from './services/strategic-deliverables.service';
 import { StrategicDeliverablesStore } from './store/strategic-deliverables.store';
 import { DELIVERABLES_CONFIG, DeliverablesConfig } from './deliverables-config';
+import { KpiQuarterChart } from './components/kpi-quarter-chart/kpi-quarter-chart';
 
 /** List and report-details pages shared by the presidential priorities and ministerial deliverables modules. */
 @NgModule({
   declarations: [DeliverablesList, QuarterlyReportDetail],
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, KpiQuarterChart],
   exports: [DeliverablesList, QuarterlyReportDetail],
 })
 export class StrategicDeliverablesSharedModule {}

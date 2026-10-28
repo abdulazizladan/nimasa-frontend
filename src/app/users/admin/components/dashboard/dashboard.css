@@ -97,6 +97,13 @@
   line-height: 1;
 }
 
+/* "in 2026 · 10 in total" under a deliverables count */
+.stat-sub {
+  margin: -10px 0 12px 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
 .stat-trend {
   font-size: 12px;
   color: var(--text-muted);

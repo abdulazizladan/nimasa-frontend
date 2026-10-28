@@ -1,0 +1,49 @@
+/* Phones and small tablets: the sidebar becomes a row of tabs along the bottom, so content gets the full width */
+@media (max-width: 900px) {
+  .layout-body {
+    flex-direction: column;
+  }
+
+  .main-content {
+    padding: 16px;
+  }
+
+  .sidenav {
+    order: 2;
+    width: 100%;
+    border-right: none;
+    border-top: 1px solid #e5e7eb;
+    overflow: visible;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .sidenav-menu {
+    flex-direction: row;
+    padding: 0;
+  }
+
+  .sidenav-item {
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 4px;
+    font-size: 11px;
+    border-left: none;
+    border-top: 3px solid transparent;
+    text-align: center;
+  }
+
+  .sidenav-item .icon {
+    margin-right: 0;
+    font-size: 18px;
+  }
+
+  .sidenav-item.active {
+    border-left-color: transparent;
+    border-top-color: #00aeef;
+  }
+
+  .sidenav-divider {
+    display: none;
+  }
+}

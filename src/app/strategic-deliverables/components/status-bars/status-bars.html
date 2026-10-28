@@ -1,0 +1,28 @@
+<div class="status-bars">
+  <div class="bar-row" *ngFor="let row of rows()">
+    <button type="button" class="bar-label" [class.static]="!isClickable(row)" [disabled]="!isClickable(row)"
+      [attr.title]="isClickable(row) ? 'Open ' + row.label : null" (click)="select(row)">
+      <span class="bar-title">{{ row.label }}</span>
+      <span class="bar-total">{{ row.total }}</span>
+    </button>
+    <div class="bar-track" #track>
+      <ng-container *ngIf="row.total; else emptyBar">
+        <ng-container *ngFor="let s of statusClasses">
+          <div *ngIf="row.counts[s.key]" class="segment" [class.static]="!isClickable(row)"
+            [ngClass]="['fill-' + s.key, inkFor(s.key)]" [style.flex-grow]="row.counts[s.key]"
+            tabindex="0" role="img" [attr.aria-label]="row.label + ': ' + row.counts[s.key] + ' ' + s.label"
+            (pointermove)="showTip($event, row, s.key)" (pointerleave)="hideTip()"
+            (focus)="showTip($event, row, s.key)" (blur)="hideTip()" (click)="select(row)">
+            <span *ngIf="fitsLabel(row.counts[s.key], row.total)" class="segment-label">{{ row.counts[s.key] }}</span>
+          </div>
+        </ng-container>
+      </ng-container>
+      <ng-template #emptyBar><span class="empty-bar">{{ emptyText() }}</span></ng-template>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="tip() as t" class="viz-tooltip" [style.left.px]="t.x" [style.top.px]="t.y" role="tooltip">
+  <strong>{{ t.value }}</strong>
+  <span>{{ t.label }}</span>
+</div>

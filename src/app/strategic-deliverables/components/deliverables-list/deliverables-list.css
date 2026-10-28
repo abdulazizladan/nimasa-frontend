@@ -775,3 +775,6 @@
   color: #64748b;
   cursor: default;
 }
+
+/* Line chart of every reported quarter, in the expanded card */
+.kpi-chart-block { margin-top: 18px; padding-top: 14px; border-top: 1px dashed #e2e8f0; }

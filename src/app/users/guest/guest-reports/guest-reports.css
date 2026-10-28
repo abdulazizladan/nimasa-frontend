@@ -1,0 +1,11 @@
+.kinds { border: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 10px; }
+.kinds legend { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; padding: 0; }
+.kind { display: flex; gap: 10px; align-items: flex-start; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; cursor: pointer; }
+.kind.on { border-color: #2563eb; background: #eff6ff; }
+.kind input { margin-top: 3px; }
+.kind > span { display: flex; flex-direction: column; gap: 2px; font-size: 14px; color: #1e293b; }
+.section { margin-top: 18px; }
+.field.grow select { max-width: none; width: 100%; }
+.download { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; border-top: 1px solid #e2e8f0; padding-top: 16px; }
+.preview { margin: 0; font-size: 13px; color: #334155; max-width: 70ch; }
+.ok { margin: 0; font-size: 13px; color: #166534; }

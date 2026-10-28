@@ -3,6 +3,9 @@ import { RouterModule, Routes } from '@angular/router';
 
 import { GuestLayout } from './guest-layout/guest-layout';
 import { GuestDashboard } from './guest-dashboard/guest-dashboard';
+import { GuestKpis } from './guest-kpis/guest-kpis';
+import { GuestKpi } from './guest-kpi/guest-kpi';
+import { GuestReports } from './guest-reports/guest-reports';
 
 const routes: Routes = [
   {
@@ -10,7 +13,10 @@ const routes: Routes = [
     component: GuestLayout,
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      { path: 'dashboard', component: GuestDashboard }
+      { path: 'dashboard', component: GuestDashboard },
+      { path: 'kpis', component: GuestKpis },
+      { path: 'kpis/:id', component: GuestKpi },
+      { path: 'reports', component: GuestReports }
     ]
   }
 ];

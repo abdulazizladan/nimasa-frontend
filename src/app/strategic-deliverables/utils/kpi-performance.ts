@@ -180,18 +180,20 @@ export function assess(p: StrategicDeliverable, actual: number | null | undefine
 
   const lower = isLowerBetter(p);
   const round = (n: number) => Math.round(n * 100) / 100;
+  /** e.g. 5000 -> "5,000", 1.33 -> "1.33" */
+  const fmt = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits: 2 });
   // How much better than target the result is: positive = better, negative = worse
   const margin = round(lower ? target - actual : actual - target);
 
   if (margin > 0) {
-    const deviation = lower ? `${margin} below target` : `+${margin} above target`;
+    const deviation = lower ? `${fmt(margin)} below target` : `+${fmt(margin)} above target`;
     return { cls: 'status-surpassed', label: 'Target Surpassed', width: 100, deviation };
   }
   if (margin === 0) return { cls: 'status-on-track', label: 'Target Met', width: 100, deviation: '' };
 
   if (!lower) {
     // Short of a positive target (a target of 0 or less is always met or surpassed above)
-    const deviation = `${-margin} short of target`;
+    const deviation = `${fmt(-margin)} short of target`;
     const pct = target > 0 ? (actual / target) * 100 : 0;
     const width = Math.min(100, Math.max(0, pct));
     if (pct >= 90) return { cls: 'status-on-track', label: 'On Track', width, deviation };
@@ -200,7 +202,7 @@ export function assess(p: StrategicDeliverable, actual: number | null | undefine
   }
 
   const excess = -margin;
-  const deviation = `+${excess} above target`;
+  const deviation = `+${fmt(excess)} above target`;
   let baseline = getBaselineForYear(p, year)?.value ?? null;
   // A quarter is measured against a quarter's share of an annual baseline when quarters are summed
   if (quarter && baseline !== null && getAggregation(p) === 'sum') baseline = baseline / 4;

@@ -1,0 +1,50 @@
+<div class="trend-head">
+  <ul class="legend" aria-label="Lines">
+    <li *ngFor="let s of plotted()"><span class="key" [style.background]="s.color"></span>{{ s.label }}</li>
+  </ul>
+  <button type="button" class="link-btn" (click)="showTable.set(!showTable())" [attr.aria-pressed]="showTable()">
+    {{ showTable() ? 'Show chart' : 'Show table' }}
+  </button>
+</div>
+
+<div *ngIf="!showTable()" class="chart-wrap">
+  <svg class="chart" [attr.viewBox]="'0 0 ' + W + ' ' + H" role="img"
+    [attr.aria-label]="'Share surpassed, met or on track by quarter, ' + year() + '. Use Show table for the values.'">
+    <g *ngFor="let t of ticks">
+      <line class="grid" [attr.x1]="plot.left" [attr.x2]="plot.right" [attr.y1]="yFor(t)" [attr.y2]="yFor(t)"></line>
+      <text class="tick" [attr.x]="plot.left - 8" [attr.y]="yFor(t) + 4" text-anchor="end">{{ t }}%</text>
+    </g>
+    <text *ngFor="let q of quarters; let i = index" class="tick" [attr.x]="xFor(i)" [attr.y]="plot.bottom + 20" text-anchor="middle">{{ q }}</text>
+
+    <g *ngFor="let s of plotted()">
+      <polyline *ngIf="s.points.length > 1" class="line" [attr.points]="s.path" [style.stroke]="s.color"></polyline>
+      <circle *ngFor="let p of s.points" class="dot" [attr.cx]="p.x" [attr.cy]="p.y" r="5" [style.fill]="s.color"
+        tabindex="0" [attr.aria-label]="s.label + ', ' + p.quarter + ': ' + p.value + '%'"
+        (pointerenter)="showTip($event, s, p)" (pointerleave)="hideTip()" (focus)="showTip($event, s, p)" (blur)="hideTip()"></circle>
+      <text *ngIf="s.endLabelY !== null" class="end-label" [attr.x]="s.points[s.points.length - 1].x + 10"
+        [attr.y]="s.endLabelY + 4">{{ s.shortLabel }}</text>
+    </g>
+  </svg>
+</div>
+
+<div *ngIf="showTable()" class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">Type</th><th scope="col" class="num" *ngFor="let q of quarters">{{ q }}</th></tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let s of series()">
+        <th scope="row">{{ s.source.title }}</th>
+        <td class="num" *ngFor="let q of quarters; let i = index">
+          {{ cell(s, i) }} <span class="muted" *ngIf="s.scored[i]">({{ s.scored[i] }} scored)</span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div *ngIf="tip() as t" class="viz-tooltip" [style.left.px]="t.x" [style.top.px]="t.y" role="tooltip">
+  <strong>{{ t.value }}</strong>
+  <span>{{ t.label }}</span>
+  <span class="muted">{{ t.detail }}</span>
+</div>

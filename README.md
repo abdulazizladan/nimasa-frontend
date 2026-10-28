@@ -56,7 +56,7 @@ There are two roles, set on each user by an admin:
 | Role | Lands on | Can do |
 |---|---|---|
 | `admin` | `/admin` | Everything: manage users, organization, deliverables and quarterly reports |
-| `guest` | `/guest` | View the guest dashboard (read-only) |
+| `guest` | `/guest` | Read-only: the dashboard, every KPI and its quarterly results, and PDF reports |
 
 Log in at `/auth/login`. The JWT is kept in `localStorage` and attached to every API request by `core/interceptors/jwt.interceptor.ts`. Expired sessions are sent back to the login page. Logging out asks for confirmation.
 
@@ -77,9 +77,12 @@ The backend enforces the same rules: reading needs a login, and changes need the
 | `/admin/organization/departments/:code` | One department and the deliverables assigned to it | `organization/components/department-detail` |
 | `/admin/users` | User management | `modules/users-management` |
 | `/admin/settings` | Settings | `users/admin/components/settings` |
-| `/guest/dashboard` | Guest dashboard (read-only overview) | `users/guest` |
+| `/guest/dashboard` | Guest dashboard (read-only overview) | `users/guest/guest-dashboard` |
+| `/guest/kpis` | Every KPI for the period, searchable and filterable | `users/guest/guest-kpis` |
+| `/guest/kpis/:id` | One KPI: targets, results over the quarters, notes, PDF | `users/guest/guest-kpi` |
+| `/guest/reports` | Download a PDF report (period summary or single KPI) | `users/guest/guest-reports` |
 
-The year selected on any page is shared app-wide through `core/services/global-state.service.ts`.
+The year and the period within it (full year, or Q1–Q4) are shared app-wide through `core/services/global-state.service.ts`.
 
 ## How deliverables work
 
@@ -138,14 +141,40 @@ Serial numbers are assigned by the backend when a deliverable is created and can
 
 ## Dashboards
 
-The admin and guest dashboards share `strategic-deliverables/components/deliverables-overview`:
+The admin and guest dashboards share `strategic-deliverables/components/deliverables-overview`. At the top, the **period** (full year or Q1–Q4) and Type and Department filters apply to every panel. For a quarter, each KPI is scored on that quarter's result against that quarter's target. **Download PDF report** saves the view as a PDF; **CSV** saves the figures.
 
-- headline tiles per page (share of deliverables surpassed, met or on track)
-- status by type, as stacked bars with a table view
-- quarterly reporting completeness (share of deliverables reported per quarter)
-- a "needs attention" list, worst first
+| Panel | Shows |
+|---|---|
+| Ready to score (admins only) | What stops deliverables getting a status: no annual target, direction never set, no report this year, owner that isn't a department. Each line opens to list the deliverables. |
+| Headline tiles | Per page: share surpassed, met or on track, the surpassed / met / on track split, and the change since the previous period |
+| How the priorities are doing | National (presidential and ministerial) and agency priority areas. Guests see it right after the tiles. |
+| Status by type | Stacked bars per page, with a table view |
+| Quarterly reporting | Share of deliverables reported for each quarter |
+| Needs attention | Worst results first, with a sparkline of each quarter's result against its target |
+| Overdue reports (admins only) | Who still owes a report for the latest quarter that has ended |
+| Status by department | Stacked bars per owner |
+| Trend by quarter | Share surpassed, met or on track per quarter; appears once two quarters have scored reports |
 
-On the guest dashboard it runs with `[linkToPages]="false"`, so nothing links to the admin pages.
+The overview takes `audience="admin"` (the default) or `audience="guest"`. Admins' links open the admin pages; guests' links open the guest KPI pages, already filtered (a tile by type, a priority by area, a department by owner).
+
+The top cards on the admin dashboard count the deliverables active in the selected year, with the all-time total underneath, so they agree with the panels below.
+
+### KPI line chart
+
+`strategic-deliverables/components/kpi-quarter-chart` draws one KPI's quarterly results (blue) against its quarterly targets (grey), from its first report to its latest, across years. A quarter without a report leaves a gap. It appears on the guest KPI page, in the expanded card on the admin deliverables pages, and in the KPI PDF. The geometry lives in `utils/kpi-timeline.ts`, so the screen and the PDF draw the same lines.
+
+### PDF reports
+
+`strategic-deliverables/services/pdf-report.service.ts` builds A4 PDFs in the browser with [pdfmake](https://pdfmake.github.io/docs/), loaded only when someone downloads a report:
+
+- **Period summary:** headline figures, status by type, how the priorities are doing, and every KPI with target, result and status.
+- **Single KPI:** details, the line chart, each quarter's result and status, and the report notes.
+
+Guest reports and the guest KPI page leave out the "support required" note.
+
+### Where the rules live
+
+The rules behind these panels are plain functions in `strategic-deliverables/utils/portfolio-summary.ts` (periods, filters, readiness, overdue, grouping, trend, export), covered by `portfolio-summary.spec.ts`. The charts are small standalone components: `status-bars`, `quarter-sparkline`, `status-trend` and `kpi-quarter-chart`.
 
 ## Conventions
 

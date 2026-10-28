@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 
 import { GuestDashboard } from './guest-dashboard';
 import { DeliverablesOverview } from '../../../strategic-deliverables/components/deliverables-overview/deliverables-overview';
@@ -48,6 +48,7 @@ describe('GuestDashboard', () => {
     httpMock.expectOne(r => r.url.endsWith('/presidential-priorities')).flush(presidential);
     httpMock.expectOne(r => r.url.endsWith('/ministerial-deliverables/deliverables')).flush(ministerial);
     httpMock.expectOne(r => r.url.endsWith('/agency-deliverables')).flush(agency);
+    httpMock.expectOne(r => r.url.endsWith('/departments')).flush([]);
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
@@ -71,13 +72,25 @@ describe('GuestDashboard', () => {
     expect(text).toContain('1 of 1 with results');
   });
 
-  it('is read-only for guests: tiles and attention rows do not link to the admin pages', async () => {
+  it('links guests to the guest KPI pages, not the admin pages', async () => {
     await respond([onTrack]);
     const el: HTMLElement = fixture.nativeElement;
+    const router = TestBed.inject(Router);
+    const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
 
-    expect(el.querySelectorAll('.tile').length).toBe(3);
-    expect(el.querySelectorAll('button.tile').length).toBe(0);
-    expect(el.querySelectorAll('tr.clickable-row').length).toBe(0);
+    (el.querySelector('button.tile') as HTMLElement).click();
+    expect(navigate).toHaveBeenCalledWith(['/guest/kpis'], { queryParams: { type: 'presidential' } });
+  });
+
+  it('hides the internal overdue reports panel from guests', async () => {
+    await respond([onTrack]);
+    expect(fixture.nativeElement.textContent).not.toContain('Overdue reports');
+    expect(fixture.nativeElement.textContent).toContain('How the priorities are doing');
+  });
+
+  it('does not show the admin-only data readiness panel', async () => {
+    await respond([onTrack]);
+    expect(fixture.nativeElement.querySelector('.readiness')).toBeNull();
   });
 
   it('changes the shared year when a different year is selected', async () => {

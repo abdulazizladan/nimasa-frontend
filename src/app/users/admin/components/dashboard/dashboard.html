@@ -39,11 +39,11 @@
       </div>
       <div class="stat-content">
         <p class="stat-label">Presidential Priorities</p>
-        <h3 class="stat-value">{{ dashboardStore.stats().presidentialPriorities }}</h3>
+        <h3 class="stat-value">{{ countsLoaded() ? (counts()['presidential']?.inYear ?? 0) : '…' }}</h3>
+        <p class="stat-sub" *ngIf="countsLoaded()">in {{ globalYear }} · {{ counts()['presidential']?.total ?? 0 }} in total</p>
       </div>
       <div class="stat-trend neutral">
-        <span *ngIf="dashboardStore.loading()">Loading...</span>
-        <span *ngIf="!dashboardStore.loading()">View all →</span>
+        <span>View all →</span>
       </div>
     </div>
 
@@ -56,11 +56,11 @@
       </div>
       <div class="stat-content">
         <p class="stat-label">Ministerial Deliverables</p>
-        <h3 class="stat-value">{{ dashboardStore.stats().ministerialDeliverables }}</h3>
+        <h3 class="stat-value">{{ countsLoaded() ? (counts()['ministerial']?.inYear ?? 0) : '…' }}</h3>
+        <p class="stat-sub" *ngIf="countsLoaded()">in {{ globalYear }} · {{ counts()['ministerial']?.total ?? 0 }} in total</p>
       </div>
       <div class="stat-trend neutral">
-        <span *ngIf="dashboardStore.loading()">Loading...</span>
-        <span *ngIf="!dashboardStore.loading()">View all →</span>
+        <span>View all →</span>
       </div>
     </div>
 
@@ -73,11 +73,11 @@
       </div>
       <div class="stat-content">
         <p class="stat-label">Agency Deliverables</p>
-        <h3 class="stat-value">{{ dashboardStore.stats().agencyKPIs }}</h3>
+        <h3 class="stat-value">{{ countsLoaded() ? (counts()['agency']?.inYear ?? 0) : '…' }}</h3>
+        <p class="stat-sub" *ngIf="countsLoaded()">in {{ globalYear }} · {{ counts()['agency']?.total ?? 0 }} in total</p>
       </div>
       <div class="stat-trend neutral">
-        <span *ngIf="dashboardStore.loading()">Loading...</span>
-        <span *ngIf="!dashboardStore.loading()">View all →</span>
+        <span>View all →</span>
       </div>
     </div>
   </div>

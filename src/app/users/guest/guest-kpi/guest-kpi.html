@@ -1,0 +1,83 @@
+<div class="page">
+  <a routerLink="/guest/kpis" class="back">← All KPIs</a>
+
+  <div *ngIf="!deliverable() && !notFound() && !error()" class="loading">Loading KPI…</div>
+  <p class="alert" *ngIf="error()">{{ error() }}</p>
+  <div class="card" *ngIf="notFound()">
+    <h3>KPI not found</h3>
+    <p class="empty">It may have been removed. <a routerLink="/guest/kpis">See all KPIs</a>.</p>
+  </div>
+
+  <ng-container *ngIf="deliverable() as d">
+    <div class="page-head">
+      <div class="title">
+        <span class="eyebrow">{{ typeLabel(d) }} · #{{ d.serialNumber }}</span>
+        <h2>{{ d.outcome || d.deliverable || d.indicator }}</h2>
+        <p class="indicator">{{ d.indicator }}</p>
+        <p class="meta">{{ d.priorityArea || 'No priority area' }} · {{ ownerOf(d) }} · {{ direction(d) }} · Annual figure: {{ aggregation(d) }}</p>
+      </div>
+      <div class="head-actions">
+        <app-period-picker></app-period-picker>
+        <button type="button" class="btn-primary" (click)="downloadPdf()" [disabled]="downloading()">
+          {{ downloading() ? 'Preparing PDF…' : 'Download PDF' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-label">Baseline{{ baseline() ? ' (' + baseline()!.label + ')' : '' }}</span>
+        <span class="stat-value">{{ baseline()?.value === null || baseline()?.value === undefined ? '—' : (baseline()!.value! | number: '1.0-2') }}</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Target {{ year() }}</span>
+        <span class="stat-value">{{ annualTarget() === null ? '—' : (annualTarget()! | number: '1.0-2') }}</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Result {{ periodName() }}</span>
+        <span class="stat-value">{{ result()?.summary?.actual === null || result()?.summary?.actual === undefined ? '—' : (result()!.summary!.actual! | number: '1.0-2') }}</span>
+      </div>
+      <div class="stat" *ngIf="result() as r">
+        <span class="stat-label">Status {{ periodName() }}</span>
+        <span><span class="badge" [ngClass]="r.assessment.cls">{{ r.status === 'none' ? 'No result yet' : r.assessment.label }}</span></span>
+        <span class="muted" *ngIf="r.assessment.deviation">{{ r.assessment.deviation }}</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Results over the quarters</h3>
+      <p class="card-sub">Each quarter's result against that quarter's target, from the first report to the latest.</p>
+      <app-kpi-quarter-chart [deliverable]="d"></app-kpi-quarter-chart>
+    </div>
+
+    <div class="card">
+      <h3>{{ year() }} by quarter</h3>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th scope="col">Quarter</th><th scope="col" class="num">Target</th><th scope="col" class="num">Actual</th><th scope="col">Status</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let row of quarterRows()" [class.selected]="row.selected">
+              <th scope="row">{{ row.quarter }}</th>
+              <td class="num">{{ row.entry?.target === undefined || row.entry?.target === null ? '—' : (row.entry.target | number: '1.0-2') }}</td>
+              <td class="num">{{ row.entry ? (row.entry.actual | number: '1.0-2') : 'No report' }}</td>
+              <td><span class="badge" *ngIf="row.entry" [ngClass]="row.result.assessment.cls">{{ row.result.assessment.label }}</span><span *ngIf="!row.entry" class="muted">—</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Report notes · {{ periodName() }}</h3>
+      <p class="empty" *ngIf="!notes().length">No notes were published with the reports for {{ periodName() }}.</p>
+      <div class="notes">
+        <div class="note" *ngFor="let r of notes()">
+          <h4>{{ r.quarter }} {{ r.year }}</h4>
+          <ng-container *ngFor="let f of noteFields">
+            <p *ngIf="r[f.key]"><b>{{ f.label }}:</b> {{ r[f.key] }}</p>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>

@@ -1,0 +1,61 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h2>Reports</h2>
+      <p>Download a PDF report for a period, or for one KPI.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <fieldset class="kinds">
+      <legend>Report</legend>
+      <label class="kind" [class.on]="kind() === 'summary'">
+        <input type="radio" name="report-kind" value="summary" [checked]="kind() === 'summary'" (change)="kind.set('summary')" />
+        <span><b>Period summary</b><span class="muted">Headline figures, priorities and every KPI for a period</span></span>
+      </label>
+      <label class="kind" [class.on]="kind() === 'kpi'">
+        <input type="radio" name="report-kind" value="kpi" [checked]="kind() === 'kpi'" (change)="kind.set('kpi')" />
+        <span><b>Single KPI</b><span class="muted">One KPI's targets, results over the quarters and notes</span></span>
+      </label>
+    </fieldset>
+
+    <div class="section">
+      <app-period-picker></app-period-picker>
+    </div>
+
+    <div class="section filters" *ngIf="kind() === 'summary'">
+      <div class="field">
+        <label for="report-type">Type</label>
+        <select id="report-type" (change)="type.set($any($event.target).value)">
+          <option value="" [selected]="!type()">All types</option>
+          <option *ngFor="let t of typeOptions" [value]="t.id" [selected]="t.id === type()">{{ t.title }}</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="report-owner">Department</label>
+        <select id="report-owner" (change)="owner.set($any($event.target).value)">
+          <option value="" [selected]="!owner()">All departments</option>
+          <option *ngFor="let o of ownerOptions()" [value]="o" [selected]="o === owner()">{{ o }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section filters" *ngIf="kind() === 'kpi'">
+      <div class="field grow">
+        <label for="report-kpi">KPI</label>
+        <select id="report-kpi" (change)="kpiId.set($any($event.target).value)">
+          <option value="" [selected]="!kpiId()">Choose a KPI</option>
+          <option *ngFor="let k of kpiOptions()" [value]="k.id" [selected]="k.id === kpiId()">{{ k.label }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section download">
+      <p class="preview"><b>{{ kind() === 'summary' ? 'Performance Report' : 'KPI Report' }} · {{ periodName() }}.</b> {{ preview() }}</p>
+      <button type="button" class="btn-primary" (click)="download()" [disabled]="!canDownload()">
+        {{ downloading() ? 'Preparing PDF…' : 'Download PDF' }}
+      </button>
+      <p *ngIf="message() as m" [class.alert]="m.kind === 'error'" [class.ok]="m.kind === 'ok'" role="status">{{ m.text }}</p>
+    </div>
+  </div>
+</div>
