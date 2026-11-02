@@ -11,7 +11,7 @@
       <legend>Report</legend>
       <label class="kind" [class.on]="kind() === 'summary'">
         <input type="radio" name="report-kind" value="summary" [checked]="kind() === 'summary'" (change)="kind.set('summary')" />
-        <span><b>Period summary</b><span class="muted">Headline figures, priorities and every KPI for a period</span></span>
+        <span><b>Period summary</b><span class="muted">Headline figures, status by type and every KPI for a period</span></span>
       </label>
       <label class="kind" [class.on]="kind() === 'kpi'">
         <input type="radio" name="report-kind" value="kpi" [checked]="kind() === 'kpi'" (change)="kind.set('kpi')" />

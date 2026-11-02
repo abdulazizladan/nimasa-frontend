@@ -1,6 +1,6 @@
 import {
   periodLabel, previousPeriod, assessForPeriod, latestReportedQuarter,
-  applyFilters, summariseFamilies, uniqueItems, ownerOf, statusByGroup, goodBreakdown, lastEndedQuarter,
+  applyFilters, summariseFamilies, uniqueItems, ownerOf, statusByGroup, goodBreakdown, lastEndedQuarter, worstFirst, needsAttention,
   overdueReports, readinessChecks, quarterTrend, quartersWithTrendData, summaryCsv, departmentCodeFor,
   ORGANIZATION_WIDE, NO_OWNER
 } from './portfolio-summary';
@@ -80,6 +80,12 @@ describe('status breakdowns', () => {
 
   it('splits good results into surpassed, met and on track', () => {
     expect(goodBreakdown(items)).toEqual({ surpassed: 1, met: 1, onTrack: 0 });
+  });
+
+  it('orders KPIs worst first: off track, then met, then surpassed, unscored last', () => {
+    const ordered = [...items].sort(worstFirst).map(i => i.deliverable.id);
+    expect(ordered).toEqual([offTrack.id, both.id, surpassed.id, agencyEmpty.id, agencyOdd.id]);
+    expect(needsAttention(families).map(i => i.deliverable.id)).toEqual([offTrack.id]);
   });
 });
 

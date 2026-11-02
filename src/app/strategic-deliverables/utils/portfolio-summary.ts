@@ -180,35 +180,39 @@ export function reportingCompleteness(family: FamilySummary, year: number, today
   });
 }
 
-/** Severity order of the detailed statuses, worst first. */
+/** Severity order of the detailed statuses, worst first; unscored KPIs (not listed) come last. */
 const SEVERITY: Record<string, number> = {
-  'Missed – Severe': 4,
-  'Off Track': 3,
-  'Missed – Moderate': 3,
-  'At Risk': 2,
-  'Missed – Minor': 2,
+  'Missed – Severe': 7,
+  'Off Track': 6,
+  'Missed – Moderate': 6,
+  'At Risk': 5,
+  'Missed – Minor': 5,
+  'On Track': 4,
+  'Target Met': 3,
+  'Target Surpassed': 2,
 };
 
+/** How far a scored KPI is from its target: lowest % achieved, or for "lower is better" KPIs the largest excess. */
+const distanceFromTarget = (i: AssessedDeliverable) =>
+  isLowerBetter(i.deliverable) ? i.assessment.width : 100 - i.assessment.width;
+
 /**
- * Deliverables most in need of attention, worst first: by detailed status, then by how far
- * from target (lowest % achieved, or for "lower is better" KPIs the largest excess).
+ * Orders KPIs worst first: by detailed status (missed severe, off track, at risk, on track, met,
+ * surpassed, then unscored), then by distance from target, then by page and serial number.
+ */
+export function worstFirst(a: AssessedDeliverable, b: AssessedDeliverable): number {
+  return (SEVERITY[b.assessment.label] ?? 0) - (SEVERITY[a.assessment.label] ?? 0)
+    || distanceFromTarget(b) - distanceFromTarget(a)
+    || a.source.title.localeCompare(b.source.title)
+    || a.deliverable.serialNumber - b.deliverable.serialNumber;
+}
+
+/**
+ * Deliverables most in need of attention (at risk, off track or missed), worst first.
  * Deliverables listed on two pages ("Both") appear once.
  */
 export function needsAttention(families: FamilySummary[]): AssessedDeliverable[] {
-  const seen = new Set<string>();
-  const flagged: AssessedDeliverable[] = [];
-  for (const family of families) {
-    for (const item of family.items) {
-      if (seen.has(item.deliverable.id)) continue;
-      seen.add(item.deliverable.id);
-      if (item.status === 'warning' || item.status === 'critical') flagged.push(item);
-    }
-  }
-  const distance = (i: AssessedDeliverable) =>
-    isLowerBetter(i.deliverable) ? i.assessment.width : 100 - i.assessment.width;
-  return flagged.sort((a, b) =>
-    (SEVERITY[b.assessment.label] ?? 0) - (SEVERITY[a.assessment.label] ?? 0) || distance(b) - distance(a)
-  );
+  return uniqueItems(families).filter(i => i.status === 'warning' || i.status === 'critical').sort(worstFirst);
 }
 
 // ── Owners and filters ──

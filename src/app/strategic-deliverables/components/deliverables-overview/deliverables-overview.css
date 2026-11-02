@@ -217,9 +217,12 @@
   border-radius: 20px;
   white-space: nowrap;
 }
+.status-badge.status-surpassed { background: #166534; color: #ffffff; }
+.status-badge.status-on-track  { background: #dcfce7; color: #166534; }
 .status-badge.status-at-risk   { background: #fef9c3; color: #713f12; }
 .status-badge.status-off-track { background: #fee2e2; color: #991b1b; }
 .status-badge.status-severe    { background: #991b1b; color: #ffffff; }
+.status-badge.status-na        { background: #f1f5f9; color: #64748b; }
 
 .empty-note,
 .more-note { font-size: 13px; color: var(--text-muted); margin: 4px 0 0; }
@@ -357,17 +360,6 @@
 .owner-list .link-btn.owner-name { color: var(--accent); font-size: 13px; font-weight: 600; }
 .owner-count { font-weight: 700; font-variant-numeric: tabular-nums; }
 
-/* ── Priority-area groups ── */
-.group-title {
-  margin: 4px 0 8px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-.group-title + app-status-bars { margin-bottom: 12px; }
-
 /* ── Period toggle: Full year, Q1-Q4 ── */
 .filter-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
 .period-toggle { display: inline-flex; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: var(--surface); }
@@ -399,4 +391,48 @@
 .tile-change .down { color: var(--status-critical); }
 .tile-change .muted { font-weight: 400; }
 
-.solo-card { margin-bottom: 16px; }
+/* ── KPI results: status chips, search and the list ── */
+.kpi-card { margin-bottom: 16px; }
+.kpi-search input {
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-primary);
+  min-width: 200px;
+}
+.kpi-search input:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 12px; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--surface);
+  border: 1px solid #cbd5e1;
+  border-radius: 20px;
+  padding: 5px 11px;
+  cursor: pointer;
+}
+.chip b { font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.chip:hover:not(:disabled) { background: var(--surface-muted); }
+.chip.on { background: var(--text-primary); border-color: var(--text-primary); color: #ffffff; }
+.chip.on b { color: #ffffff; }
+.chip:disabled { opacity: 0.5; cursor: default; }
+.chip:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 1px; }
+
+.kpi-table .item-title { font-weight: 600; }
+.kpi-table td:nth-child(2) { min-width: 220px; }
+.more-note .link-btn { font-size: 13px; }
+
+@media (max-width: 640px) {
+  .kpi-search { width: 100%; }
+  .kpi-search input { width: 100%; min-width: 0; }
+}

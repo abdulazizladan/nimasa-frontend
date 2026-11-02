@@ -4,7 +4,7 @@ import { GlobalStateService } from '../../../core/services/global-state.service'
 import { AllDeliverablesService, DELIVERABLE_SOURCES } from '../../../strategic-deliverables/services/all-deliverables.service';
 import { PdfReportService } from '../../../strategic-deliverables/services/pdf-report.service';
 import {
-  applyFilters, summariseFamilies, uniqueItems, ownerOf, statusByGroup, periodLabel, latestReportedQuarter
+  applyFilters, summariseFamilies, uniqueItems, ownerOf, periodLabel, latestReportedQuarter
 } from '../../../strategic-deliverables/utils/portfolio-summary';
 
 type ReportKind = 'summary' | 'kpi';
@@ -59,7 +59,7 @@ export class GuestReports implements OnInit, OnDestroy {
       return option ? `${option.item.deliverable.indicator}: targets, results over the quarters and ${this.periodName()} report notes.` : 'Choose a KPI.';
     }
     const n = this.items().length;
-    return `${n} KPI${n === 1 ? '' : 's'}: headline figures, status by type, how the priorities are doing, and a table of every KPI for ${this.periodName()}.`;
+    return `${n} KPI${n === 1 ? '' : 's'}: headline figures, status by type, KPIs by status, and every KPI's result against its target for ${this.periodName()}.`;
   });
 
   canDownload = computed(() => !this.loading() && !this.downloading() && (this.kind() === 'summary' || !!this.kpiId()));
@@ -86,8 +86,6 @@ export class GuestReports implements OnInit, OnDestroy {
           scope: `${type} · ${this.owner() || 'All departments'}`,
           families: this.families(),
           items,
-          nationalAreas: statusByGroup(items.filter(i => i.source.id !== 'agency'), i => i.deliverable.priorityArea || 'No priority area'),
-          agencyAreas: statusByGroup(items.filter(i => i.source.id === 'agency'), i => i.deliverable.priorityArea || 'No priority area'),
           latest: latestReportedQuarter(this.service.results()),
         });
       } else {

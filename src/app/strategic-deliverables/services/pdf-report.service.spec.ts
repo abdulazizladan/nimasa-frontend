@@ -32,13 +32,15 @@ describe('PdfReportService documents', () => {
     const families = summariseFamilies([{ source: PRESIDENTIAL_CONFIG, deliverables: [kpi], failed: false }], YEAR, 1);
     const doc = service.summaryDocument({
       period: { year: YEAR, quarter: 1 }, scope: 'All types · All departments', families, items: uniqueItems(families),
-      nationalAreas: [], agencyAreas: [], latest: { year: YEAR, quarter: 1 },
+      latest: { year: YEAR, quarter: 1 },
     });
     const text = textOf(doc.content);
     expect(doc.pageSize).toBe('A4');
     expect(text).toContain('Performance Report · Q2 2026');
     expect(text).toContain('Latest results: Q2 2026');
     expect(text).toContain('Status by type');
+    expect(text).toContain('KPIs by status');
+    expect(text).toContain('KPI results, worst first');
     expect(text).toContain('#3 Safer ports');
     expect(text).toContain('Target Surpassed');   // 3 days against a target of 4, lower is better
   });

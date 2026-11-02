@@ -2,8 +2,8 @@ import { Injectable } from '@angular/core';
 import { StrategicDeliverable, QuarterlyReport } from './strategic-deliverables.service';
 import { DeliverablesConfig, CATEGORY_LABELS } from '../deliverables-config';
 import {
-  AssessedDeliverable, FamilySummary, Period, StatusRow, StatusClass, STATUS_CLASSES,
-  periodLabel, ownerOf, assessForPeriod
+  AssessedDeliverable, FamilySummary, Period, StatusClass, STATUS_CLASSES,
+  periodLabel, ownerOf, assessForPeriod, worstFirst
 } from '../utils/portfolio-summary';
 import { getAggregationLabel, getBaselineForYear, getAnnualTarget, isLowerBetter, QUARTER_KEYS } from '../utils/kpi-performance';
 import { kpiTimeline, timelineSvg } from '../utils/kpi-timeline';
@@ -15,8 +15,6 @@ export interface SummaryReportInput {
   scope: string;
   families: FamilySummary[];
   items: AssessedDeliverable[];
-  nationalAreas: StatusRow[];
-  agencyAreas: StatusRow[];
   /** Most recent quarter with results, for "Latest results: Q3 2026" */
   latest: Period | null;
 }
@@ -102,31 +100,43 @@ export class PdfReportService {
       ...input.families.map(f => this.barRow(f.source.title, f.counts, f.total)),
     ];
 
-    if (input.nationalAreas.length || input.agencyAreas.length) {
-      content.push({ text: 'How the priorities are doing', style: 'h2' });
-      if (input.nationalAreas.length) {
-        content.push({ text: 'NATIONAL', style: 'group' }, ...input.nationalAreas.map(r => this.barRow(r.label, r.counts, r.total)));
-      }
-      if (input.agencyAreas.length) {
-        content.push({ text: 'AGENCY', style: 'group' }, ...input.agencyAreas.map(r => this.barRow(r.label, r.counts, r.total)));
-      }
+    if (input.items.length) {
+      content.push(
+        { text: 'KPIs by status', style: 'h2' },
+        {
+          table: {
+            headerRows: 1,
+            widths: ['*', 50, 50],
+            body: [
+              ['Status', 'KPIs', 'Share'].map((h, i) => ({ text: h, style: i ? 'thNum' : 'th' })),
+              ...STATUS_CLASSES.map(s => [
+                { text: s.label, style: 'td', fillColor: STATUS_WASH[s.key] },
+                { text: String(counts[s.key]), style: 'tdNum' },
+                { text: input.items.length ? `${Math.round((counts[s.key] / input.items.length) * 100)}%` : '—', style: 'tdNum' },
+              ]),
+            ],
+          },
+          layout: this.tableLayout(),
+          margin: [0, 0, 0, 6],
+        },
+      );
     }
 
-    content.push({ text: 'KPIs', style: 'h2', pageBreak: input.items.length > 6 ? 'before' : undefined });
+    content.push({ text: 'KPI results, worst first', style: 'h2', pageBreak: input.items.length > 6 ? 'before' : undefined });
     if (input.items.length) {
       content.push({
         table: {
           headerRows: 1,
           widths: [58, '*', 80, 42, 42, 74],
           body: [
-            ['Type', 'KPI', 'Owner', 'Target', 'Actual', 'Status'].map(h => ({ text: h, style: ['Target', 'Actual'].includes(h) ? 'thNum' : 'th' })),
+            ['Type', 'KPI', 'Owner', 'Target', 'Result', 'Status'].map(h => ({ text: h, style: ['Target', 'Result'].includes(h) ? 'thNum' : 'th' })),
             ...[...input.items]
-              .sort((a, b) => a.source.title.localeCompare(b.source.title) || a.deliverable.serialNumber - b.deliverable.serialNumber)
+              .sort(worstFirst)
               .map(i => [
                 { text: CATEGORY_LABELS[i.deliverable.category] ?? i.source.badge, style: 'td' },
                 { stack: [
-                  { text: `#${i.deliverable.serialNumber} ${i.deliverable.outcome || i.deliverable.deliverable || ''}`.trim(), style: 'tdStrong' },
-                  { text: i.deliverable.indicator, style: 'tdMuted' },
+                  { text: i.deliverable.indicator, style: 'tdStrong' },
+                  { text: `#${i.deliverable.serialNumber} ${i.deliverable.outcome || i.deliverable.deliverable || ''}`.trim(), style: 'tdMuted' },
                 ] },
                 { text: ownerOf(i.deliverable), style: 'td' },
                 { text: fmt(i.summary?.target), style: 'tdNum' },

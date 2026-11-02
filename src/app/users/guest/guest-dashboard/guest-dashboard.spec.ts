@@ -63,7 +63,7 @@ describe('GuestDashboard', () => {
     await respond([onTrack]);
     const text: string = fixture.nativeElement.textContent;
 
-    expect(text).toContain(`Deliverables overview · ${YEAR}`);
+    expect(text).toContain(`KPI overview · ${YEAR}`);
     expect(text).toContain('Presidential Priorities');
     expect(text).toContain('Ministerial Deliverables');
     expect(text).toContain('Agency Deliverables');
@@ -85,7 +85,24 @@ describe('GuestDashboard', () => {
   it('hides the internal overdue reports panel from guests', async () => {
     await respond([onTrack]);
     expect(fixture.nativeElement.textContent).not.toContain('Overdue reports');
-    expect(fixture.nativeElement.textContent).toContain('How the priorities are doing');
+  });
+
+  it('lists every KPI with its status, result and target, and filters by status', async () => {
+    await respond([onTrack]);
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.textContent).toContain('KPI results');
+    expect(el.textContent).not.toContain('priorities are doing');
+    const row = el.querySelector('.kpi-table tbody tr') as HTMLElement;
+    expect(row.textContent).toContain('% of vessels inspected');
+    expect(row.textContent).toContain('On Track');
+    expect(row.textContent).toContain('90');
+
+    const attention = [...el.querySelectorAll('.chip')].find(c => c.textContent?.includes('Needs attention')) as HTMLButtonElement;
+    expect(attention.disabled).toBe(true);   // nothing is at risk
+    const good = [...el.querySelectorAll('.chip')].find(c => c.textContent?.includes('Surpassed, met or on track')) as HTMLButtonElement;
+    good.click();
+    fixture.detectChanges();
+    expect(el.querySelectorAll('.kpi-table tbody tr').length).toBe(1);
   });
 
   it('does not show the admin-only data readiness panel', async () => {

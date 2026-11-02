@@ -1,16 +1,16 @@
 <section class="overview" aria-labelledby="overview-title">
   <div class="overview-header">
-    <h2 id="overview-title">Deliverables overview · {{ periodName() }}</h2>
+    <h2 id="overview-title">KPI overview · {{ periodName() }}</h2>
     <p class="subtitle">
-      <ng-container *ngIf="quarter() === null; else quarterSubtitle">Status of each deliverable for the year, from its quarterly reports against its annual target.</ng-container>
-      <ng-template #quarterSubtitle>Status of each deliverable for {{ periodName() }}: that quarter's result against that quarter's target.</ng-template>
+      <ng-container *ngIf="quarter() === null; else quarterSubtitle">Status of each KPI for the year, from its quarterly reports against its annual target.</ng-container>
+      <ng-template #quarterSubtitle>Status of each KPI for {{ periodName() }}: that quarter's result against that quarter's target.</ng-template>
       <span class="latest" *ngIf="latest() as l"> Latest results: {{ l.quarter === null ? l.year : 'Q' + (l.quarter + 1) + ' ' + l.year }}.</span>
     </p>
   </div>
 
   <div *ngIf="loading()" class="loading-wrapper">
     <div class="spinner"></div>
-    <p>Loading deliverables...</p>
+    <p>Loading KPIs...</p>
   </div>
 
   <ng-container *ngIf="!loading()">
@@ -40,11 +40,11 @@
       <button type="button" class="link-btn" *ngIf="hasFilters()" (click)="clearFilters()">Clear filters</button>
       <span class="filter-spacer"></span>
       <button type="button" class="btn-download btn-primary-download" (click)="downloadPdf()" [disabled]="downloadingPdf()"
-        title="A PDF report of this view: figures, priorities and every KPI">
+        title="A PDF report of this view: figures, status by type and every KPI">
         {{ downloadingPdf() ? 'Preparing PDF…' : 'Download PDF report' }}
       </button>
       <button type="button" class="btn-download" (click)="downloadSummary()" [disabled]="!items().length"
-        title="Every deliverable shown below, with each quarter's target and actual">
+        title="Every KPI shown below, with each quarter's target and actual">
         CSV
       </button>
     </div>
@@ -60,7 +60,7 @@
         <div class="card-head">
           <div>
             <h3>Ready to score in {{ year() }}?</h3>
-            <p class="card-sub">These stop deliverables from getting a status. Fix them and the panels below fill in.</p>
+            <p class="card-sub">These stop KPIs from getting a status. Fix them and the panels below fill in.</p>
           </div>
         </div>
         <div class="ready-list">
@@ -87,7 +87,7 @@
       </ng-container>
       <ng-template #allReady>
         <p class="ready-ok"><span class="status-icon status-good" aria-hidden="true">✓</span>
-          All {{ items().length }} deliverables are ready to score in {{ year() }}.</p>
+          All {{ items().length }} KPIs are ready to score in {{ year() }}.</p>
       </ng-template>
     </div>
 
@@ -130,15 +130,82 @@
         <ng-template #noCompare><span class="muted">No results for {{ c.since }} to compare</span></ng-template>
       </span>
       <span class="tile-meta">
-        <span>{{ f.total }} deliverable{{ f.total === 1 ? '' : 's' }} in {{ year() }}</span>
+        <span>{{ f.total }} KPI{{ f.total === 1 ? '' : 's' }} in {{ year() }}</span>
         <span *ngIf="f.counts.critical" class="tile-flag">
           <span class="status-icon status-critical" aria-hidden="true">✕</span> {{ f.counts.critical }} off track / missed
         </span>
       </span>
     </ng-template>
 
-    <div class="solo-card" *ngIf="!isAdmin()">
-      <ng-container *ngTemplateOutlet="prioritiesCard"></ng-container>
+    <!-- KPI results: the centrepiece, every KPI for the period worst first -->
+    <div class="card kpi-card">
+      <div class="card-head">
+        <div>
+          <h3>KPI results · {{ periodName() }}</h3>
+          <p class="card-sub">Every KPI's result against its target, worst first. Click a KPI to {{ isAdmin() ? 'open it on its page' : 'see its details' }}. The line shows each quarter's result (blue) against its target (grey).</p>
+        </div>
+        <label class="kpi-search">
+          <span class="sr-only">Search KPIs</span>
+          <input type="search" placeholder="Search KPIs" [value]="kpiSearch()" (input)="setKpiSearch($any($event.target).value)">
+        </label>
+      </div>
+
+      <div class="chips" role="group" aria-label="Filter KPIs by status">
+        <button type="button" *ngFor="let chip of kpiChips()" class="chip" [class.on]="chip.key === kpiStatus()"
+          [attr.aria-pressed]="chip.key === kpiStatus()" [disabled]="!chip.count && chip.key !== ''" (click)="setKpiStatus(chip.key)">
+          <span *ngIf="chip.cls" class="swatch" [ngClass]="'fill-' + chip.cls" aria-hidden="true"></span>
+          {{ chip.label }} <b>{{ chip.count }}</b>
+        </button>
+      </div>
+
+      <p *ngIf="!items().length" class="empty-note">No KPIs match the filters for {{ year() }}.</p>
+      <p *ngIf="items().length && !kpiMatchCount()" class="empty-note">
+        <ng-container *ngIf="kpiSearch(); else noneInStatus">No KPIs match "{{ kpiSearch() }}".</ng-container>
+        <ng-template #noneInStatus>No KPIs in this status for {{ periodName() }}.</ng-template>
+      </p>
+
+      <div class="table-wrap" *ngIf="kpiRows().length">
+        <table class="data-table kpi-table">
+          <thead>
+            <tr>
+              <th scope="col">Status</th>
+              <th scope="col">KPI</th>
+              <th scope="col">Quarters</th>
+              <th scope="col">Type</th>
+              <th scope="col">Owner</th>
+              <th scope="col" class="num">Target</th>
+              <th scope="col" class="num">Result</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of kpiRows()" class="clickable-row" role="link" tabindex="0"
+              [attr.title]="isAdmin() ? 'Open on ' + item.source.title : 'Open this KPI'"
+              (click)="openDeliverable(item)" (keydown.enter)="openDeliverable(item)">
+              <td>
+                <span class="status-badge" [ngClass]="item.assessment.cls">
+                  <span aria-hidden="true">{{ statusIcon(item.status) }}</span> {{ item.status === 'none' ? 'No result' : item.assessment.label }}
+                </span>
+                <div class="muted" *ngIf="item.assessment.deviation">{{ item.assessment.deviation }}</div>
+              </td>
+              <td>
+                <div class="item-title">{{ item.deliverable.indicator }}</div>
+                <div class="item-kpi">#{{ item.deliverable.serialNumber }} {{ titleOf(item) }}</div>
+              </td>
+              <td><app-quarter-sparkline [deliverable]="item.deliverable" [year]="year()"></app-quarter-sparkline></td>
+              <td>{{ item.source.badge }}</td>
+              <td>{{ ownerOf(item) }}</td>
+              <td class="num">{{ item.summary?.target === null || item.summary?.target === undefined ? '—' : (item.summary!.target | number: '1.0-2') }}</td>
+              <td class="num">{{ item.summary?.actual === null || item.summary?.actual === undefined ? '—' : (item.summary!.actual | number: '1.0-2') }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="more-note" *ngIf="kpiHidden() || kpiShowAll()">
+        <ng-container *ngIf="kpiHidden()">Showing {{ kpiRows().length }} of {{ kpiMatchCount() }} KPIs. </ng-container>
+        <button type="button" class="link-btn" (click)="kpiShowAll.set(!kpiShowAll())">
+          {{ kpiShowAll() ? 'Show fewer' : 'Show all ' + kpiMatchCount() }}
+        </button>
+      </p>
     </div>
 
     <ng-template #statusLegend>
@@ -157,7 +224,7 @@
         <div class="card-head">
           <div>
             <h3>Status by type</h3>
-            <p class="card-sub">Share of each page's deliverables in each status, {{ periodName() }}</p>
+            <p class="card-sub">Share of each page's KPIs in each status, {{ periodName() }}</p>
           </div>
           <button type="button" class="link-btn" (click)="showStatusTable.set(!showStatusTable())"
             [attr.aria-pressed]="showStatusTable()">
@@ -167,7 +234,7 @@
         <ng-container *ngTemplateOutlet="statusLegend"></ng-container>
 
         <app-status-bars *ngIf="!showStatusTable()" [rows]="typeRows()" [clickable]="true"
-          [emptyText]="'No deliverables active in ' + year()" (rowSelect)="openTypeRow($event)"></app-status-bars>
+          [emptyText]="'No KPIs active in ' + year()" (rowSelect)="openTypeRow($event)"></app-status-bars>
 
         <div *ngIf="showStatusTable()" class="table-wrap">
           <table class="data-table status-table">
@@ -196,7 +263,7 @@
         <div class="card-head">
           <div>
             <h3>Quarterly reporting</h3>
-            <p class="card-sub">Share of {{ year() }} deliverables with a report for each quarter</p>
+            <p class="card-sub">Share of {{ year() }} KPIs with a report for each quarter</p>
           </div>
         </div>
 
@@ -235,60 +302,6 @@
       </div>
     </div>
 
-    <!-- Needs attention -->
-    <div class="card">
-      <div class="card-head">
-        <div>
-          <h3>Needs attention</h3>
-          <p class="card-sub">Deliverables off track, missed or at risk in {{ periodName() }}, worst first. The line shows each quarter's result (blue) against its target (grey).</p>
-        </div>
-      </div>
-
-      <p *ngIf="attention().length === 0" class="empty-note">
-        Nothing is off track or at risk among deliverables with results for {{ periodName() }}.
-      </p>
-
-      <div class="table-wrap" *ngIf="attention().length">
-        <table class="data-table attention-table">
-          <thead>
-            <tr>
-              <th scope="col">Status</th>
-              <th scope="col">Deliverable / KPI</th>
-              <th scope="col">Quarters</th>
-              <th scope="col">Type</th>
-              <th scope="col">Owner</th>
-              <th scope="col" class="num">Target</th>
-              <th scope="col" class="num">Actual</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of attention()" class="clickable-row" role="link" tabindex="0"
-              [attr.title]="isAdmin() ? 'Open on ' + item.source.title : 'Open this KPI'"
-              (click)="openDeliverable(item)" (keydown.enter)="openDeliverable(item)">
-              <td>
-                <span class="status-badge" [ngClass]="item.assessment.cls">
-                  <span aria-hidden="true">{{ item.status === 'critical' ? '✕' : '!' }}</span> {{ item.assessment.label }}
-                </span>
-                <div class="muted" *ngIf="item.assessment.deviation">{{ item.assessment.deviation }}</div>
-              </td>
-              <td>
-                <div class="item-title">#{{ item.deliverable.serialNumber }} {{ titleOf(item) }}</div>
-                <div class="item-kpi">{{ item.deliverable.indicator }}</div>
-              </td>
-              <td><app-quarter-sparkline [deliverable]="item.deliverable" [year]="year()"></app-quarter-sparkline></td>
-              <td>{{ item.source.badge }}</td>
-              <td>{{ ownerOf(item) }}</td>
-              <td class="num">{{ item.summary?.target === null || item.summary?.target === undefined ? '—' : (item.summary!.target | number: '1.0-2') }}</td>
-              <td class="num">{{ item.summary?.actual === null || item.summary?.actual === undefined ? '—' : (item.summary!.actual | number: '1.0-2') }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <p *ngIf="attentionMore()" class="more-note">
-        and {{ attentionMore() }} more; see the {{ isAdmin() ? 'deliverables pages' : 'KPIs page' }} for the full list.
-      </p>
-    </div>
-
     <div class="cards">
       <!-- Overdue reports (admins: naming late departments is for internal follow-up) -->
       <div class="card" *ngIf="isAdmin()">
@@ -303,11 +316,11 @@
           <p class="overdue-banner" [class.clear]="!o.missing">
             <ng-container *ngIf="o.missing; else allReported">
               {{ o.quarter }} ended on <b>{{ o.ended | date: 'd MMM y' }}</b><ng-container *ngIf="o.daysAgo">, {{ o.daysAgo }} days ago</ng-container>.
-              <b>{{ o.missing }} of {{ o.expected }}</b> deliverables have no {{ o.quarter }} report.
+              <b>{{ o.missing }} of {{ o.expected }}</b> KPIs have no {{ o.quarter }} report.
             </ng-container>
             <ng-template #allReported>
               <span class="status-icon status-good" aria-hidden="true">✓</span>
-              All {{ o.expected }} deliverables have reported for {{ o.quarter }} {{ year() }}.
+              All {{ o.expected }} KPIs have reported for {{ o.quarter }} {{ year() }}.
             </ng-template>
           </p>
           <ul class="owner-list" *ngIf="o.missing">
@@ -336,16 +349,12 @@
     </div>
 
     <div class="cards">
-      <ng-container *ngIf="isAdmin()">
-        <ng-container *ngTemplateOutlet="prioritiesCard"></ng-container>
-      </ng-container>
-
       <!-- Trend by quarter -->
       <div class="card">
         <div class="card-head">
           <div>
             <h3>Trend by quarter</h3>
-            <p class="card-sub">Share of scored deliverables surpassed, met or on track in each quarter of {{ year() }}</p>
+            <p class="card-sub">Share of scored KPIs surpassed, met or on track in each quarter of {{ year() }}</p>
           </div>
         </div>
         <app-status-trend *ngIf="trendQuarters() >= 2; else trendWaiting" [series]="trend()" [year]="year()"></app-status-trend>
@@ -358,32 +367,8 @@
       </div>
     </div>
 
-    <ng-template #prioritiesCard>
-      <!-- Status by priority area (guests see it first, as "How the priorities are doing") -->
-      <div class="card">
-        <div class="card-head">
-          <div>
-            <h3>{{ isAdmin() ? 'Status by priority area' : 'How the priorities are doing' }}</h3>
-            <p class="card-sub">National priorities (presidential and ministerial) and agency areas, {{ periodName() }}, most off track first<ng-container *ngIf="!isAdmin()">. Click one to see its KPIs.</ng-container></p>
-          </div>
-        </div>
-        <ng-container *ngTemplateOutlet="statusLegend"></ng-container>
-        <ng-container *ngIf="nationalAreaRows().length">
-          <h4 class="group-title">National</h4>
-          <app-status-bars [rows]="nationalAreaRows()" [clickable]="!isAdmin()" (rowSelect)="openArea($event)"></app-status-bars>
-        </ng-container>
-        <ng-container *ngIf="agencyAreaRows().length">
-          <h4 class="group-title">Agency</h4>
-          <app-status-bars [rows]="agencyAreaRows()" [clickable]="!isAdmin()" (rowSelect)="openArea($event)"></app-status-bars>
-        </ng-container>
-        <ng-container *ngIf="!nationalAreaRows().length && !agencyAreaRows().length">
-          <ng-container *ngTemplateOutlet="noRows"></ng-container>
-        </ng-container>
-      </div>
-    </ng-template>
-
     <ng-template #noRows>
-      <p class="empty-note">No deliverables match the filters for {{ year() }}.</p>
+      <p class="empty-note">No KPIs match the filters for {{ year() }}.</p>
     </ng-template>
   </ng-container>
 

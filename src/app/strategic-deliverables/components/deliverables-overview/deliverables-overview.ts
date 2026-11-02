@@ -7,8 +7,8 @@ import { PdfReportService } from '../../services/pdf-report.service';
 import { GlobalStateService } from '../../../core/services/global-state.service';
 import { DeliverablesConfig } from '../../deliverables-config';
 import {
-  STATUS_CLASSES, FamilySummary, AssessedDeliverable, CompletenessCell, StatusRow, Period,
-  summariseFamilies, reportingCompleteness, needsAttention, applyFilters, uniqueItems, ownerOf, statusByGroup,
+  STATUS_CLASSES, FamilySummary, AssessedDeliverable, CompletenessCell, StatusRow, Period, StatusClass,
+  summariseFamilies, reportingCompleteness, worstFirst, applyFilters, uniqueItems, ownerOf, statusByGroup,
   goodBreakdown, overdueReports, readinessChecks, quarterTrend, quartersWithTrendData, summaryCsv,
   departmentCodeFor, periodLabel, previousPeriod, latestReportedQuarter, ORGANIZATION_WIDE
 } from '../../utils/portfolio-summary';
@@ -31,18 +31,30 @@ interface TileChange {
   since: string;
 }
 
-/** How many deliverables the attention list shows */
-const ATTENTION_LIMIT = 8;
+/** How many KPIs the results list shows before "Show all" */
+const KPI_LIST_LIMIT = 10;
+
+/** Status chip above the KPI list: a status class, "attention" (at risk or worse), or "" for all */
+export type KpiStatusFilter = StatusClass | 'attention' | '';
+
+interface StatusChip {
+  key: KpiStatusFilter;
+  label: string;
+  count: number;
+  /** Status class whose colour the chip shows; none for "All" and "Needs attention" */
+  cls: StatusClass | null;
+}
 /** How many deliverables each readiness line lists when opened */
 const READINESS_LIST_LIMIT = 10;
 
 /**
- * Dashboard summary of presidential, ministerial and agency deliverables for a period (a year, or
- * one quarter of it). Period, type and department filters scope every panel. Statuses use the same
- * rules as the deliverables pages.
+ * Dashboard summary of the presidential, ministerial and agency KPIs for a period (a year, or one
+ * quarter of it). Period, type and department filters scope every panel. The KPI results list is the
+ * centrepiece: every KPI's result against its target, worst first, filtered by status. Statuses use
+ * the same rules as the deliverables pages.
  *
  * Admins get links into the admin pages plus the data readiness and overdue panels. Guests get
- * links into the guest KPI pages, with the priorities summary moved up and internal panels hidden.
+ * links into the guest KPI pages, with the internal panels hidden.
  */
 @Component({
   selector: 'app-deliverables-overview',
@@ -144,13 +156,6 @@ export class DeliverablesOverview implements OnInit, OnDestroy {
       });
   });
 
-  nationalAreaRows = computed<StatusRow[]>(() =>
-    statusByGroup(this.items().filter(i => i.source.id !== 'agency'), i => i.deliverable.priorityArea || 'No priority area')
-  );
-  agencyAreaRows = computed<StatusRow[]>(() =>
-    statusByGroup(this.items().filter(i => i.source.id === 'agency'), i => i.deliverable.priorityArea || 'No priority area')
-  );
-
   completeness = computed(() =>
     this.families().map(f => ({ family: f, cells: reportingCompleteness(f, this.yearNum()) }))
   );
@@ -160,9 +165,38 @@ export class DeliverablesOverview implements OnInit, OnDestroy {
   trend = computed(() => quarterTrend(this.families(), this.yearNum()));
   trendQuarters = computed(() => quartersWithTrendData(this.trend()));
 
-  private attentionAll = computed(() => needsAttention(this.families()));
-  attention = computed(() => this.attentionAll().slice(0, ATTENTION_LIMIT));
-  attentionMore = computed(() => Math.max(0, this.attentionAll().length - ATTENTION_LIMIT));
+  // ── KPI results: every KPI for the period, worst first ──
+  kpiStatus = signal<KpiStatusFilter>('');
+  kpiSearch = signal('');
+  kpiShowAll = signal(false);
+
+  private statusCounts = computed(() => {
+    const counts: Record<StatusClass, number> = { good: 0, warning: 0, critical: 0, none: 0 };
+    this.items().forEach(i => counts[i.status]++);
+    return counts;
+  });
+
+  kpiChips = computed<StatusChip[]>(() => {
+    const c = this.statusCounts();
+    return [
+      { key: '', label: 'All', count: this.items().length, cls: null },
+      { key: 'attention', label: 'Needs attention', count: c.warning + c.critical, cls: null },
+      ...STATUS_CLASSES.map(s => ({ key: s.key, label: s.label, count: c[s.key], cls: s.key })),
+    ];
+  });
+
+  private kpiMatches = computed(() => {
+    const status = this.kpiStatus();
+    const text = this.kpiSearch().trim().toLowerCase();
+    return [...this.items()]
+      .filter(i => !status || (status === 'attention' ? i.status === 'warning' || i.status === 'critical' : i.status === status))
+      .filter(i => !text || [i.deliverable.indicator, i.deliverable.outcome, i.deliverable.deliverable, ownerOf(i.deliverable)]
+        .some(v => (v || '').toLowerCase().includes(text)))
+      .sort(worstFirst);
+  });
+  kpiRows = computed(() => this.kpiShowAll() ? this.kpiMatches() : this.kpiMatches().slice(0, KPI_LIST_LIMIT));
+  kpiHidden = computed(() => Math.max(0, this.kpiMatches().length - this.kpiRows().length));
+  kpiMatchCount = computed(() => this.kpiMatches().length);
 
   ngOnInit(): void {
     this.sub = this.globalState.selectedQuarter$.subscribe(q => this.quarter.set(q));
@@ -192,6 +226,21 @@ export class DeliverablesOverview implements OnInit, OnDestroy {
   clearFilters(): void {
     this.typeFilter.set('');
     this.ownerFilter.set('');
+  }
+
+  setKpiStatus(key: KpiStatusFilter): void {
+    this.kpiStatus.set(key);
+    this.kpiShowAll.set(false);
+  }
+
+  setKpiSearch(value: string): void {
+    this.kpiSearch.set(value);
+    this.kpiShowAll.set(false);
+  }
+
+  /** Icon for a KPI's status: ✓ good, ! at risk, ✕ off track, – not scored */
+  statusIcon(status: StatusClass): string {
+    return STATUS_CLASSES.find(s => s.key === status)?.icon ?? '';
   }
 
   share(count: number, total: number): number {
@@ -227,7 +276,7 @@ export class DeliverablesOverview implements OnInit, OnDestroy {
       y = rect.top - box.top;
     }
     this.tip.set(cell.due
-      ? { x, y, value: this.percent(cell.share), label, detail: `${cell.reported} of ${cell.expected} deliverables reported` }
+      ? { x, y, value: this.percent(cell.share), label, detail: `${cell.reported} of ${cell.expected} KPIs reported` }
       : { x, y, value: 'Not due yet', label, detail: `${cell.reported} of ${cell.expected} reported so far` });
   }
 
@@ -263,8 +312,6 @@ export class DeliverablesOverview implements OnInit, OnDestroy {
         scope: this.scopeText(),
         families: this.families(),
         items: this.items(),
-        nationalAreas: this.nationalAreaRows(),
-        agencyAreas: this.agencyAreaRows(),
         latest: this.latest(),
       });
     } catch {
@@ -308,10 +355,6 @@ export class DeliverablesOverview implements OnInit, OnDestroy {
 
   openDepartment(code: string | null | undefined): void {
     if (this.isAdmin() && code) this.router.navigate(['/admin/organization/departments', code]);
-  }
-
-  openArea(row: StatusRow): void {
-    if (!this.isAdmin()) this.openGuestKpis({ area: row.label });
   }
 
   titleOf(item: AssessedDeliverable): string {

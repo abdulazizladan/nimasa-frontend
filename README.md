@@ -141,21 +141,20 @@ Serial numbers are assigned by the backend when a deliverable is created and can
 
 ## Dashboards
 
-The admin and guest dashboards share `strategic-deliverables/components/deliverables-overview`. At the top, the **period** (full year or Q1–Q4) and Type and Department filters apply to every panel. For a quarter, each KPI is scored on that quarter's result against that quarter's target. **Download PDF report** saves the view as a PDF; **CSV** saves the figures.
+The admin and guest dashboards share `strategic-deliverables/components/deliverables-overview`. They are about KPIs, not priority areas: the centrepiece is the **KPI results** list, every KPI's result against its target for the period, worst first. At the top, the **period** (full year or Q1–Q4) and Type and Department filters apply to every panel. For a quarter, each KPI is scored on that quarter's result against that quarter's target. **Download PDF report** saves the view as a PDF; **CSV** saves the figures.
 
 | Panel | Shows |
 |---|---|
 | Ready to score (admins only) | What stops deliverables getting a status: no annual target, direction never set, no report this year, owner that isn't a department. Each line opens to list the deliverables. |
 | Headline tiles | Per page: share surpassed, met or on track, the surpassed / met / on track split, and the change since the previous period |
-| How the priorities are doing | National (presidential and ministerial) and agency priority areas. Guests see it right after the tiles. |
+| KPI results | Every KPI for the period, worst first: status, result, target and a sparkline of each quarter's result against its target. Status chips (All, Needs attention, and the four status classes) and a search box filter the list; it shows 10 KPIs until "Show all". |
 | Status by type | Stacked bars per page, with a table view |
-| Quarterly reporting | Share of deliverables reported for each quarter |
-| Needs attention | Worst results first, with a sparkline of each quarter's result against its target |
+| Quarterly reporting | Share of KPIs reported for each quarter |
 | Overdue reports (admins only) | Who still owes a report for the latest quarter that has ended |
 | Status by department | Stacked bars per owner |
 | Trend by quarter | Share surpassed, met or on track per quarter; appears once two quarters have scored reports |
 
-The overview takes `audience="admin"` (the default) or `audience="guest"`. Admins' links open the admin pages; guests' links open the guest KPI pages, already filtered (a tile by type, a priority by area, a department by owner).
+The overview takes `audience="admin"` (the default) or `audience="guest"`. Admins' links open the admin pages; guests' links open the guest KPI pages, already filtered (a tile by type, a department by owner) or the KPI itself.
 
 The top cards on the admin dashboard count the deliverables active in the selected year, with the all-time total underneath, so they agree with the panels below.
 
@@ -167,14 +166,14 @@ The top cards on the admin dashboard count the deliverables active in the select
 
 `strategic-deliverables/services/pdf-report.service.ts` builds A4 PDFs in the browser with [pdfmake](https://pdfmake.github.io/docs/), loaded only when someone downloads a report:
 
-- **Period summary:** headline figures, status by type, how the priorities are doing, and every KPI with target, result and status.
+- **Period summary:** headline figures, status by type, KPIs by status, and every KPI with target, result and status, worst first.
 - **Single KPI:** details, the line chart, each quarter's result and status, and the report notes.
 
 Guest reports and the guest KPI page leave out the "support required" note.
 
 ### Where the rules live
 
-The rules behind these panels are plain functions in `strategic-deliverables/utils/portfolio-summary.ts` (periods, filters, readiness, overdue, grouping, trend, export), covered by `portfolio-summary.spec.ts`. The charts are small standalone components: `status-bars`, `quarter-sparkline`, `status-trend` and `kpi-quarter-chart`.
+The rules behind these panels are plain functions in `strategic-deliverables/utils/portfolio-summary.ts` (periods, filters, worst-first ordering, readiness, overdue, grouping, trend, export), covered by `portfolio-summary.spec.ts`. The charts are small standalone components: `status-bars`, `quarter-sparkline`, `status-trend` and `kpi-quarter-chart`.
 
 ## Conventions
 
