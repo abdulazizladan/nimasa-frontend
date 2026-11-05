@@ -1,0 +1,89 @@
+<app-modal [title]="saved() ? 'Edit quarterly report' : 'Submit quarterly report'" [closeOnBackdrop]="!saving()" (closed)="cancel.emit()">
+  <form (ngSubmit)="submit()" #reportForm="ngForm" class="form">
+    <div class="modal-body">
+      <p class="kpi-name"><span class="label-caps">KPI</span> {{ deliverable().indicator }}</p>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="rf-year">Year *</label>
+          <select id="rf-year" [ngModel]="form().year" (ngModelChange)="changePeriod('year', $event)" name="year" required>
+            @for (y of yearOptions(); track y) {
+              <option [ngValue]="y">{{ y }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="rf-quarter">Quarter *</label>
+          <select id="rf-quarter" [ngModel]="form().quarter" (ngModelChange)="changePeriod('quarter', $event)" name="quarter" required>
+            @for (q of quarters; track q) {
+              <option [value]="q">{{ q }}{{ hasReport(q) ? ' (reported)' : '' }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      @if (loading()) {
+        <p class="period-note" role="status"><span class="spinner-sm dark"></span> Loading saved reports…</p>
+      } @else if (saved()) {
+        <p class="period-note">A {{ periodLabel() }} report already exists. Saving will update it.</p>
+      }
+      @if (loadError()) {
+        <div class="alert alert-warning" role="alert"><span>{{ loadError() }}</span></div>
+      }
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="rf-target">Target value *</label>
+          <input id="rf-target" type="number" [ngModel]="form().targetValue" (ngModelChange)="patch('targetValue', $event)" name="targetValue" required
+            placeholder="Target for this quarter" />
+        </div>
+        <div class="form-group">
+          <label for="rf-actual">Actual value *</label>
+          <input id="rf-actual" type="number" [ngModel]="form().actualValue" (ngModelChange)="patch('actualValue', $event)" name="actualValue" required
+            placeholder="Actual for this quarter" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="rf-progress">Milestones / progress achieved</label>
+        <textarea id="rf-progress" rows="2" [ngModel]="form().progress" (ngModelChange)="patch('progress', $event)" name="progress"
+          placeholder="Describe key progress achievements"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="rf-issues">Key issues / challenges faced</label>
+        <textarea id="rf-issues" rows="2" [ngModel]="form().keyIssues" (ngModelChange)="patch('keyIssues', $event)" name="keyIssues"
+          placeholder="Outline any challenges faced"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="rf-efforts">MDA's mitigation efforts</label>
+        <textarea id="rf-efforts" rows="2" [ngModel]="form().mdaEfforts" (ngModelChange)="patch('mdaEfforts', $event)" name="mdaEfforts"
+          placeholder="Describe efforts taken to resolve challenges"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="rf-comments">Comments / stakeholder support required</label>
+        <textarea id="rf-comments" rows="2" [ngModel]="form().comments" (ngModelChange)="patch('comments', $event)" name="comments"
+          placeholder="Any additional support requirements or comments (not shown to guests)"></textarea>
+      </div>
+    </div>
+
+    @if (formError() || serverError()) {
+      <div class="alert alert-error modal-error" role="alert"><span>{{ formError() || serverError() }}</span></div>
+    }
+
+    <div class="modal-footer">
+      @if (saved()) {
+        <button type="button" class="btn btn-danger-ghost push-left" (click)="deleteReport()" [disabled]="saving()">
+          <app-icon name="trash" /> Delete report
+        </button>
+      }
+      <button type="button" class="btn btn-secondary" (click)="cancel.emit()" [disabled]="saving()">Cancel</button>
+      <button type="submit" class="btn btn-primary" [disabled]="saving() || loading() || !reportForm.form.valid">
+        @if (saving()) { <span class="spinner-sm"></span> }
+        {{ saved() ? 'Update report' : 'Submit report' }}
+      </button>
+    </div>
+  </form>
+</app-modal>

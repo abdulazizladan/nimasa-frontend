@@ -1,36 +1,29 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { Injectable, signal } from '@angular/core';
 
 /**
  * App-wide selections shared by every page: the year, and within it the period being looked at
- * (the full year, or one quarter, 0 = Q1 ... 3 = Q4).
+ * (the full year, or one quarter, 0 = Q1 ... 3 = Q4). Both are signals, so components read them
+ * directly in templates and computeds without subscribing.
  */
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class GlobalStateService {
-  private selectedYearSubject = new BehaviorSubject<number>(new Date().getFullYear());
-  public selectedYear$: Observable<number> = this.selectedYearSubject.asObservable();
-
+  readonly selectedYear = signal<number>(new Date().getFullYear());
   /** null = full year; 0-3 = Q1-Q4 */
-  private selectedQuarterSubject = new BehaviorSubject<number | null>(null);
-  public selectedQuarter$: Observable<number | null> = this.selectedQuarterSubject.asObservable();
-
-  constructor() {}
+  readonly selectedQuarter = signal<number | null>(null);
 
   setYear(year: number): void {
-    this.selectedYearSubject.next(year);
+    if (Number.isFinite(year)) this.selectedYear.set(year);
   }
 
   getYear(): number {
-    return this.selectedYearSubject.value;
+    return this.selectedYear();
   }
 
   setQuarter(quarter: number | null): void {
-    this.selectedQuarterSubject.next(quarter);
+    this.selectedQuarter.set(quarter);
   }
 
   getQuarter(): number | null {
-    return this.selectedQuarterSubject.value;
+    return this.selectedQuarter();
   }
 }

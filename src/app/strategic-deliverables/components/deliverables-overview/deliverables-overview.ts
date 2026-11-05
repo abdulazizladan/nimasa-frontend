@@ -1,8 +1,7 @@
-import { Component, OnInit, OnDestroy, ElementRef, inject, input, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, ElementRef, inject, input, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { NgClass, NgFor, NgIf, NgTemplateOutlet, DecimalPipe, DatePipe } from '@angular/common';
-import { Subscription } from 'rxjs';
-import { AllDeliverablesService, DELIVERABLE_SOURCES } from '../../services/all-deliverables.service';
+import { AllDeliverablesService, TYPE_OPTIONS } from '../../services/all-deliverables.service';
 import { PdfReportService } from '../../services/pdf-report.service';
 import { GlobalStateService } from '../../../core/services/global-state.service';
 import { DeliverablesConfig } from '../../deliverables-config';
@@ -12,10 +11,12 @@ import {
   goodBreakdown, overdueReports, readinessChecks, quarterTrend, quartersWithTrendData, summaryCsv,
   departmentCodeFor, periodLabel, previousPeriod, latestReportedQuarter, ORGANIZATION_WIDE
 } from '../../utils/portfolio-summary';
-import { isActiveInYear } from '../../utils/kpi-performance';
+import { isActiveInYear, deliverableTitle } from '../../utils/kpi-performance';
 import { StatusBars } from '../status-bars/status-bars';
 import { QuarterSparkline } from '../quarter-sparkline/quarter-sparkline';
 import { StatusTrend } from '../status-trend/status-trend';
+import { Icon } from '../../../core/components/icon/icon';
+import { ROUTES } from '../../../core/routes';
 
 interface Tooltip {
   x: number;
@@ -59,17 +60,17 @@ const READINESS_LIST_LIMIT = 10;
 @Component({
   selector: 'app-deliverables-overview',
   standalone: true,
-  imports: [NgIf, NgFor, NgClass, NgTemplateOutlet, DecimalPipe, DatePipe, StatusBars, QuarterSparkline, StatusTrend],
+  imports: [NgIf, NgFor, NgClass, NgTemplateOutlet, DecimalPipe, DatePipe, StatusBars, QuarterSparkline, StatusTrend, Icon],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './deliverables-overview.html',
   styleUrl: './deliverables-overview.css',
 })
-export class DeliverablesOverview implements OnInit, OnDestroy {
+export class DeliverablesOverview implements OnInit {
   private service = inject(AllDeliverablesService);
   private pdf = inject(PdfReportService);
   private globalState = inject(GlobalStateService);
   private router = inject(Router);
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
-  private sub?: Subscription;
 
   /** Selected year, e.g. "2026" */
   year = input.required<string>();
@@ -78,11 +79,14 @@ export class DeliverablesOverview implements OnInit, OnDestroy {
   isAdmin = computed(() => this.audience() === 'admin');
 
   readonly statusClasses = STATUS_CLASSES;
-  readonly typeOptions = DELIVERABLE_SOURCES.map(s => ({ id: s.id, title: s.title }));
+  readonly typeOptions = TYPE_OPTIONS;
   readonly quarterOptions = [null, 0, 1, 2, 3];
   readonly readinessListLimit = READINESS_LIST_LIMIT;
 
+  /** First load: nothing to show yet */
   loading = computed(() => !this.service.loaded());
+  /** A later refresh: the panels stay up while new data arrives */
+  refreshing = computed(() => this.service.loaded() && this.service.loading());
   showStatusTable = signal(false);
   tip = signal<Tooltip | null>(null);
   downloadingPdf = signal(false);
@@ -90,7 +94,7 @@ export class DeliverablesOverview implements OnInit, OnDestroy {
 
   // ── Period and filters ──
   /** null = full year; 0-3 = Q1-Q4 (shared with the guest KPI pages) */
-  quarter = signal<number | null>(null);
+  quarter = this.globalState.selectedQuarter;
   typeFilter = signal('');
   ownerFilter = signal('');
   hasFilters = computed(() => !!this.typeFilter() || !!this.ownerFilter());
@@ -199,12 +203,24 @@ export class DeliverablesOverview implements OnInit, OnDestroy {
   kpiMatchCount = computed(() => this.kpiMatches().length);
 
   ngOnInit(): void {
-    this.sub = this.globalState.selectedQuarter$.subscribe(q => this.quarter.set(q));
+    this.service.ensureLoaded();
+  }
+
+  /** Fetches the latest deliverables and departments again. */
+  refresh(): void {
     this.service.refresh();
   }
 
-  ngOnDestroy(): void {
-    this.sub?.unsubscribe();
+  trackFamily(_: number, f: FamilySummary): string {
+    return f.source.id;
+  }
+
+  trackItem(_: number, item: AssessedDeliverable): string {
+    return item.deliverable.id;
+  }
+
+  trackChip(_: number, chip: StatusChip): string {
+    return chip.key;
   }
 
   setQuarter(q: number | null): void {
@@ -324,7 +340,7 @@ export class DeliverablesOverview implements OnInit, OnDestroy {
   // ── Navigation ──
 
   private openGuestKpis(params: Record<string, string>): void {
-    this.router.navigate(['/guest/kpis'], { queryParams: params });
+    this.router.navigate([ROUTES.guest.kpis], { queryParams: params });
   }
 
   openPage(source: DeliverablesConfig): void {
@@ -341,25 +357,24 @@ export class DeliverablesOverview implements OnInit, OnDestroy {
     if (this.isAdmin()) {
       this.router.navigate([item.source.pagePath], { queryParams: { year: this.year(), expand: item.deliverable.id } });
     } else {
-      this.router.navigate(['/guest/kpis', item.deliverable.id]);
+      this.router.navigateByUrl(ROUTES.guest.kpi(item.deliverable.id));
     }
   }
 
   openDepartmentRow(row: StatusRow): void {
     if (this.isAdmin()) {
-      if (row.departmentCode) this.router.navigate(['/admin/organization/departments', row.departmentCode]);
+      if (row.departmentCode) this.router.navigateByUrl(ROUTES.admin.department(row.departmentCode));
     } else {
       this.openGuestKpis({ owner: row.label });
     }
   }
 
   openDepartment(code: string | null | undefined): void {
-    if (this.isAdmin() && code) this.router.navigate(['/admin/organization/departments', code]);
+    if (this.isAdmin() && code) this.router.navigateByUrl(ROUTES.admin.department(code));
   }
 
   titleOf(item: AssessedDeliverable): string {
-    const d = item.deliverable;
-    return d.outcome || d.deliverable || d.indicator;
+    return deliverableTitle(item.deliverable);
   }
 
   ownerOf(item: AssessedDeliverable): string {

@@ -3,7 +3,7 @@ import { SourceDeliverables, DepartmentRef } from '../services/all-deliverables.
 import { DeliverablesConfig, AGENCY_CONFIG, CATEGORY_LABELS } from '../deliverables-config';
 import {
   assess, getYearSummary, getAnnualTarget, getQuarters, getAggregation, getAggregationLabel, isActiveInYear, isLowerBetter,
-  QUARTER_KEYS, Assessment, YearSummary
+  deliverableTitle, QUARTER_KEYS, Assessment, YearSummary
 } from './kpi-performance';
 
 /**
@@ -96,7 +96,7 @@ export function latestReportedQuarter(results: SourceDeliverables[]): Period | n
     for (const d of deliverables) {
       for (const [year, perf] of Object.entries(d.yearlyPerformance || {})) {
         QUARTER_KEYS.forEach((key, q) => {
-          if (!(perf as any)?.[key]) return;
+          if (!perf?.[key]) return;
           const y = Number(year);
           if (!best || y > best.year || (y === best.year && q > (best.quarter ?? -1))) best = { year: y, quarter: q };
         });
@@ -244,6 +244,34 @@ export function applyFilters(results: SourceDeliverables[], filters: DashboardFi
     .map(r => ({ ...r, deliverables: filters.owner ? r.deliverables.filter(d => ownerOf(d) === filters.owner) : r.deliverables }));
 }
 
+export interface KpiFilters {
+  /** Status class, or '' for all */
+  status?: string;
+  /** Page id ('presidential', 'ministerial', 'agency'), or '' for all */
+  type?: string;
+  /** Owner label from ownerOf(), or '' for all */
+  owner?: string;
+  /** Priority area name, or '' for all */
+  area?: string;
+  /** Free text matched against the KPI, deliverable, description, priority area and owner */
+  text?: string;
+}
+
+/** Narrows a KPI list by status, page, owner, priority area and free text. One rule for every KPI list. */
+export function filterKpis(items: AssessedDeliverable[], f: KpiFilters): AssessedDeliverable[] {
+  const text = (f.text ?? '').trim().toLowerCase();
+  return items.filter(i => {
+    const d = i.deliverable;
+    if (f.status && i.status !== f.status) return false;
+    if (f.type && i.source.id !== f.type) return false;
+    if (f.owner && ownerOf(d) !== f.owner) return false;
+    if (f.area && d.priorityArea !== f.area) return false;
+    if (text && ![d.indicator, d.outcome, d.deliverable, d.priorityArea, ownerOf(d)]
+      .some(v => (v || '').toLowerCase().includes(text))) return false;
+    return true;
+  });
+}
+
 /** Each deliverable once ("Both" ones are on two pages; the first page, presidential, wins). */
 export function uniqueItems(families: FamilySummary[]): AssessedDeliverable[] {
   const seen = new Set<string>();
@@ -372,7 +400,7 @@ export function readinessChecks(items: AssessedDeliverable[], year: number, depa
     {
       key: 'no-target',
       label: `No annual target for ${year}`,
-      detail: "Without a target, results can't be called met or missed. Fix: Edit the deliverable, then Annual Targets.",
+      detail: "Without a target, actuals can't be called met or missed. Fix: Edit the deliverable, then Annual Targets.",
       items: items.filter(i => getAnnualTarget(i.deliverable, year) === null),
     },
     {
@@ -459,7 +487,7 @@ export function summaryCsv(items: AssessedDeliverable[], year: number): string {
     return [
       CATEGORY_LABELS[d.category] ?? d.category,
       d.serialNumber,
-      d.outcome || d.deliverable,
+      deliverableTitle(d),
       d.indicator,
       d.priorityArea,
       ownerOf(d),

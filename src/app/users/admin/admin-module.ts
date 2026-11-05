@@ -7,10 +7,12 @@ import { Layout } from './components/layout/layout';
 import { Dashboard } from './components/dashboard/dashboard';
 import { Settings } from './components/settings/settings';
 import { DeliverablesOverview } from '../../strategic-deliverables/components/deliverables-overview/deliverables-overview';
-import { ConfirmDialog } from '../../core/components/confirm-dialog/confirm-dialog';
+import { PortalLayout } from '../../core/components/portal-layout/portal-layout';
+import { Icon } from '../../core/components/icon/icon';
+import { YearSelect } from '../../core/components/year-select/year-select';
 
 @NgModule({
   declarations: [Layout, Dashboard, Settings],
-  imports: [CommonModule, FormsModule, AdminRoutingModule, DeliverablesOverview, ConfirmDialog],
+  imports: [CommonModule, FormsModule, AdminRoutingModule, DeliverablesOverview, PortalLayout, Icon, YearSelect],
 })
 export class AdminModule {}

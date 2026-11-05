@@ -1,14 +1,12 @@
-import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription } from 'rxjs';
 import { GlobalStateService } from '../../../core/services/global-state.service';
-import { AllDeliverablesService, DELIVERABLE_SOURCES } from '../../../strategic-deliverables/services/all-deliverables.service';
+import { AllDeliverablesService, TYPE_OPTIONS } from '../../../strategic-deliverables/services/all-deliverables.service';
 import {
-  AssessedDeliverable, StatusClass, STATUS_CLASSES, summariseFamilies, uniqueItems, ownerOf, periodLabel
+  AssessedDeliverable, STATUS_CLASSES, summariseFamilies, uniqueItems, ownerOf, periodLabel, filterKpis, worstFirst
 } from '../../../strategic-deliverables/utils/portfolio-summary';
-
-/** Worst first: off track, at risk, on track, then no result */
-const STATUS_ORDER: Record<StatusClass, number> = { critical: 0, warning: 1, good: 2, none: 3 };
+import { deliverableTitle } from '../../../strategic-deliverables/utils/kpi-performance';
+import { ROUTES } from '../../../core/routes';
 
 /** Every KPI (presidential, ministerial and agency) for the selected period, searchable and filterable. */
 @Component({
@@ -17,18 +15,17 @@ const STATUS_ORDER: Record<StatusClass, number> = { critical: 0, warning: 1, goo
   templateUrl: './guest-kpis.html',
   styleUrls: ['../guest-pages.css', './guest-kpis.css'],
 })
-export class GuestKpis implements OnInit, OnDestroy {
+export class GuestKpis implements OnInit {
   private service = inject(AllDeliverablesService);
   private globalState = inject(GlobalStateService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
-  private subs: Subscription[] = [];
 
-  readonly typeOptions = DELIVERABLE_SOURCES.map(s => ({ id: s.id, title: s.title }));
+  readonly typeOptions = TYPE_OPTIONS;
   readonly statusOptions = STATUS_CLASSES;
 
-  year = signal(this.globalState.getYear());
-  quarter = signal<number | null>(this.globalState.getQuarter());
+  year = this.globalState.selectedYear;
+  quarter = this.globalState.selectedQuarter;
   periodName = computed(() => periodLabel({ year: this.year(), quarter: this.quarter() }));
   loading = computed(() => !this.service.loaded());
 
@@ -47,33 +44,24 @@ export class GuestKpis implements OnInit, OnDestroy {
   areaOptions = computed(() => [...new Set(this.all().map(i => i.deliverable.priorityArea).filter(Boolean))].sort());
   ownerOptions = computed(() => [...new Set(this.all().map(i => ownerOf(i.deliverable)))].sort());
 
-  shown = computed(() => {
-    const text = this.search().trim().toLowerCase();
-    return this.all()
-      .filter(i => !this.type() || i.source.id === this.type())
-      .filter(i => !this.area() || i.deliverable.priorityArea === this.area())
-      .filter(i => !this.owner() || ownerOf(i.deliverable) === this.owner())
-      .filter(i => !this.status() || i.status === this.status())
-      .filter(i => !text || [i.deliverable.outcome, i.deliverable.deliverable, i.deliverable.indicator, i.deliverable.priorityArea]
-        .some(v => (v || '').toLowerCase().includes(text)))
-      .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
-        || a.source.title.localeCompare(b.source.title) || a.deliverable.serialNumber - b.deliverable.serialNumber);
-  });
+  /** Same filter and order as the dashboard's KPI list: worst first */
+  shown = computed(() =>
+    filterKpis(this.all(), { status: this.status(), type: this.type(), owner: this.owner(), area: this.area(), text: this.search() })
+      .sort(worstFirst)
+  );
   total = computed(() => this.all().length);
 
   ngOnInit(): void {
-    // Filters can come from the dashboard (e.g. clicking a priority area)
+    // Filters can come from the dashboard (e.g. clicking a department)
     const params = this.route.snapshot.queryParamMap;
     this.type.set(params.get('type') ?? '');
     this.area.set(params.get('area') ?? '');
     this.owner.set(params.get('owner') ?? '');
-    this.subs.push(this.globalState.selectedYear$.subscribe(y => this.year.set(y)));
-    this.subs.push(this.globalState.selectedQuarter$.subscribe(q => this.quarter.set(q)));
     this.service.ensureLoaded();
   }
 
-  ngOnDestroy(): void {
-    this.subs.forEach(s => s.unsubscribe());
+  trackItem(_: number, item: AssessedDeliverable): string {
+    return item.deliverable.id;
   }
 
   clearFilters(): void {
@@ -85,11 +73,11 @@ export class GuestKpis implements OnInit, OnDestroy {
   }
 
   open(item: AssessedDeliverable): void {
-    this.router.navigate(['/guest/kpis', item.deliverable.id]);
+    this.router.navigateByUrl(ROUTES.guest.kpi(item.deliverable.id));
   }
 
   titleOf(item: AssessedDeliverable): string {
-    return item.deliverable.outcome || item.deliverable.deliverable || item.deliverable.indicator;
+    return deliverableTitle(item.deliverable);
   }
 
   ownerOf(item: AssessedDeliverable): string {
@@ -97,6 +85,6 @@ export class GuestKpis implements OnInit, OnDestroy {
   }
 
   statusLabel(item: AssessedDeliverable): string {
-    return item.status === 'none' ? `No result for ${this.periodName()}` : item.assessment.label;
+    return item.status === 'none' ? `No actual for ${this.periodName()}` : item.assessment.label;
   }
 }

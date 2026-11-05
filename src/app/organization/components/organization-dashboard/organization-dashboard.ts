@@ -1,11 +1,16 @@
-import { Component, OnInit, inject, computed } from '@angular/core';
+import { Component, OnInit, inject, computed, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { OrganizationStore } from '../../store/organization.store';
 import {
-  CreateDepartmentPayload,
-  CreateOrganizationPayload
+  CreateDepartmentPayload, CreateOrganizationPayload, Department, Organization
 } from '../../services/organization.service';
+import { ToastService } from '../../../core/services/toast.service';
 
+const emptyAgency = (): CreateOrganizationPayload => ({ code: '', name: '', motto: '', logo: '', isActive: true });
+const emptyDepartment = (organizationCode: string): CreateDepartmentPayload =>
+  ({ code: '', name: '', description: '', head: '', directorEmail: '', contactPhone: '', organizationCode });
+
+/** Agencies and departments: the agency card, a searchable department table, and the two edit forms. */
 @Component({
   selector: 'app-organization-dashboard',
   standalone: false,
@@ -14,226 +19,114 @@ import {
 })
 export class OrganizationDashboard implements OnInit {
   store = inject(OrganizationStore);
+  private toast = inject(ToastService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
-  searchText = '';
+  searchText = signal('');
 
-  // Modals visibility state
-  showAgencyModal = false;
-  showDeptModal = false;
+  /** Open agency form (null = closed) */
+  agencyForm = signal<{ editing: boolean; form: CreateOrganizationPayload } | null>(null);
+  /** Open department form (null = closed) */
+  deptForm = signal<{ id: string | null; form: CreateDepartmentPayload } | null>(null);
 
-  // Edit Modes
-  isEditingAgency = false;
-  isEditingDept = false;
-
-  // Form Models
-  agencyForm: CreateOrganizationPayload = {
-    code: '',
-    name: '',
-    motto: '',
-    logo: '',
-    isActive: true
-  };
-
-  deptForm: CreateDepartmentPayload = {
-    code: '',
-    name: '',
-    description: '',
-    head: '',
-    directorEmail: '',
-    contactPhone: '',
-    organizationCode: ''
-  };
-
-  editingDeptId = '';
-
-  showSuccessModal = false;
-  successMessage = '';
-
-  showSuccess(message: string): void {
-    this.successMessage = message;
-    this.showSuccessModal = true;
-    setTimeout(() => {
-      this.showSuccessModal = false;
-    }, 5000);
-  }
-
-  // Computeds
-  filteredAgencies = computed(() => {
-    const list = this.store.agencies();
-    const query = this.store.searchQuery().toLowerCase();
-    if (!query) return list;
-    return list.filter(
-      (a) =>
-        a.name.toLowerCase().includes(query) ||
-        a.code.toLowerCase().includes(query) ||
-        (a.motto && a.motto.toLowerCase().includes(query))
-    );
-  });
+  /** The one agency the system manages */
+  agency = computed<Organization | null>(() => this.store.agencies()[0] ?? null);
 
   filteredDepartments = computed(() => {
+    const query = this.searchText().trim().toLowerCase();
     const list = this.store.departments();
-    const query = this.store.searchQuery().toLowerCase();
     if (!query) return list;
-    return list.filter(
-      (d) =>
-        d.name.toLowerCase().includes(query) ||
-        d.code.toLowerCase().includes(query) ||
-        d.head.toLowerCase().includes(query)
+    return list.filter(d =>
+      d.name.toLowerCase().includes(query) || d.code.toLowerCase().includes(query) || (d.head || '').toLowerCase().includes(query)
     );
   });
 
   ngOnInit(): void {
-    this.store.loadAgencies();
-    this.store.loadDepartments();
-  }
-
-  setTab(tab: 'agencies' | 'departments'): void {
-    this.store.setActiveTab(tab);
-  }
-
-  onSearch(): void {
-    this.store.setSearchQuery(this.searchText);
-  }
-
-  // Agency Modals / Form actions
-  openAddAgency(): void {
-    this.isEditingAgency = false;
-    this.agencyForm = {
-      code: '',
-      name: '',
-      motto: '',
-      logo: '',
-      isActive: true
-    };
-    this.showAgencyModal = true;
-  }
-
-  openEditAgency(agency: any): void {
-    this.isEditingAgency = true;
-    this.agencyForm = {
-      code: agency.code,
-      name: agency.name,
-      motto: agency.motto || '',
-      logo: agency.logo || '',
-      isActive: agency.isActive
-    };
-    this.showAgencyModal = true;
-  }
-
-  closeAgencyModal(): void {
-    this.showAgencyModal = false;
-  }
-
-  submitAgencyForm(): void {
-    if (!this.agencyForm.code || !this.agencyForm.name) {
-      return;
-    }
-    if (this.isEditingAgency) {
-      this.store.updateAgency({
-        code: this.agencyForm.code,
-        payload: {
-          name: this.agencyForm.name,
-          motto: this.agencyForm.motto,
-          logo: this.agencyForm.logo,
-          isActive: this.agencyForm.isActive
-        },
-        successCb: () => {
-          this.closeAgencyModal();
-          this.showSuccess('Agency saved successfully.');
-        }
-      });
-    } else {
-      this.store.createAgency({
-        payload: this.agencyForm,
-        successCb: () => {
-          this.closeAgencyModal();
-          this.showSuccess('Agency created successfully.');
-        }
-      });
-    }
-  }
-
-  // Department Modals / Form actions
-  openAddDept(): void {
-    this.isEditingDept = false;
-    this.deptForm = {
-      code: '',
-      name: '',
-      description: '',
-      head: '',
-      directorEmail: '',
-      contactPhone: '',
-      organizationCode: this.store.agencies()[0]?.code || ''
-    };
-    this.showDeptModal = true;
+    this.store.load();
   }
 
   /** Opens the department's page listing every deliverable assigned to it. */
-  openDepartment(dept: { code: string }): void {
+  openDepartment(dept: Department): void {
     this.router.navigate(['departments', dept.code], { relativeTo: this.route });
   }
 
-  openEditDept(dept: any): void {
-    this.isEditingDept = true;
-    this.editingDeptId = dept.id;
-    this.deptForm = {
-      code: dept.code,
-      name: dept.name,
-      description: dept.description || '',
-      head: dept.head,
-      directorEmail: dept.directorEmail || '',
-      contactPhone: dept.contactPhone || '',
-      organizationCode: dept.organization?.code || this.store.agencies()[0]?.code || ''
-    };
-    this.showDeptModal = true;
+  trackDept(_: number, d: Department): string {
+    return d.id;
   }
 
-  closeDeptModal(): void {
-    this.showDeptModal = false;
+  // ── Agency form ──
+
+  editAgency(agency: Organization): void {
+    this.store.clearError();
+    this.agencyForm.set({
+      editing: true,
+      form: { code: agency.code, name: agency.name, motto: agency.motto || '', logo: agency.logo || '', isActive: agency.isActive }
+    });
   }
 
-  submitDeptForm(): void {
-    if (!this.deptForm.code || !this.deptForm.name || !this.deptForm.head || !this.deptForm.organizationCode) {
-      return;
-    }
+  addAgency(): void {
+    this.store.clearError();
+    this.agencyForm.set({ editing: false, form: emptyAgency() });
+  }
 
-    // Build a clean payload — strip empty strings from optional fields
-    // so backend validators (@IsEmail, @Matches) don't reject them
-    const cleanPayload: any = {
-      code: this.deptForm.code,
-      name: this.deptForm.name,
-      head: this.deptForm.head,
-      organizationCode: this.deptForm.organizationCode,
+  submitAgency(): void {
+    const state = this.agencyForm();
+    if (!state || !state.form.code || !state.form.name) return;
+    const onSuccess = () => {
+      this.agencyForm.set(null);
+      this.toast.success(state.editing ? 'Agency saved.' : 'Agency created.');
     };
-    if (this.deptForm.description && this.deptForm.description.trim()) {
-      cleanPayload.description = this.deptForm.description.trim();
-    }
-    if (this.deptForm.directorEmail && this.deptForm.directorEmail.trim()) {
-      cleanPayload.directorEmail = this.deptForm.directorEmail.trim();
-    }
-    if (this.deptForm.contactPhone && this.deptForm.contactPhone.trim()) {
-      cleanPayload.contactPhone = this.deptForm.contactPhone.trim();
-    }
-
-    if (this.isEditingDept) {
-      this.store.updateDepartment({
-        id: this.editingDeptId,
-        payload: cleanPayload,
-        successCb: () => {
-          this.closeDeptModal();
-          this.showSuccess('Department saved successfully.');
-        }
-      });
+    if (state.editing) {
+      const { code, ...payload } = state.form;
+      this.store.updateAgency({ code, payload, onSuccess });
     } else {
-      this.store.createDepartment({
-        payload: cleanPayload,
-        successCb: () => {
-          this.closeDeptModal();
-          this.showSuccess('Department created successfully.');
-        }
-      });
+      this.store.createAgency({ payload: state.form, onSuccess });
     }
+  }
+
+  // ── Department form ──
+
+  addDepartment(): void {
+    this.store.clearError();
+    this.deptForm.set({ id: null, form: emptyDepartment(this.agency()?.code || '') });
+  }
+
+  editDepartment(dept: Department): void {
+    this.store.clearError();
+    this.deptForm.set({
+      id: dept.id,
+      form: {
+        code: dept.code, name: dept.name, description: dept.description || '', head: dept.head,
+        directorEmail: dept.directorEmail || '', contactPhone: dept.contactPhone || '',
+        organizationCode: dept.organization?.code || this.agency()?.code || ''
+      }
+    });
+  }
+
+  submitDepartment(): void {
+    const state = this.deptForm();
+    if (!state) return;
+    const f = state.form;
+    if (!f.code || !f.name || !f.head || !f.organizationCode) return;
+
+    // Optional fields are left out when blank so backend validators (@IsEmail, @Matches) don't reject them
+    const payload: CreateDepartmentPayload = { code: f.code, name: f.name, head: f.head, organizationCode: f.organizationCode };
+    if (f.description?.trim()) payload.description = f.description.trim();
+    if (f.directorEmail?.trim()) payload.directorEmail = f.directorEmail.trim();
+    if (f.contactPhone?.trim()) payload.contactPhone = f.contactPhone.trim();
+
+    const onSuccess = () => {
+      this.deptForm.set(null);
+      this.toast.success(state.id ? 'Department saved.' : 'Department created.');
+    };
+    if (state.id) this.store.updateDepartment({ id: state.id, payload, onSuccess });
+    else this.store.createDepartment({ payload, onSuccess });
+  }
+
+  closeForms(): void {
+    this.agencyForm.set(null);
+    this.deptForm.set(null);
+    this.store.clearError();
   }
 }

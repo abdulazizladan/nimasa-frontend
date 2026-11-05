@@ -1,37 +1,30 @@
 <div class="page-container">
-  <!-- Page Header -->
-  <div class="page-header">
+  <header class="page-header">
     <div class="header-left">
-      <div class="header-badge">Preferences</div>
-      <h2>System Settings</h2>
-      <p class="subtitle">Admin account and portal information</p>
+      <span class="header-badge">Account</span>
+      <h1 class="page-title">Settings</h1>
+      <p class="subtitle">Your account, and where the system's lists are managed</p>
     </div>
-  </div>
+  </header>
 
   <div class="settings-grid">
-    <!-- Administrative Preferences Placeholder Card -->
-    <div class="settings-card info-card">
-      <div class="card-header">
-        <span class="card-icon">⚙️</span>
-        <div class="card-info">
-          <h3>Administrative Profile</h3>
-          <p>Global system notifications and account configurations</p>
-        </div>
-      </div>
-      <div class="info-body">
-        <div class="info-row">
-          <span class="info-label">Current Role:</span>
-          <span class="info-badge">Super Admin</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Portal Version:</span>
-          <span class="info-value">v2.4.0 (Stable)</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Last Checked:</span>
-          <span class="info-value">Today at 09:48 AM</span>
-        </div>
-      </div>
-    </div>
+    <section class="card">
+      <h2 class="section-title">Signed in as</h2>
+      <dl class="info-list">
+        <div><dt>Email</dt><dd>{{ user?.email || '—' }}</dd></div>
+        <div><dt>Role</dt><dd><span class="badge info capitalize">{{ user?.role || '—' }}</span></dd></div>
+      </dl>
+      <p class="muted">To change your name, password or role, ask another administrator to edit your user record.</p>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Where things are managed</h2>
+      <ul class="link-list">
+        <li><a [routerLink]="routes.users"><app-icon name="users" /> Users and roles</a><span class="muted">Who can sign in, as admin or guest</span></li>
+        <li><a [routerLink]="routes.organization"><app-icon name="building" /> Organization</a><span class="muted">The agency and its departments</span></li>
+        <li><a [routerLink]="routes.presidential"><app-icon name="star" /> Priority areas</a><span class="muted">On each deliverables page, under the Priority areas tab</span></li>
+      </ul>
+      <p class="muted">Year pickers offer {{ firstYear }} to {{ lastYear }}, plus any year that appears in the data.</p>
+    </section>
   </div>
 </div>

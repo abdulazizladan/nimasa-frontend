@@ -1,69 +1,57 @@
-import { Component, OnInit, OnDestroy, inject, computed, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, OnInit, inject, computed } from '@angular/core';
 import { DashboardStore } from '../../store/dashboard.store';
 import { GlobalStateService } from '../../../../core/services/global-state.service';
-import { Subscription } from 'rxjs';
-import { AllDeliverablesService } from '../../../../strategic-deliverables/services/all-deliverables.service';
+import { AllDeliverablesService, DELIVERABLE_SOURCES } from '../../../../strategic-deliverables/services/all-deliverables.service';
 import { isActiveInYear } from '../../../../strategic-deliverables/utils/kpi-performance';
+import { IconName } from '../../../../core/components/icon/icon';
+import { ROUTES } from '../../../../core/routes';
 
-/** Count shown on a deliverables card: active in the selected year, and all-time */
-interface DeliverableCount {
+/** One of the count tiles at the top of the page */
+interface CountTile {
+  id: string;
+  label: string;
+  icon: IconName;
+  path: string;
+  /** Active in the selected year */
   inYear: number;
   total: number;
 }
 
+const TILE_ICONS: Record<string, IconName> = { presidential: 'star', ministerial: 'briefcase', agency: 'chart' };
+
+/** Admin home: counts for the year, then the KPI overview. */
 @Component({
   selector: 'app-dashboard',
   standalone: false,
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
-export class Dashboard implements OnInit, OnDestroy {
+export class Dashboard implements OnInit {
   dashboardStore = inject(DashboardStore);
-  globalState = inject(GlobalStateService);
+  private globalState = inject(GlobalStateService);
   /** Shared with the overview below, which loads it */
   private deliverables = inject(AllDeliverablesService);
-  private router = inject(Router);
-  private sub?: Subscription;
 
-  globalYear = new Date().getFullYear().toString();
-  private year = signal(Number(this.globalYear));
-
-  /** Whether the deliverable counts have loaded */
+  readonly usersPath = ROUTES.admin.users;
+  year = this.globalState.selectedYear;
   countsLoaded = computed(() => this.deliverables.loaded());
 
   /** Per page: deliverables active in the selected year (as everything below counts them), and all-time */
-  counts = computed<Record<string, DeliverableCount>>(() => {
-    const counts: Record<string, DeliverableCount> = {};
-    for (const { source, deliverables } of this.deliverables.results()) {
-      counts[source.id] = {
-        inYear: deliverables.filter(d => isActiveInYear(d, this.year())).length,
-        total: deliverables.length,
+  tiles = computed<CountTile[]>(() =>
+    DELIVERABLE_SOURCES.map(source => {
+      const list = this.deliverables.results().find(r => r.source.id === source.id)?.deliverables ?? [];
+      return {
+        id: source.id, label: source.title, icon: TILE_ICONS[source.id] ?? 'chart', path: source.pagePath,
+        inYear: list.filter(d => isActiveInYear(d, this.year())).length, total: list.length,
       };
-    }
-    return counts;
-  });
+    })
+  );
 
-  // Available years: from 2023 up to next year
-  years = Array.from({ length: new Date().getFullYear() - 2021 }, (_, i) => String(2023 + i));
-
-  ngOnInit() {
+  ngOnInit(): void {
     this.dashboardStore.loadStats();
-    this.sub = this.globalState.selectedYear$.subscribe(year => {
-      this.globalYear = year.toString();
-      this.year.set(year);
-    });
   }
 
-  ngOnDestroy() {
-    if (this.sub) this.sub.unsubscribe();
-  }
-
-  onGlobalYearChange(year: string) {
-    this.globalState.setYear(parseInt(year, 10));
-  }
-
-  navigateTo(path: string) {
-    this.router.navigate([`/admin/${path}`]);
+  trackTile(_: number, tile: CountTile): string {
+    return tile.id;
   }
 }

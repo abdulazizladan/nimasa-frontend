@@ -1,41 +1,33 @@
 <div class="login-container">
   <div class="login-card">
     <div class="login-header">
-      <img src="/logo.webp" alt="NIMASA Logo" class="brand-logo" />
-      <h2>Welcome Back</h2>
-      <p>Please log in to your account</p>
+      <img src="/logo.webp" alt="NIMASA" class="brand-logo" width="120" height="120" />
+      <h1>Welcome back</h1>
+      <p>Log in to the Performance Monitoring System</p>
     </div>
-    
-    <div *ngIf="authStore.error()" class="error-message" style="color: #ed1c24; background: #ffebee; padding: 10px; border-radius: 4px; margin-bottom: 16px; font-size: 14px; text-align: center;">
-      {{ authStore.error() }}
-    </div>
+
+    @if (authStore.error()) {
+      <div class="alert alert-error" role="alert"><span>{{ authStore.error() }}</span></div>
+    }
 
     <form class="login-form" (ngSubmit)="onSubmit()" #loginForm="ngForm">
       <div class="form-group">
-        <label for="email">Email Address</label>
-        <input type="email" id="email" name="email" [(ngModel)]="credentials.email" placeholder="Enter your email" required />
-      </div>
-      
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password" [(ngModel)]="credentials.password" placeholder="Enter your password" required />
+        <label for="email">Email address</label>
+        <input type="email" id="email" name="email" [(ngModel)]="credentials.email" placeholder="you@nimasa.gov.ng"
+          autocomplete="email" required />
       </div>
 
-      <div class="form-options">
-        <label class="remember-me">
-          <input type="checkbox" name="remember" />
-          <span>Remember me</span>
-        </label>
-        <a href="#" class="forgot-password">Forgot Password?</a>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" [(ngModel)]="credentials.password" placeholder="Your password"
+          autocomplete="current-password" required />
       </div>
-      
-      <button type="submit" class="btn-primary" [disabled]="!loginForm.form.valid || authStore.loading()">
-        {{ authStore.loading() ? 'Logging in...' : 'Log In' }}
+
+      <button type="submit" class="btn btn-primary btn-lg btn-block" [disabled]="!loginForm.form.valid || authStore.loading()">
+        {{ authStore.loading() ? 'Logging in…' : 'Log in' }}
       </button>
     </form>
-    
-    <div class="login-footer">
-      <p>Don't have an account? <a href="#">Sign up</a></p>
-    </div>
+
+    <p class="login-footer">Accounts are created by an administrator. Contact yours if you need access.</p>
   </div>
 </div>

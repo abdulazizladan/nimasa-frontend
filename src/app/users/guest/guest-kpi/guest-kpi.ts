@@ -1,6 +1,8 @@
-import { Component, OnDestroy, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { of } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import { GlobalStateService } from '../../../core/services/global-state.service';
 import { AllDeliverablesService } from '../../../strategic-deliverables/services/all-deliverables.service';
 import { PdfReportService } from '../../../strategic-deliverables/services/pdf-report.service';
@@ -8,8 +10,9 @@ import { StrategicDeliverable, QuarterlyReport } from '../../../strategic-delive
 import { DeliverablesConfig, CATEGORY_LABELS } from '../../../strategic-deliverables/deliverables-config';
 import { assessForPeriod, ownerOf, periodLabel } from '../../../strategic-deliverables/utils/portfolio-summary';
 import {
-  getAnnualTarget, getBaselineForYear, getAggregationLabel, isLowerBetter, QUARTER_KEYS
+  getAnnualTarget, getBaselineForYear, getAggregationLabel, isLowerBetter, deliverableTitle, quarterIndex, QUARTER_KEYS
 } from '../../../strategic-deliverables/utils/kpi-performance';
+import { ROUTES } from '../../../core/routes';
 
 /** Notes guests may read from each quarterly report ("support required" stays internal) */
 const GUEST_NOTE_FIELDS: { key: keyof QuarterlyReport; label: string }[] = [
@@ -18,6 +21,8 @@ const GUEST_NOTE_FIELDS: { key: keyof QuarterlyReport; label: string }[] = [
   { key: 'mdaEfforts', label: 'Mitigation' },
 ];
 
+const LOAD_ERROR = "This KPI couldn't be loaded. Check your connection and try again.";
+
 /** One KPI, read-only: targets, results over the quarters, the year's reports and notes, and a PDF. */
 @Component({
   selector: 'app-guest-kpi',
@@ -25,17 +30,17 @@ const GUEST_NOTE_FIELDS: { key: keyof QuarterlyReport; label: string }[] = [
   templateUrl: './guest-kpi.html',
   styleUrls: ['../guest-pages.css', './guest-kpi.css'],
 })
-export class GuestKpi implements OnInit, OnDestroy {
+export class GuestKpi implements OnInit {
   private service = inject(AllDeliverablesService);
   private pdf = inject(PdfReportService);
   private globalState = inject(GlobalStateService);
   private route = inject(ActivatedRoute);
-  private subs: Subscription[] = [];
 
   readonly noteFields = GUEST_NOTE_FIELDS;
-  private id = signal('');
-  year = signal(this.globalState.getYear());
-  quarter = signal<number | null>(this.globalState.getQuarter());
+  readonly kpisPath = ROUTES.guest.kpis;
+  private id = toSignal(this.route.paramMap.pipe(map(p => p.get('id') ?? '')), { initialValue: '' });
+  year = this.globalState.selectedYear;
+  quarter = this.globalState.selectedQuarter;
   period = computed(() => ({ year: this.year(), quarter: this.quarter() }));
   periodName = computed(() => periodLabel(this.period()));
 
@@ -43,12 +48,31 @@ export class GuestKpi implements OnInit, OnDestroy {
   source = computed<DeliverablesConfig | null>(() =>
     this.service.results().find(r => r.deliverables.some(d => d.id === this.id()))?.source ?? null
   );
-  /** The KPI with its quarterly reports and notes */
-  deliverable = signal<StrategicDeliverable | null>(null);
-  error = signal<string | null>(null);
   notFound = computed(() => this.service.loaded() && !this.source());
+
+  /** The KPI with its quarterly reports, fetched whenever the id or its page changes; a late response for an earlier KPI is dropped */
+  private fetched = toSignal(
+    toObservable(computed(() => ({ source: this.source(), id: this.id() }))).pipe(
+      switchMap(({ source, id }) => {
+        if (!source || !id) return of({ deliverable: null, error: null });
+        return this.service.loadOne(source, id).pipe(
+          map(deliverable => ({ deliverable, error: null as string | null })),
+          catchError(() => of({ deliverable: null, error: LOAD_ERROR }))
+        );
+      })
+    ),
+    { initialValue: { deliverable: null as StrategicDeliverable | null, error: null as string | null } }
+  );
+  deliverable = computed(() => this.fetched().deliverable);
+  loadError = computed(() => this.fetched().error);
+  pdfError = signal<string | null>(null);
+  error = computed(() => this.loadError() ?? this.pdfError());
   downloading = signal(false);
 
+  title = computed(() => {
+    const d = this.deliverable();
+    return d ? deliverableTitle(d) : '';
+  });
   result = computed(() => {
     const d = this.deliverable(), s = this.source();
     return d && s ? assessForPeriod(d, s, this.period()) : null;
@@ -75,38 +99,15 @@ export class GuestKpi implements OnInit, OnDestroy {
 
   /** The year's reports with notes, in quarter order (one quarter when a quarter is selected) */
   notes = computed(() => {
-    const reports = this.deliverable()?.monthlySubmissions ?? [];
+    const reports = this.deliverable()?.quarterlyReports ?? [];
     return reports
       .filter(r => Number(r.year) === this.year() && (this.quarter() === null || r.quarter === `Q${(this.quarter() ?? 0) + 1}`))
       .filter(r => GUEST_NOTE_FIELDS.some(f => r[f.key]))
-      .sort((a, b) => QUARTER_KEYS.indexOf((a.quarter || '').toLowerCase()) - QUARTER_KEYS.indexOf((b.quarter || '').toLowerCase()));
+      .sort((a, b) => quarterIndex(a.quarter) - quarterIndex(b.quarter));
   });
 
-  constructor() {
-    // Once the KPI's page is known, fetch the KPI with its reports
-    effect(() => {
-      const source = this.source();
-      const id = this.id();
-      if (!source || !id) return;
-      untracked(() => {
-        this.error.set(null);
-        this.service.loadOne(source, id).subscribe({
-          next: d => this.deliverable.set(d),
-          error: () => this.error.set("This KPI couldn't be loaded. Check your connection and try again."),
-        });
-      });
-    });
-  }
-
   ngOnInit(): void {
-    this.subs.push(this.route.paramMap.subscribe(p => { this.deliverable.set(null); this.id.set(p.get('id') ?? ''); }));
-    this.subs.push(this.globalState.selectedYear$.subscribe(y => this.year.set(y)));
-    this.subs.push(this.globalState.selectedQuarter$.subscribe(q => this.quarter.set(q)));
     this.service.ensureLoaded();
-  }
-
-  ngOnDestroy(): void {
-    this.subs.forEach(s => s.unsubscribe());
   }
 
   typeLabel(d: StrategicDeliverable): string {
@@ -129,11 +130,11 @@ export class GuestKpi implements OnInit, OnDestroy {
     const d = this.deliverable(), s = this.source();
     if (!d || !s) return;
     this.downloading.set(true);
-    this.error.set(null);
+    this.pdfError.set(null);
     try {
       await this.pdf.downloadKpi({ deliverable: d, source: s, period: this.period(), includeSupportRequired: false });
     } catch {
-      this.error.set("The PDF couldn't be created. Check your connection and try again.");
+      this.pdfError.set("The PDF couldn't be created. Check your connection and try again.");
     } finally {
       this.downloading.set(false);
     }

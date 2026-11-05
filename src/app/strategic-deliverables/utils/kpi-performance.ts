@@ -1,11 +1,18 @@
 import {
-  StrategicDeliverable, AnnualTarget, AnnualAggregation, PerformanceDirection
+  StrategicDeliverable, AnnualTarget, AnnualAggregation, PerformanceDirection, QuarterKey
 } from '../services/strategic-deliverables.service';
 import { CATEGORY_LABELS, DeliverableCategory } from '../deliverables-config';
 
 /** Shared KPI performance rules for the deliverables pages (list and report details). */
 
-export const QUARTER_KEYS = ['q1', 'q2', 'q3', 'q4'];
+export const QUARTER_KEYS: readonly QuarterKey[] = ['q1', 'q2', 'q3', 'q4'];
+
+/** 'q3' -> 'Q3' */
+export const quarterLabel = (key: string) => key.toUpperCase();
+
+/** 'Q3' or 'q3' -> 2; -1 when it is not a quarter */
+export const quarterIndex = (quarter: string | undefined): number =>
+  (QUARTER_KEYS as readonly string[]).indexOf((quarter || '').toLowerCase());
 
 export const AGGREGATION_LABELS: Record<AnnualAggregation, string> = {
   sum: 'Sum of quarters',
@@ -37,9 +44,14 @@ export interface YearSummary {
 }
 
 export interface QuarterFigures {
-  key: string;
-  target: number;
+  key: QuarterKey;
+  target: number | null;
   actual: number;
+}
+
+/** What a deliverable is called in lists: its outcome, else its description, else its KPI. */
+export function deliverableTitle(p: Pick<StrategicDeliverable, 'outcome' | 'deliverable' | 'indicator'>): string {
+  return p.outcome || p.deliverable || p.indicator;
 }
 
 /** The year the KPI was registered for (the "Current Year" entered on creation). */
@@ -93,7 +105,9 @@ export function getAnnualTargets(p: StrategicDeliverable): AnnualTarget[] {
 /** Quarter entries (q1..q4) reported for a year, in quarter order. */
 export function getQuarters(p: StrategicDeliverable, year: string | number): QuarterFigures[] {
   const perf = p.yearlyPerformance?.[year.toString()] || {};
-  return QUARTER_KEYS.filter(k => perf[k]).map(k => ({ key: k, target: perf[k].target, actual: perf[k].actual }));
+  return QUARTER_KEYS
+    .filter(k => perf[k] && perf[k]!.actual !== null && perf[k]!.actual !== undefined)
+    .map(k => ({ key: k, target: perf[k]!.target ?? null, actual: Number(perf[k]!.actual) }));
 }
 
 export function getAggregation(p: Partial<StrategicDeliverable>): AnnualAggregation {
@@ -105,9 +119,9 @@ export function getAggregationLabel(p: Partial<StrategicDeliverable>): string {
 }
 
 /** Combines quarterly values into an annual figure using the KPI's method (mirrors the backend). */
-function combine(method: AnnualAggregation, values: number[]): number {
-  if (method === 'latest') return values[values.length - 1];
-  const total = values.reduce((sum, v) => sum + (Number(v) || 0), 0);
+function combine(method: AnnualAggregation, values: (number | null)[]): number {
+  if (method === 'latest') return values[values.length - 1] ?? 0;
+  const total = values.reduce<number>((sum, v) => sum + (Number(v) || 0), 0);
   return method === 'average' ? Math.round((total / values.length) * 100) / 100 : total;
 }
 

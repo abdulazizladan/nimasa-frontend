@@ -1,26 +1,17 @@
-import { Component, inject } from '@angular/core';
-import { AuthStore } from '../../../auth/store/auth.store';
+import { Component } from '@angular/core';
+import { NavItem } from '../../../core/components/portal-layout/portal-layout';
+import { ROUTES } from '../../../core/routes';
 
-/** Shell for the guest portal: top bar plus Dashboard, KPIs, Reports and Logout (a sidebar, or tabs on phones). */
+/** Guest portal shell: the shared layout with Dashboard, KPIs and Reports. */
 @Component({
   selector: 'app-guest-layout',
   standalone: false,
-  templateUrl: './guest-layout.html',
-  // Same look as the admin portal, plus bottom tabs on phones
-  styleUrls: ['../../admin/components/layout/layout.css', './guest-layout.css'],
+  template: `<app-portal-layout brand="Guest Portal" initial="G" [navItems]="navItems"></app-portal-layout>`,
 })
 export class GuestLayout {
-  private authStore = inject(AuthStore);
-
-  /** Whether the "log out?" confirmation is showing */
-  confirmingLogout = false;
-
-  logout() {
-    this.confirmingLogout = true;
-  }
-
-  confirmLogout() {
-    this.confirmingLogout = false;
-    this.authStore.logout();
-  }
+  readonly navItems: NavItem[] = [
+    { path: ROUTES.guest.dashboard, label: 'Dashboard', icon: 'dashboard' },
+    { path: ROUTES.guest.kpis, label: 'KPIs', icon: 'trending' },
+    { path: ROUTES.guest.reports, label: 'Reports', icon: 'document' },
+  ];
 }

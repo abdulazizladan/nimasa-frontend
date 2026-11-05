@@ -1,12 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { FormsModule } from '@angular/forms';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, RouterLink } from '@angular/router';
 
 import { Dashboard } from './dashboard';
 import { DeliverablesOverview } from '../../../../strategic-deliverables/components/deliverables-overview/deliverables-overview';
 import { GlobalStateService } from '../../../../core/services/global-state.service';
+import { Icon } from '../../../../core/components/icon/icon';
+import { YearSelect } from '../../../../core/components/year-select/year-select';
 
 const YEAR = new Date().getFullYear();
 
@@ -29,7 +30,7 @@ describe('Dashboard', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       declarations: [Dashboard],
-      imports: [FormsModule, DeliverablesOverview],
+      imports: [DeliverablesOverview, Icon, YearSelect, RouterLink],
       providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     }).compileComponents();
 
@@ -63,11 +64,13 @@ describe('Dashboard', () => {
     await respond();
   });
 
-  it('counts deliverables on the top cards for the selected year, with the all-time total', async () => {
+  it('counts deliverables on the top tiles for the selected year, with the all-time total', async () => {
     await respond();
-    const values = Array.from(el().querySelectorAll('.stat-value')).map(e => e.textContent?.trim());
+    const values = Array.from(el().querySelectorAll('.count-tile .stat-value')).map(e => e.textContent?.trim());
     expect(values).toEqual(['3', '1', '0', '0']);
-    expect(el().querySelector('.stat-sub')?.textContent).toContain(`in ${YEAR} · 2 in total`);
+    expect(el().querySelectorAll('.count-tile .stat-sub')[1]?.textContent).toContain(`in ${YEAR} · 2 in total`);
+    // Tiles are real links
+    expect(el().querySelectorAll('a.count-tile').length).toBe(4);
   });
 
   it('shows the data readiness panel to admins', async () => {
@@ -89,5 +92,14 @@ describe('Dashboard', () => {
 
     expect(el().querySelectorAll('app-deliverables-overview .tile').length).toBe(1);
     expect(el().querySelector('.readiness')).toBeNull();   // no agency deliverables, so nothing to check
+  });
+
+  it('does not fetch the lists again when the data is already loaded', async () => {
+    await respond();
+    // A second dashboard (e.g. navigating away and back) reuses the cache
+    const second = TestBed.createComponent(Dashboard);
+    second.detectChanges();
+    httpMock.expectOne(r => r.url.endsWith('/dashboard/performance-report')).flush({ summary_metrics: { totalUsers: { total: 3 } } });
+    httpMock.expectNone(r => r.url.endsWith('/presidential-priorities'));
   });
 });

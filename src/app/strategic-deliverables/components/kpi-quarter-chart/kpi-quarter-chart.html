@@ -12,19 +12,19 @@
 
   <div *ngIf="!showTable()" class="chart-wrap" #wrap>
     <svg class="chart" [attr.viewBox]="'0 0 ' + geometry().width + ' ' + geometry().height" role="img"
-      [attr.aria-label]="'Quarterly results against target from ' + points()[0].label + ' to ' + points()[points().length - 1].label + '. Use Show table for the values.'">
-      <g *ngFor="let t of geometry().ticks">
+      [attr.aria-label]="'Quarterly actuals against targets from ' + points()[0].label + ' to ' + points()[points().length - 1].label + '. Use Show table for the values.'">
+      <g *ngFor="let t of geometry().ticks; trackBy: trackIndex">
         <line class="grid" [attr.x1]="geometry().plot.left" [attr.x2]="geometry().plot.right" [attr.y1]="t.y" [attr.y2]="t.y"></line>
         <text class="tick" [attr.x]="geometry().plot.left - 8" [attr.y]="t.y + 4" text-anchor="end">{{ t.label }}</text>
       </g>
-      <text *ngFor="let l of geometry().xLabels" class="tick" [attr.x]="l.x" [attr.y]="geometry().plot.bottom + 20" text-anchor="middle">{{ l.text }}</text>
+      <text *ngFor="let l of geometry().xLabels; trackBy: trackIndex" class="tick" [attr.x]="l.x" [attr.y]="geometry().plot.bottom + 20" text-anchor="middle">{{ l.text }}</text>
 
-      <polyline *ngFor="let r of geometry().targetRuns" class="line target" [attr.points]="r"></polyline>
-      <polyline *ngFor="let r of geometry().actualRuns" class="line actual" [attr.points]="r"></polyline>
-      <circle *ngFor="let p of geometry().target" class="dot target" [attr.cx]="p.x" [attr.cy]="p.y" r="3"></circle>
-      <circle *ngFor="let p of geometry().actual; let last = last" class="dot actual" [attr.cx]="p.x" [attr.cy]="p.y"
+      <polyline *ngFor="let r of geometry().targetRuns; trackBy: trackIndex" class="line target" [attr.points]="r"></polyline>
+      <polyline *ngFor="let r of geometry().actualRuns; trackBy: trackIndex" class="line actual" [attr.points]="r"></polyline>
+      <circle *ngFor="let p of geometry().target; trackBy: trackIndex" class="dot target" [attr.cx]="p.x" [attr.cy]="p.y" r="3"></circle>
+      <circle *ngFor="let p of geometry().actual; let last = last; trackBy: trackIndex" class="dot actual" [attr.cx]="p.x" [attr.cy]="p.y"
         [attr.r]="last ? 6 : 5" tabindex="0"
-        [attr.aria-label]="p.point.label + ': ' + p.value + ' against target ' + (p.point.target ?? 'not set')"
+        [attr.aria-label]="p.point.label + ': actual ' + p.value + ', target ' + (p.point.target ?? 'not set')"
         (pointerenter)="showTip($event, p.point)" (pointerleave)="hideTip()" (focus)="showTip($event, p.point)" (blur)="hideTip()"></circle>
 
       <text *ngIf="endLabels().actual as e" class="end-label" [attr.x]="e.x" [attr.y]="e.y">Actual</text>
@@ -32,8 +32,8 @@
     </svg>
   </div>
 
-  <div *ngIf="showTable()" class="table-wrap">
-    <table class="data-table">
+  <div *ngIf="showTable()" class="table-wrap plain">
+    <table class="table table-compact">
       <thead><tr><th scope="col">Quarter</th><th scope="col" class="num">Target</th><th scope="col" class="num">Actual</th><th scope="col">Status</th></tr></thead>
       <tbody>
         <tr *ngFor="let p of points()">
@@ -52,4 +52,4 @@
     <span class="muted">{{ t.detail }}</span>
   </div>
 </div>
-<ng-template #noData><p class="empty">No quarterly results reported yet.</p></ng-template>
+<ng-template #noData><p class="empty">No quarterly actuals reported yet.</p></ng-template>

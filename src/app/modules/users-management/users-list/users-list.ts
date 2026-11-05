@@ -1,6 +1,9 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { UserStore } from '../store/user.store';
+import { User } from '../services/user.service';
+import { ToastService } from '../../../core/services/toast.service';
+import { ROUTES } from '../../../core/routes';
 
 @Component({
   selector: 'app-users-list',
@@ -10,20 +13,32 @@ import { UserStore } from '../store/user.store';
 })
 export class UsersList implements OnInit {
   userStore = inject(UserStore);
+  private router = inject(Router);
+  private toast = inject(ToastService);
 
-  constructor(private router: Router) {}
+  /** User awaiting delete confirmation */
+  deleting = signal<User | null>(null);
 
   ngOnInit(): void {
     this.userStore.loadUsers();
   }
 
-  deleteUser(email: string) {
-    if (confirm(`Are you sure you want to delete ${email}?`)) {
-      this.userStore.deleteUser(email);
-    }
+  confirmDelete(): void {
+    const user = this.deleting();
+    if (!user) return;
+    this.deleting.set(null);
+    this.userStore.deleteUser({ email: user.email, onSuccess: () => this.toast.success(`${user.email} deleted.`) });
   }
 
-  viewDetails(email: string) {
-    this.router.navigate(['/admin/users', email]);
+  viewDetails(email: string): void {
+    this.router.navigateByUrl(ROUTES.admin.user(email));
+  }
+
+  initialOf(user: User): string {
+    return (user.info?.firstName?.charAt(0) || user.email.charAt(0) || 'U').toUpperCase();
+  }
+
+  nameOf(user: User): string {
+    return [user.info?.firstName, user.info?.lastName].filter(Boolean).join(' ') || user.email;
   }
 }

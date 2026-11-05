@@ -1,7 +1,7 @@
-import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
-import { Subscription, firstValueFrom } from 'rxjs';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { GlobalStateService } from '../../../core/services/global-state.service';
-import { AllDeliverablesService, DELIVERABLE_SOURCES } from '../../../strategic-deliverables/services/all-deliverables.service';
+import { AllDeliverablesService, TYPE_OPTIONS } from '../../../strategic-deliverables/services/all-deliverables.service';
 import { PdfReportService } from '../../../strategic-deliverables/services/pdf-report.service';
 import {
   applyFilters, summariseFamilies, uniqueItems, ownerOf, periodLabel, latestReportedQuarter
@@ -16,21 +16,20 @@ type ReportKind = 'summary' | 'kpi';
   templateUrl: './guest-reports.html',
   styleUrls: ['../guest-pages.css', './guest-reports.css'],
 })
-export class GuestReports implements OnInit, OnDestroy {
+export class GuestReports implements OnInit {
   private service = inject(AllDeliverablesService);
   private pdf = inject(PdfReportService);
   private globalState = inject(GlobalStateService);
-  private subs: Subscription[] = [];
 
-  readonly typeOptions = DELIVERABLE_SOURCES.map(s => ({ id: s.id, title: s.title }));
+  readonly typeOptions = TYPE_OPTIONS;
 
   kind = signal<ReportKind>('summary');
   type = signal('');
   owner = signal('');
   kpiId = signal('');
 
-  year = signal(this.globalState.getYear());
-  quarter = signal<number | null>(this.globalState.getQuarter());
+  year = this.globalState.selectedYear;
+  quarter = this.globalState.selectedQuarter;
   period = computed(() => ({ year: this.year(), quarter: this.quarter() }));
   periodName = computed(() => periodLabel(this.period()));
   loading = computed(() => !this.service.loaded());
@@ -56,22 +55,16 @@ export class GuestReports implements OnInit, OnDestroy {
   preview = computed(() => {
     if (this.kind() === 'kpi') {
       const option = this.kpiOptions().find(o => o.id === this.kpiId());
-      return option ? `${option.item.deliverable.indicator}: targets, results over the quarters and ${this.periodName()} report notes.` : 'Choose a KPI.';
+      return option ? `${option.item.deliverable.indicator}: targets and actuals over the quarters, and ${this.periodName()} report notes.` : 'Choose a KPI.';
     }
     const n = this.items().length;
-    return `${n} KPI${n === 1 ? '' : 's'}: headline figures, status by type, KPIs by status, and every KPI's result against its target for ${this.periodName()}.`;
+    return `${n} KPI${n === 1 ? '' : 's'}: headline figures, status by type, KPIs by status, and every KPI's target and actual for ${this.periodName()}.`;
   });
 
   canDownload = computed(() => !this.loading() && !this.downloading() && (this.kind() === 'summary' || !!this.kpiId()));
 
   ngOnInit(): void {
-    this.subs.push(this.globalState.selectedYear$.subscribe(y => this.year.set(y)));
-    this.subs.push(this.globalState.selectedQuarter$.subscribe(q => this.quarter.set(q)));
     this.service.ensureLoaded();
-  }
-
-  ngOnDestroy(): void {
-    this.subs.forEach(s => s.unsubscribe());
   }
 
   async download(): Promise<void> {
@@ -79,13 +72,12 @@ export class GuestReports implements OnInit, OnDestroy {
     this.message.set(null);
     try {
       if (this.kind() === 'summary') {
-        const items = this.items();
         const type = this.typeOptions.find(t => t.id === this.type())?.title ?? 'All types';
         await this.pdf.downloadSummary({
           period: this.period(),
           scope: `${type} · ${this.owner() || 'All departments'}`,
           families: this.families(),
-          items,
+          items: this.items(),
           latest: latestReportedQuarter(this.service.results()),
         });
       } else {

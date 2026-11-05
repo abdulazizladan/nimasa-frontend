@@ -1,12 +1,6 @@
 :host {
   display: block;
   position: relative; /* tooltip anchor */
-  --text-primary: #1e293b;
-  --text-muted: #64748b;
-  --status-good: #0ca30c;
-  --status-warning: #fab219;
-  --status-critical: #d03b3b;
-  --status-none: #a3a29b;
 }
 
 /* 100% stacked, 24px, 2px surface gaps, rounded data-end */
@@ -34,8 +28,8 @@
 }
 .bar-label:not(.static):hover .bar-title { text-decoration: underline; }
 .bar-label.static { cursor: default; }
-.bar-title { font-size: 13px; font-weight: 600; color: var(--text-primary); overflow-wrap: anywhere; }
-.bar-total { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.bar-title { font-size: var(--fs-sm); font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+.bar-total { font-size: var(--fs-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; }
 
 .bar-track { display: flex; gap: 2px; height: 24px; min-width: 0; }
 
@@ -51,37 +45,18 @@
 .segment.static { cursor: default; }
 .segment:last-child { border-radius: 0 4px 4px 0; }
 .segment:hover,
-.segment:focus-visible { filter: brightness(1.1); outline: 2px solid var(--text-primary); outline-offset: 1px; }
+.segment:focus-visible { filter: brightness(1.1); outline: 2px solid var(--text); outline-offset: 1px; }
 
 .fill-good { background: var(--status-good); }
-.fill-warning { background: var(--status-warning); }
-.fill-critical { background: var(--status-critical); }
+.fill-warning { background: var(--status-warn); }
+.fill-critical { background: var(--status-bad); }
 .fill-none { background: var(--status-none); }
 
 .segment-label { font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.ink-dark { color: var(--text-primary); }
+.ink-dark { color: var(--text); }
 .ink-light { color: #ffffff; }
 
-.empty-bar { align-self: center; font-size: 12px; color: var(--text-muted); font-style: italic; }
-
-/* Tooltip: value leads, label follows */
-.viz-tooltip {
-  position: absolute;
-  z-index: 20;
-  transform: translate(-50%, calc(-100% - 12px));
-  pointer-events: none;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  background: var(--text-primary);
-  color: #ffffff;
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 12px;
-  white-space: nowrap;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2);
-}
-.viz-tooltip strong { font-size: 14px; }
+.empty-bar { align-self: center; font-size: var(--fs-xs); color: var(--text-muted); font-style: italic; }
 
 @media (max-width: 560px) {
   .bar-row { grid-template-columns: 1fr; gap: 6px; }

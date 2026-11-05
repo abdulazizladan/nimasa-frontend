@@ -1,14 +1,11 @@
 import { inject } from '@angular/core';
 import { Router, CanActivateFn } from '@angular/router';
-import { Auth } from '../services/auth';
+import { AuthService } from '../services/auth.service';
+import { ROUTES } from '../../core/routes';
 
-export const adminGuard: CanActivateFn = (route, state) => {
-  const authService = inject(Auth);
+export const adminGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
   const router = inject(Router);
-
-  if (authService.isLoggedIn() && authService.isAdmin()) {
-    return true;
-  }
-
-  return router.parseUrl('/auth/login');
+  if (auth.isLoggedIn() && auth.isAdmin()) return true;
+  return router.parseUrl(auth.isLoggedIn() ? ROUTES.guest.root : ROUTES.login);
 };

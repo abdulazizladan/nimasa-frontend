@@ -1,4 +1,4 @@
-import { Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { NgFor, NgIf } from '@angular/common';
 import { StrategicDeliverable } from '../../services/strategic-deliverables.service';
 import { QUARTER_KEYS } from '../../utils/kpi-performance';
@@ -25,6 +25,7 @@ const PAD_Y = 6;
   selector: 'app-quarter-sparkline',
   standalone: true,
   imports: [NgFor, NgIf],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <svg *ngIf="points().length; else none" class="spark" [attr.viewBox]="'0 0 ' + width + ' ' + height"
       role="img" [attr.aria-label]="summary()">
@@ -32,7 +33,7 @@ const PAD_Y = 6;
       <polyline *ngIf="points().length > 1" class="actual" [attr.points]="line('yActual')"></polyline>
       <circle *ngFor="let p of points(); let last = last" class="dot" [class.last]="last"
         [attr.cx]="p.x" [attr.cy]="p.yActual" [attr.r]="last ? 4 : 3">
-        <title>{{ p.quarter }} {{ year() }}: {{ p.actual }} (target {{ p.target }})</title>
+        <title>{{ p.quarter }} {{ year() }}: actual {{ p.actual }}, target {{ p.target }}</title>
       </circle>
     </svg>
     <ng-template #none><span class="none">No reports</span></ng-template>
@@ -40,10 +41,10 @@ const PAD_Y = 6;
   styles: [`
     :host { display: inline-block; line-height: 0; }
     .spark { width: 120px; height: 36px; overflow: visible; }
-    .target { fill: none; stroke: #94a3b8; stroke-width: 1.5; stroke-linejoin: round; }
-    .actual { fill: none; stroke: #2a78d6; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    .dot { fill: #2a78d6; stroke: #ffffff; stroke-width: 1.5; }
-    .none { font-size: 12px; line-height: 1.4; color: #64748b; }
+    .target { fill: none; stroke: var(--status-none); stroke-width: 1.5; stroke-linejoin: round; }
+    .actual { fill: none; stroke: var(--line-actual); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .dot { fill: var(--line-actual); stroke: var(--surface); stroke-width: 1.5; }
+    .none { font-size: var(--fs-xs); line-height: 1.4; color: var(--text-muted); }
   `],
 })
 export class QuarterSparkline {
@@ -55,7 +56,7 @@ export class QuarterSparkline {
 
   points = computed<SparkPoint[]>(() => {
     const perf = this.deliverable().yearlyPerformance?.[String(this.year())] || {};
-    const raw = QUARTER_KEYS.map((key, i) => ({ i, key, entry: perf[key] }))
+    const raw = QUARTER_KEYS.map((key, i) => ({ i, key, entry: perf[key]! }))
       .filter(r => r.entry && r.entry.actual !== undefined && r.entry.actual !== null);
     if (!raw.length) return [];
 
@@ -74,7 +75,7 @@ export class QuarterSparkline {
   });
 
   summary = computed(() =>
-    'Quarterly results: ' + this.points().map(p => `${p.quarter} ${p.actual} against target ${p.target}`).join('; ')
+    'Target vs actual by quarter: ' + this.points().map(p => `${p.quarter} actual ${p.actual}, target ${p.target}`).join('; ')
   );
 
   line(key: 'yActual' | 'yTarget'): string {

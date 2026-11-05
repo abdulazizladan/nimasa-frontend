@@ -5,15 +5,17 @@ import { HttpClient } from '@angular/common/http';
 import { pipe, tap, switchMap, catchError, of } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 
+interface PerformanceReport {
+  summary_metrics?: {
+    totalUsers?: { admin?: number; guest?: number; total?: number };
+  };
+}
+
+/** The admin dashboard's user count (deliverable counts come from AllDeliverablesService). */
 export const DashboardStore = signalStore(
   { providedIn: 'root' },
   withState({
-    stats: {
-      users: 0,
-      presidentialPriorities: 0,
-      ministerialDeliverables: 0,
-      agencyKPIs: 0
-    },
+    users: 0,
     loading: false,
     error: null as string | null
   }),
@@ -21,25 +23,10 @@ export const DashboardStore = signalStore(
     loadStats: rxMethod<void>(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
-        switchMap(() => http.get<any>(`${environment.baseUrl}/dashboard/performance-report`).pipe(
-          tap((res) => {
-            if (res && res.summary_metrics) {
-              const metrics = res.summary_metrics;
-              patchState(store, {
-                stats: {
-                  users: metrics.totalUsers?.total || 0,
-                  presidentialPriorities: metrics.totalPresidentialPriorities || 0,
-                  ministerialDeliverables: metrics.totalMinisterialDeliverables || 0,
-                  agencyKPIs: metrics.totalAgencyKPIs || 0
-                },
-                loading: false
-              });
-            } else {
-              patchState(store, { loading: false });
-            }
-          }),
-          catchError((err) => {
-            patchState(store, { error: 'Failed to load dashboard stats', loading: false });
+        switchMap(() => http.get<PerformanceReport>(`${environment.baseUrl}/dashboard/performance-report`).pipe(
+          tap(res => patchState(store, { users: res?.summary_metrics?.totalUsers?.total ?? 0, loading: false })),
+          catchError(() => {
+            patchState(store, { error: "The user count couldn't be loaded.", loading: false });
             return of(null);
           })
         ))

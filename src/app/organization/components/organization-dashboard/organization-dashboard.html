@@ -1,303 +1,178 @@
 <div class="page-container">
 
-  <!-- Page Header -->
-  <div class="page-header">
+  <header class="page-header">
     <div class="header-left">
-      <div class="header-badge">Governance</div>
-      <h2>Organization Management</h2>
-      <p class="subtitle">Configure corporate bodies, agencies, and operational departments</p>
+      <span class="header-badge">Governance</span>
+      <h1 class="page-title">Organization</h1>
+      <p class="subtitle">The agency and its operational departments</p>
     </div>
-    <div class="header-stats">
+    <div class="header-actions">
       <div class="stat-chip">
-        <span class="stat-value">{{ store.agencies().length }}</span>
-        <span class="stat-label">Agencies</span>
-      </div>
-      <div class="stat-chip stat-chip-teal">
         <span class="stat-value">{{ store.departments().length }}</span>
         <span class="stat-label">Departments</span>
       </div>
+      <button type="button" class="btn btn-primary" (click)="addDepartment()"><app-icon name="plus" /> Add department</button>
     </div>
-  </div>
+  </header>
 
-  <!-- Error Alerts -->
-  <div *ngIf="store.error()" class="alert-error">
-    <span>⚠️ {{ store.error() }}</span>
-    <button (click)="store.clearError()">✕</button>
-  </div>
-
-
-  <!-- Search & Action Bar -->
-  <div class="action-bar">
-    <div class="search-group">
-      <span class="search-icon">🔍</span>
-      <input
-        type="text"
-        [(ngModel)]="searchText"
-        (ngModelChange)="onSearch()"
-        placeholder="Search by code or name..."
-        class="search-input"
-      />
+  @if (store.error() && !agencyForm() && !deptForm()) {
+    <div class="alert alert-error" role="alert">
+      <span>{{ store.error() }}</span>
+      <button type="button" class="close" (click)="store.clearError()" aria-label="Dismiss"><app-icon name="close" /></button>
     </div>
-    <div class="action-buttons">
-      <button
-        class="btn-primary"
-        (click)="openAddDept()"
-      >+ Add Department</button>
-    </div>
-  </div>
+  }
 
-  <!-- Loading State -->
-  <div *ngIf="store.loading()" class="loading-wrapper">
-    <div class="spinner"></div>
-    <p>Retrieving records...</p>
-  </div>
+  @if (store.loading()) {
+    <div class="loading-wrapper"><div class="spinner"></div><p>Loading organization…</p></div>
+  } @else {
+    @if (agency(); as a) {
+      <section class="card agency-card">
+        <div class="logo-circle" [style.background-image]="a.logo ? 'url(' + a.logo + ')' : ''" aria-hidden="true">{{ a.logo ? '' : a.code.slice(0, 2) }}</div>
+        <div class="agency-details">
+          <h2 class="agency-name">{{ a.name }}</h2>
+          <div class="agency-meta">
+            <span class="tag">{{ a.code }}</span>
+            <span class="badge" [class.active]="a.isActive" [class.inactive]="!a.isActive">{{ a.isActive ? 'Active' : 'Inactive' }}</span>
+          </div>
+          @if (a.motto) { <p class="motto">“{{ a.motto }}”</p> }
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="editAgency(a)"><app-icon name="pencil" /> Edit agency</button>
+      </section>
+    } @else {
+      <section class="card agency-card empty">
+        <p class="empty-note">No agency has been registered yet.</p>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="addAgency()"><app-icon name="plus" /> Register agency</button>
+      </section>
+    }
 
-  <!-- Content Grid -->
-  <div class="content-body" *ngIf="!store.loading()">
-
-    <!-- AGENCY INFORMATION CARD -->
-    <div class="agency-card-container" *ngIf="store.agencies().length > 0">
-      <div class="agency-card" *ngFor="let a of store.agencies().slice(0, 1)">
-        <div class="agency-card-content">
-          <div class="logo-wrapper">
-            <div class="logo-circle large-logo" [style.background-image]="a.logo ? 'url(' + a.logo + ')' : ''">
-              {{ !a.logo ? a.code.slice(0, 2) : '' }}
-            </div>
-          </div>
-          <div class="agency-details">
-            <h3 class="agency-name">{{ a.name }}</h3>
-            <div class="agency-meta">
-              <span class="bold-code">{{ a.code }}</span>
-              <span class="divider">•</span>
-              <span class="status-badge" [class.active]="a.isActive">
-                {{ a.isActive ? 'Active' : 'Inactive' }}
-              </span>
-            </div>
-            <div class="italic-motto">"{{ a.motto || 'N/A' }}"</div>
-          </div>
-          <div class="agency-actions">
-            <button class="btn-edit" (click)="openEditAgency(a)">✏️ Edit Agency</button>
-          </div>
+    <section class="departments">
+      <div class="section-head">
+        <h2 class="section-title">Departments</h2>
+        <div class="field search">
+          <label for="dept-search" class="sr-only">Search departments</label>
+          <input id="dept-search" type="search" placeholder="Search by code, name or head" [value]="searchText()" (input)="searchText.set($any($event.target).value)" />
         </div>
       </div>
-    </div>
 
-    <!-- DEPARTMENTS LIST -->
-    <div class="departments-section">
-      <h3 class="section-title">Departments</h3>
-      <div class="table-container">
-        <table class="modern-table">
+      <div class="table-wrap">
+        <table class="table">
           <thead>
             <tr>
-              <th>Code</th>
-              <th>Name</th>
-              <th>Department Head</th>
-              <th>Director Email</th>
-              <th>Contact Phone</th>
-              <th>Parent Agency</th>
-              <th class="actions-col">Actions</th>
+              <th scope="col">Code</th>
+              <th scope="col">Department</th>
+              <th scope="col">Head</th>
+              <th scope="col">Director email</th>
+              <th scope="col">Phone</th>
+              <th scope="col">Agency</th>
+              <th scope="col" class="actions-col"><span class="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let d of filteredDepartments()" class="clickable-row" role="link" tabindex="0"
-              [title]="'View ' + d.name + ' and its deliverables'"
-              (click)="openDepartment(d)" (keydown.enter)="openDepartment(d)">
-              <td class="bold-code">{{ d.code }}</td>
-              <td class="name-td">
-                <div class="dept-title">{{ d.name }}</div>
-                <div class="dept-desc">{{ d.description || 'No description' }}</div>
-              </td>
-              <td>🧑‍💼 {{ d.head }}</td>
-              <td>📧 <span class="email-text">{{ d.directorEmail || 'N/A' }}</span></td>
-              <td>📞 {{ d.contactPhone || 'N/A' }}</td>
-              <td>
-                <span class="agency-tag">{{ d.organization?.name || 'NIMASA' }}</span>
-              </td>
-              <td class="actions-col">
-                <button class="btn-edit" (click)="openEditDept(d); $event.stopPropagation()"
-                  (keydown.enter)="$event.stopPropagation()">✏️ Edit</button>
-              </td>
-            </tr>
-            <tr *ngIf="filteredDepartments().length === 0">
-              <td colspan="7" class="no-records">No departments match your search.</td>
-            </tr>
+            @for (d of filteredDepartments(); track d.id) {
+              <tr class="clickable-row" (click)="openDepartment(d)">
+                <td><span class="code">{{ d.code }}</span></td>
+                <td class="name-td">
+                  <a class="dept-link" [routerLink]="['departments', d.code]" (click)="$event.stopPropagation()" [title]="'View ' + d.name + ' and its deliverables'">{{ d.name }}</a>
+                  <div class="dept-desc">{{ d.description || 'No description' }}</div>
+                </td>
+                <td>{{ d.head || '—' }}</td>
+                <td>@if (d.directorEmail) { <a [href]="'mailto:' + d.directorEmail" (click)="$event.stopPropagation()">{{ d.directorEmail }}</a> } @else { — }</td>
+                <td>{{ d.contactPhone || '—' }}</td>
+                <td><span class="tag" [title]="d.organization?.name || agency()?.name || ''">{{ d.organization?.code || agency()?.code || 'NIMASA' }}</span></td>
+                <td class="actions-col">
+                  <button type="button" class="btn-icon" (click)="editDepartment(d); $event.stopPropagation()" [attr.aria-label]="'Edit ' + d.name"><app-icon name="pencil" /></button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="7" class="empty-cell">{{ searchText() ? 'No departments match your search.' : 'No departments yet.' }}</td></tr>
+            }
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
+  }
 
-  </div>
-
-  <!-- Agency Form Modal -->
-  <div class="modal-overlay" *ngIf="showAgencyModal">
-    <div class="modal-box" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3>{{ isEditingAgency ? 'Edit Agency' : 'Register New Agency' }}</h3>
-        <button class="close-btn" (click)="closeAgencyModal()">✕</button>
-      </div>
-      <form (submit)="submitAgencyForm(); $event.preventDefault()">
+  @if (agencyForm(); as state) {
+    <app-modal [title]="state.editing ? 'Edit agency' : 'Register agency'" [closeOnBackdrop]="!store.saving()" (closed)="closeForms()">
+      <form (ngSubmit)="submitAgency()" #form="ngForm" class="form">
         <div class="modal-body">
-          <div class="form-row">
-            <label for="agency-code">Agency Code *</label>
-            <input
-              id="agency-code"
-              type="text"
-              [(ngModel)]="agencyForm.code"
-              name="code"
-              placeholder="e.g. NIMASA"
-              [disabled]="isEditingAgency"
-              required
-            />
+          <div class="form-group">
+            <label for="agency-code">Agency code *</label>
+            <input id="agency-code" type="text" [(ngModel)]="state.form.code" name="code" placeholder="e.g. NIMASA" [disabled]="state.editing" required />
           </div>
-          <div class="form-row">
-            <label for="agency-name">Agency Name *</label>
-            <input
-              id="agency-name"
-              type="text"
-              [(ngModel)]="agencyForm.name"
-              name="name"
-              placeholder="e.g. Nigerian Maritime Administration and Safety Agency"
-              required
-            />
+          <div class="form-group">
+            <label for="agency-name">Agency name *</label>
+            <input id="agency-name" type="text" [(ngModel)]="state.form.name" name="name" placeholder="e.g. Nigerian Maritime Administration and Safety Agency" required />
           </div>
-          <div class="form-row">
-            <label for="agency-motto">Motto / Tagline</label>
-            <input
-              id="agency-motto"
-              type="text"
-              [(ngModel)]="agencyForm.motto"
-              name="motto"
-              placeholder="e.g. Safety at Sea, Clean Oceans"
-            />
+          <div class="form-group">
+            <label for="agency-motto">Motto / tagline</label>
+            <input id="agency-motto" type="text" [(ngModel)]="state.form.motto" name="motto" placeholder="e.g. Safety at sea, clean oceans" />
           </div>
-          <div class="form-row">
+          <div class="form-group">
             <label for="agency-logo">Logo URL</label>
-            <input
-              id="agency-logo"
-              type="text"
-              [(ngModel)]="agencyForm.logo"
-              name="logo"
-              placeholder="e.g. /assets/logo.png"
-            />
+            <input id="agency-logo" type="text" [(ngModel)]="state.form.logo" name="logo" placeholder="e.g. /assets/logo.png" />
           </div>
-          <div class="form-row checkbox-row">
-            <input
-              id="agency-active"
-              type="checkbox"
-              [(ngModel)]="agencyForm.isActive"
-              name="isActive"
-            />
-            <label for="agency-active">Active Operational Status</label>
+          <div class="form-group checkbox-row">
+            <input id="agency-active" type="checkbox" [(ngModel)]="state.form.isActive" name="isActive" />
+            <label for="agency-active">Active</label>
           </div>
         </div>
+        @if (store.error()) { <div class="alert alert-error modal-error" role="alert"><span>{{ store.error() }}</span></div> }
         <div class="modal-footer">
-          <button type="button" class="btn-secondary" (click)="closeAgencyModal()">Cancel</button>
-          <button type="submit" class="btn-submit">Save Agency</button>
+          <button type="button" class="btn btn-secondary" (click)="closeForms()" [disabled]="store.saving()">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="store.saving() || form.invalid">
+            @if (store.saving()) { <span class="spinner-sm"></span> } Save agency
+          </button>
         </div>
       </form>
-    </div>
-  </div>
+    </app-modal>
+  }
 
-  <!-- Department Form Modal -->
-  <div class="modal-overlay" *ngIf="showDeptModal">
-    <div class="modal-box" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3>{{ isEditingDept ? 'Edit Department' : 'Create Operational Department' }}</h3>
-        <button class="close-btn" (click)="closeDeptModal()">✕</button>
-      </div>
-      <form (submit)="submitDeptForm(); $event.preventDefault()">
+  @if (deptForm(); as state) {
+    <app-modal [title]="state.id ? 'Edit department' : 'Create department'" size="lg" [closeOnBackdrop]="!store.saving()" (closed)="closeForms()">
+      <form (ngSubmit)="submitDepartment()" #form="ngForm" class="form">
         <div class="modal-body">
           <div class="form-grid">
-            <div class="form-row">
-              <label for="dept-code">Department Code *</label>
-              <input
-                id="dept-code"
-                type="text"
-                [(ngModel)]="deptForm.code"
-                name="code"
-                placeholder="e.g. MARSEC"
-                required
-              />
+            <div class="form-group">
+              <label for="dept-code">Department code *</label>
+              <input id="dept-code" type="text" [(ngModel)]="state.form.code" name="code" placeholder="e.g. MARSEC" required />
             </div>
-            <div class="form-row">
-              <label for="dept-name">Department Name *</label>
-              <input
-                id="dept-name"
-                type="text"
-                [(ngModel)]="deptForm.name"
-                name="name"
-                placeholder="e.g. Maritime Security & safety"
-                required
-              />
+            <div class="form-group">
+              <label for="dept-name">Department name *</label>
+              <input id="dept-name" type="text" [(ngModel)]="state.form.name" name="name" placeholder="e.g. Maritime Security and Safety" required />
             </div>
-            <div class="form-row full-width">
-              <label for="dept-desc">Function / Description</label>
-              <textarea
-                id="dept-desc"
-                [(ngModel)]="deptForm.description"
-                name="description"
-                placeholder="Brief summary of operations..."
-                rows="2"
-              ></textarea>
+            <div class="form-group full-width">
+              <label for="dept-desc">Function / description</label>
+              <textarea id="dept-desc" [(ngModel)]="state.form.description" name="description" placeholder="Brief summary of operations" rows="2"></textarea>
             </div>
-            <div class="form-row">
-              <label for="dept-head">Department Head *</label>
-              <input
-                id="dept-head"
-                type="text"
-                [(ngModel)]="deptForm.head"
-                name="head"
-                placeholder="e.g. Captain John Doe"
-                required
-              />
+            <div class="form-group">
+              <label for="dept-head">Department head *</label>
+              <input id="dept-head" type="text" [(ngModel)]="state.form.head" name="head" placeholder="e.g. Captain John Doe" required />
             </div>
-            <div class="form-row">
-              <label for="dept-email">Director Email</label>
-              <input
-                id="dept-email"
-                type="email"
-                [(ngModel)]="deptForm.directorEmail"
-                name="directorEmail"
-                placeholder="e.g. j.doe@nimasa.gov.ng"
-              />
+            <div class="form-group">
+              <label for="dept-email">Director email</label>
+              <input id="dept-email" type="email" [(ngModel)]="state.form.directorEmail" name="directorEmail" placeholder="e.g. j.doe@nimasa.gov.ng" />
             </div>
-            <div class="form-row">
-              <label for="dept-phone">Contact Phone</label>
-              <input
-                id="dept-phone"
-                type="text"
-                [(ngModel)]="deptForm.contactPhone"
-                name="contactPhone"
-                placeholder="e.g. +2348012345678"
-              />
+            <div class="form-group">
+              <label for="dept-phone">Contact phone</label>
+              <input id="dept-phone" type="tel" [(ngModel)]="state.form.contactPhone" name="contactPhone" placeholder="e.g. +2348012345678" />
             </div>
-            <div class="form-row">
-              <label for="dept-agency">Belongs to Agency *</label>
-              <select
-                id="dept-agency"
-                [(ngModel)]="deptForm.organizationCode"
-                name="organizationCode"
-                required
-              >
-                <option *ngFor="let a of store.agencies()" [value]="a.code">{{ a.name }}</option>
+            <div class="form-group">
+              <label for="dept-agency">Belongs to agency *</label>
+              <select id="dept-agency" [(ngModel)]="state.form.organizationCode" name="organizationCode" required>
+                @for (a of store.agencies(); track a.code) { <option [value]="a.code">{{ a.name }}</option> }
               </select>
             </div>
           </div>
         </div>
+        @if (store.error()) { <div class="alert alert-error modal-error" role="alert"><span>{{ store.error() }}</span></div> }
         <div class="modal-footer">
-          <button type="button" class="btn-secondary" (click)="closeDeptModal()">Cancel</button>
-          <button type="submit" class="btn-submit">Save Department</button>
+          <button type="button" class="btn btn-secondary" (click)="closeForms()" [disabled]="store.saving()">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="store.saving() || form.invalid">
+            @if (store.saving()) { <span class="spinner-sm"></span> } Save department
+          </button>
         </div>
       </form>
-    </div>
-  </div>
-
-  <!-- Success Modal Overlay -->
-  <div class="modal-overlay" *ngIf="showSuccessModal" style="z-index: 1000;" (click)="showSuccessModal = false">
-    <div class="modal-box compact-modal" style="text-align: center; padding: 32px;" (click)="$event.stopPropagation()">
-      <div style="font-size: 48px; margin-bottom: 16px;">✅</div>
-      <h3 style="color: #10b981; margin-bottom: 8px;">Success</h3>
-      <p style="color: #64748b; margin-bottom: 0;">{{ successMessage }}</p>
-    </div>
-  </div>
+    </app-modal>
+  }
 </div>

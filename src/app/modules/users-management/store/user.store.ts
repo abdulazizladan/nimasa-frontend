@@ -1,8 +1,11 @@
 import { signalStore, withState, withMethods, patchState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { inject } from '@angular/core';
-import { pipe, tap, switchMap, catchError, of } from 'rxjs';
-import { UserService, User } from '../services/user.service';
+import { pipe, tap, switchMap, concatMap, catchError, of } from 'rxjs';
+import { UserService, User, CreateUserDto, UpdateUserDto } from '../services/user.service';
+import { apiErrorMessage } from '../../../core/api';
+
+type WithCallback<T> = T & { onSuccess?: () => void };
 
 export const UserStore = signalStore(
   { providedIn: 'root' },
@@ -18,21 +21,9 @@ export const UserStore = signalStore(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
         switchMap(() => userService.getUsers().pipe(
-          tap((data: any) => {
-            let usersData = [];
-            if (Array.isArray(data)) {
-              usersData = data;
-            } else if (data && Array.isArray(data.data)) {
-              usersData = data.data;
-            } else if (data && Array.isArray(data.users)) {
-              usersData = data.users;
-            } else {
-              usersData = data ? [data] : [];
-            }
-            patchState(store, { users: usersData, loading: false });
-          }),
-          catchError((err) => {
-            patchState(store, { error: err.error?.message || 'Failed to load users.', loading: false });
+          tap(users => patchState(store, { users, loading: false })),
+          catchError(err => {
+            patchState(store, { error: apiErrorMessage(err, 'Failed to load users.'), loading: false });
             return of(null);
           })
         ))
@@ -41,53 +32,55 @@ export const UserStore = signalStore(
     loadUser: rxMethod<string>(
       pipe(
         tap(() => patchState(store, { loading: true, error: null, selectedUser: null })),
-        switchMap((email) => userService.getUser(email).pipe(
-          tap((data) => patchState(store, { selectedUser: data, loading: false })),
-          catchError((err) => {
-            patchState(store, { error: err.error?.message || 'Failed to load user details.', loading: false });
+        switchMap(email => userService.getUser(email).pipe(
+          tap(user => patchState(store, { selectedUser: user, loading: false })),
+          catchError(err => {
+            patchState(store, { error: apiErrorMessage(err, 'Failed to load user details.'), loading: false });
             return of(null);
           })
         ))
       )
     ),
-    createUser: rxMethod<{ payload: any; onSuccess: () => void }>(
+    createUser: rxMethod<WithCallback<{ payload: CreateUserDto }>>(
       pipe(
         tap(() => patchState(store, { saving: true, error: null })),
-        switchMap(({ payload, onSuccess }) => userService.createUser(payload).pipe(
+        concatMap(({ payload, onSuccess }) => userService.createUser(payload).pipe(
           tap(() => {
             patchState(store, { saving: false });
-            onSuccess();
+            onSuccess?.();
           }),
-          catchError((err) => {
-            patchState(store, { error: err.error?.message || 'Failed to create user.', saving: false });
+          catchError(err => {
+            patchState(store, { error: apiErrorMessage(err, 'Failed to create user.'), saving: false });
             return of(null);
           })
         ))
       )
     ),
-    updateUser: rxMethod<{ email: string; payload: any; onSuccess: () => void }>(
+    updateUser: rxMethod<WithCallback<{ email: string; payload: UpdateUserDto }>>(
       pipe(
         tap(() => patchState(store, { saving: true, error: null })),
-        switchMap(({ email, payload, onSuccess }) => userService.updateUser(email, payload).pipe(
-          tap((updatedUser) => {
-            patchState(store, { saving: false, selectedUser: updatedUser });
-            onSuccess();
+        concatMap(({ email, payload, onSuccess }) => userService.updateUser(email, payload).pipe(
+          tap(updated => {
+            patchState(store, { saving: false, selectedUser: updated });
+            onSuccess?.();
           }),
-          catchError((err) => {
-            patchState(store, { error: err.error?.message || 'Failed to update user.', saving: false });
+          catchError(err => {
+            patchState(store, { error: apiErrorMessage(err, 'Failed to update user.'), saving: false });
             return of(null);
           })
         ))
       )
     ),
-    deleteUser: rxMethod<string>(
+    deleteUser: rxMethod<WithCallback<{ email: string }>>(
       pipe(
-        switchMap((email) => userService.deleteUser(email).pipe(
+        tap(() => patchState(store, { saving: true, error: null })),
+        concatMap(({ email, onSuccess }) => userService.deleteUser(email).pipe(
           tap(() => {
-            patchState(store, { users: store.users().filter((u) => u.email !== email) });
+            patchState(store, { users: store.users().filter(u => u.email !== email), saving: false });
+            onSuccess?.();
           }),
-          catchError((err) => {
-            alert(err.error?.message || 'Failed to delete user.');
+          catchError(err => {
+            patchState(store, { error: apiErrorMessage(err, 'Failed to delete user.'), saving: false });
             return of(null);
           })
         ))

@@ -1,49 +1,69 @@
 <div class="page-container">
-  <div class="page-header">
-    <h2>Users Management</h2>
-    <button class="btn-primary" routerLink="add">+ Add User</button>
-  </div>
+  <header class="page-header">
+    <div class="header-left">
+      <span class="header-badge">Access</span>
+      <h1 class="page-title">Users</h1>
+      <p class="subtitle">Who can sign in, and whether they administer the system or only read it</p>
+    </div>
+    <div class="header-actions">
+      <a class="btn btn-primary" routerLink="add"><app-icon name="plus" /> Add user</a>
+    </div>
+  </header>
 
-  <div *ngIf="userStore.error()" class="error-message">{{ userStore.error() }}</div>
+  @if (userStore.error()) {
+    <div class="alert alert-error" role="alert">
+      <span>{{ userStore.error() }}</span>
+      <button type="button" class="close" (click)="userStore.clearError()" aria-label="Dismiss"><app-icon name="close" /></button>
+    </div>
+  }
 
-  <div class="card">
-    <div *ngIf="userStore.loading()" class="loading-state">Loading users...</div>
-    <table class="data-table" *ngIf="!userStore.loading()">
-      <thead>
-        <tr>
-          <th>User</th>
-          <th>Email</th>
-          <th>Phone</th>
-          <th>Role</th>
-          <th>Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let user of userStore.users()">
-          <td>
-            <div class="user-info">
-              <img *ngIf="user.info?.image" [src]="user.info?.image" alt="Avatar" class="avatar" />
-              <div *ngIf="!user.info?.image" class="avatar-placeholder">{{ user.info?.firstName?.charAt(0) ||
-                user.email.charAt(0) || 'U' | uppercase }}</div>
-              <div>
-                <strong>{{ user.info?.firstName }} {{ user.info?.lastName }}</strong>
-              </div>
-            </div>
-          </td>
-          <td>{{ user.email }}</td>
-          <td>{{ user.contact?.phone || 'N/A' }}</td>
-          <td><span class="badge role-badge">{{ user.role }}</span></td>
-          <td><span class="badge status-badge" [ngClass]="user.status">{{ user.status || 'active' }}</span></td>
-          <td class="actions">
-            <button class="btn-ghost" (click)="viewDetails(user.email)">View/Edit</button>
-            <button class="btn-danger" (click)="deleteUser(user.email)">Delete</button>
-          </td>
-        </tr>
-        <tr *ngIf="userStore.users().length === 0">
-          <td colspan="6" class="empty-state">No users found.</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  @if (userStore.loading()) {
+    <div class="loading-wrapper"><div class="spinner"></div><p>Loading users…</p></div>
+  } @else {
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">User</th>
+            <th scope="col">Email</th>
+            <th scope="col">Phone</th>
+            <th scope="col">Role</th>
+            <th scope="col">Status</th>
+            <th scope="col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of userStore.users(); track user.email) {
+            <tr>
+              <td>
+                <div class="user-info">
+                  @if (user.info?.image) {
+                    <img [src]="user.info!.image" alt="" class="avatar" width="36" height="36" />
+                  } @else {
+                    <div class="avatar-placeholder" aria-hidden="true">{{ initialOf(user) }}</div>
+                  }
+                  <a class="user-name" [routerLink]="[user.email]">{{ nameOf(user) }}</a>
+                </div>
+              </td>
+              <td>{{ user.email }}</td>
+              <td>{{ user.contact?.phone || '—' }}</td>
+              <td><span class="badge info capitalize">{{ user.role }}</span></td>
+              <td><span class="badge capitalize" [class]="'badge capitalize ' + (user.status || 'active')">{{ user.status || 'active' }}</span></td>
+              <td class="actions">
+                <button type="button" class="btn btn-secondary btn-sm" (click)="viewDetails(user.email)">View / edit</button>
+                <button type="button" class="btn-icon danger" (click)="deleting.set(user)" [attr.aria-label]="'Delete ' + user.email"><app-icon name="trash" /></button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="empty-cell">No users found.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (deleting(); as user) {
+    <app-confirm-dialog title="Delete user" [message]="'Delete ' + user.email + '? They will no longer be able to sign in.'"
+      confirmLabel="Delete" (confirmed)="confirmDelete()" (cancelled)="deleting.set(null)"></app-confirm-dialog>
+  }
 </div>

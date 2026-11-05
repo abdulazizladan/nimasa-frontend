@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { AuthStore } from '../../store/auth.store';
+import { LoginRequest } from '../../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -8,11 +9,10 @@ import { AuthStore } from '../../store/auth.store';
   styleUrl: './login.css'
 })
 export class Login {
-  credentials = { email: '', password: '' };
-  
+  credentials: LoginRequest = { email: '', password: '' };
   authStore = inject(AuthStore);
 
-  onSubmit() {
+  onSubmit(): void {
     this.authStore.login(this.credentials);
   }
 }

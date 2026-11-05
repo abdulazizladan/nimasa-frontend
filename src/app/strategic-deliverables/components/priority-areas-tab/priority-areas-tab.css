@@ -1,0 +1,21 @@
+:host { display: block; }
+.form { display: contents; }
+.tab-actions { display: flex; justify-content: flex-end; margin-bottom: var(--sp-4); }
+
+.area-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+  gap: var(--sp-3);
+}
+.area-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+}
+.area-card h3 { font-size: var(--fs-md); font-weight: 600; margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.area-actions { display: flex; gap: 2px; flex-shrink: 0; }

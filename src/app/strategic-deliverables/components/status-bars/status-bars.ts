@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnDestroy, effect, inject, input, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import { NgClass, NgFor, NgIf } from '@angular/common';
 import { STATUS_CLASSES, StatusClass, StatusRow } from '../../utils/portfolio-summary';
 
@@ -13,6 +13,7 @@ import { STATUS_CLASSES, StatusClass, StatusRow } from '../../utils/portfolio-su
   imports: [NgIf, NgFor, NgClass],
   templateUrl: './status-bars.html',
   styleUrl: './status-bars.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StatusBars implements OnDestroy {
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -53,7 +54,11 @@ export class StatusBars implements OnDestroy {
 
   /** Text colour inside a status fill, chosen for contrast with that fill */
   inkFor(status: StatusClass): string {
-    return status === 'critical' ? 'ink-light' : 'ink-dark';
+    return status === 'critical' || status === 'good' ? 'ink-light' : 'ink-dark';
+  }
+
+  trackRow(_: number, row: StatusRow): string {
+    return row.label;
   }
 
   isClickable(row: StatusRow): boolean {

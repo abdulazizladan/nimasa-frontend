@@ -1,7 +1,12 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
+import { unwrapList } from '../../core/api';
+import { Department } from '../../core/services/reference-data.service';
+
+export type { Department };
 
 export interface Organization {
   code: string;
@@ -10,17 +15,6 @@ export interface Organization {
   logo?: string;
   isActive: boolean;
   departments?: Department[];
-}
-
-export interface Department {
-  id: string;
-  code: string;
-  name: string;
-  description?: string;
-  head: string;
-  directorEmail?: string;
-  contactPhone?: string;
-  organization?: Organization;
 }
 
 export interface CreateDepartmentPayload {
@@ -43,18 +37,13 @@ export interface CreateOrganizationPayload {
 
 @Injectable({ providedIn: 'root' })
 export class OrganizationService {
+  private http = inject(HttpClient);
   private readonly agenciesUrl = `${environment.baseUrl}/agencies`;
   private readonly deptsUrl = `${environment.baseUrl}/departments`;
 
-  constructor(private http: HttpClient) {}
-
   getAgencies(includeDepartments = true): Observable<Organization[]> {
     const params = new HttpParams().set('includeDepartments', String(includeDepartments));
-    return this.http.get<Organization[]>(this.agenciesUrl, { params });
-  }
-
-  getAgency(code: string): Observable<Organization> {
-    return this.http.get<Organization>(`${this.agenciesUrl}/${code}`);
+    return this.http.get<Organization[] | { data: Organization[] }>(this.agenciesUrl, { params }).pipe(map(unwrapList<Organization>));
   }
 
   createAgency(payload: CreateOrganizationPayload): Observable<Organization> {
@@ -63,18 +52,6 @@ export class OrganizationService {
 
   updateAgency(code: string, payload: Partial<CreateOrganizationPayload>): Observable<Organization> {
     return this.http.patch<Organization>(`${this.agenciesUrl}/${code}`, payload);
-  }
-
-  deleteAgency(code: string): Observable<void> {
-    return this.http.delete<void>(`${this.agenciesUrl}/${code}`);
-  }
-
-  getDepartments(): Observable<Department[]> {
-    return this.http.get<Department[]>(this.deptsUrl);
-  }
-
-  getDepartment(id: string): Observable<Department> {
-    return this.http.get<Department>(`${this.deptsUrl}/${id}`);
   }
 
   createDepartment(payload: CreateDepartmentPayload): Observable<Department> {

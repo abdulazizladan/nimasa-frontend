@@ -27,8 +27,8 @@
   </svg>
 </div>
 
-<div *ngIf="showTable()" class="table-wrap">
-  <table class="data-table">
+<div *ngIf="showTable()" class="table-wrap plain">
+  <table class="table table-compact">
     <thead>
       <tr><th scope="col">Type</th><th scope="col" class="num" *ngFor="let q of quarters">{{ q }}</th></tr>
     </thead>

@@ -1,12 +1,12 @@
-import { Component, ElementRef, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, signal } from '@angular/core';
 import { NgFor, NgIf } from '@angular/common';
 import { TrendSeries } from '../../utils/portfolio-summary';
 
 /** Each page keeps one colour wherever it appears, so filtering never repaints a line (categorical slots 1-3). */
 const SERIES_COLORS: Record<string, string> = {
-  presidential: '#2a78d6',
-  ministerial: '#eb6834',
-  agency: '#1baf7a',
+  presidential: 'var(--series-1)',
+  ministerial: 'var(--series-2)',
+  agency: 'var(--series-3)',
 };
 
 const W = 600, H = 240;
@@ -36,6 +36,7 @@ interface PlotSeries {
   imports: [NgFor, NgIf],
   templateUrl: './status-trend.html',
   styleUrl: './status-trend.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StatusTrend {
   private host = inject<ElementRef<HTMLElement>>(ElementRef);

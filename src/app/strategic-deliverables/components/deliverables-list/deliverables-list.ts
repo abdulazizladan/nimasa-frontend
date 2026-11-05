@@ -1,117 +1,110 @@
-import { Component, OnInit, OnDestroy, inject, computed, signal, effect, untracked } from '@angular/core';
-import { StrategicDeliverablesStore } from '../../store/strategic-deliverables.store';
-import {
-  StrategicDeliverable, StrategicDeliverablesService, AnnualTarget, AnnualAggregation, QuarterlyReport,
-  PerformanceDirection
-} from '../../services/strategic-deliverables.service';
-import { GlobalStateService } from '../../../core/services/global-state.service';
-import { Auth } from '../../../auth/services/auth';
-import { Subscription } from 'rxjs';
+import { Component, OnInit, inject, computed, signal, effect, untracked } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import * as KPI from '../../utils/kpi-performance';
-import { QUARTER_KEYS, AGGREGATION_LABELS, DIRECTION_LABELS } from '../../utils/kpi-performance';
+import { StrategicDeliverablesStore } from '../../store/strategic-deliverables.store';
+import { StrategicDeliverable } from '../../services/strategic-deliverables.service';
+import { GlobalStateService } from '../../../core/services/global-state.service';
+import { ToastService } from '../../../core/services/toast.service';
+import { AuthService } from '../../../auth/services/auth.service';
 import { DELIVERABLES_CONFIG } from '../../deliverables-config';
+import * as KPI from '../../utils/kpi-performance';
+import { Assessment, YearSummary, QuarterFigures } from '../../utils/kpi-performance';
+import { ReportSave } from '../quarterly-report-form/quarterly-report-form';
 
-/** Roles allowed to create, edit and delete (mirrors the backend @Roles guards). */
-const EDITOR_ROLES = ['admin'];
+/** One quarter of the selected year, scored */
+interface QuarterRow extends QuarterFigures {
+  label: string;
+  assessment: Assessment;
+}
 
-/** Fields the user can edit; everything else (id, serial number, timestamps, yearlyPerformance) is server-owned. */
-const EDITABLE_FIELDS: (keyof StrategicDeliverable)[] = [
-  'ministry', 'priorityArea', 'outcome', 'deliverable', 'baselineType', 'indicator',
-  'baselineYear', 'baseline2023', 'projections', 'annualTargets', 'annualAggregation', 'performanceDirection', 'responsibleDepartment',
-  'supportingEvidence', 'evidenceFile', 'category'
-];
-
-/** One editable annual target row in the create/edit form (inputs may be empty while typing). */
-interface AnnualTargetRow {
-  baselineYear: number | null;
+/** One annual target row of the expanded card, with that year's result */
+interface TargetRow {
+  baselineYear: number;
   baselineValue: number | null;
-  targetYear: number | null;
-  targetValue: number | null;
+  targetYear: number;
+  targetValue: number;
+  summary: YearSummary | null;
+  assessment: Assessment | null;
+  current: boolean;
 }
 
-const isBlank = (v: any) => v === null || v === undefined || v === '';
-
-interface ReportForm {
-  year: number;
-  quarter: string;
-  targetValue: number | undefined;
-  actualValue: number | undefined;
-  progress: string;
-  keyIssues: string;
-  mdaEfforts: string;
-  comments: string;
+/** Everything a card shows for the selected year, computed once per change rather than per template call */
+interface Card {
+  p: StrategicDeliverable;
+  title: string;
+  owner: string;
+  baseline: { label: string; value: number | null } | null;
+  summary: YearSummary | null;
+  yearAssessment: Assessment | null;
+  quarters: QuarterRow[];
+  targets: TargetRow[];
+  hasChart: boolean;
 }
 
+/** What the confirmation dialog is asking */
+interface Confirmation {
+  title: string;
+  message: string;
+  action: () => void;
+}
+
+/**
+ * One deliverables page (presidential, ministerial or agency, by config): the list of cards for
+ * the selected year with filters, the priority-areas tab, and the create/edit and quarterly
+ * report forms. The forms are child components; the store does the saving.
+ */
 @Component({
   selector: 'app-deliverables-list',
   standalone: false,
   templateUrl: './deliverables-list.html',
   styleUrl: './deliverables-list.css',
 })
-export class DeliverablesList implements OnInit, OnDestroy {
+export class DeliverablesList implements OnInit {
   store = inject(StrategicDeliverablesStore);
-  /** Labels and API path for this page (presidential or ministerial) */
   config = inject(DELIVERABLES_CONFIG);
-  private service = inject(StrategicDeliverablesService);
   private globalState = inject(GlobalStateService);
-  private auth = inject(Auth);
+  private toast = inject(ToastService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
-  searchPriorityArea = '';
-  searchDepartment = '';
-  activeTab: 'priorities' | 'areas' = 'priorities';
-  expandedId: string | null = null;
-  globalYear = signal(new Date().getFullYear().toString());
-  canEdit = EDITOR_ROLES.includes(this.auth.getUser()?.role);
-  private sub?: Subscription;
+  readonly canEdit = inject(AuthService).isAdmin();
 
-  // Available years: from 2023 up to next year, extended by any year referenced in the data
-  years = computed(() => {
-    const set = new Set<number>();
-    const next = new Date().getFullYear() + 1;
-    for (let y = 2023; y <= next; y++) set.add(y);
-    for (const p of this.store.priorities()) {
-      this.getActiveYears(p).forEach(y => set.add(y));
-    }
-    set.add(parseInt(this.globalYear(), 10));
-    return [...set].sort((a, b) => a - b).map(String);
+  year = this.globalState.selectedYear;
+  activeTab = signal<'deliverables' | 'areas'>('deliverables');
+  expandedId = signal<string | null>(null);
+  searchText = signal('');
+
+  /** Open create/edit form: null = new deliverable; undefined = closed */
+  editing = signal<StrategicDeliverable | null | undefined>(undefined);
+  /** Open report form */
+  reporting = signal<{ deliverable: StrategicDeliverable; year?: number; quarter?: string } | null>(null);
+  confirmation = signal<Confirmation | null>(null);
+
+  /** Years referenced by the data, so the year picker offers them */
+  dataYears = computed(() => this.store.deliverables().flatMap(p => KPI.getActiveYears(p)));
+
+  /** Deliverables active in the selected year (before filters), by serial number */
+  yearDeliverables = computed(() =>
+    this.store.deliverables()
+      .filter(p => KPI.isActiveInYear(p, this.year()))
+      .sort((a, b) => (a.serialNumber ?? 0) - (b.serialNumber ?? 0))
+  );
+
+  filtered = computed(() => {
+    const area = this.store.filterPriorityArea().toLowerCase();
+    const dept = this.store.filterDepartment().toLowerCase();
+    const text = this.searchText().trim().toLowerCase();
+    return this.yearDeliverables().filter(p =>
+      (!area || (p.priorityArea || '').toLowerCase() === area)
+      && (!dept || (p.responsibleDepartment || '').toLowerCase().includes(dept))
+      && (!text || [p.outcome, p.deliverable, p.indicator].some(v => (v || '').toLowerCase().includes(text)))
+    );
   });
 
-  // Add modal state variables
-  showAddModal = false;
-  showAddAreaModal = false;
-  newAreaName = '';
-  isEditingArea = false;
-  editingAreaId = '';
-  newPriority: Partial<StrategicDeliverable> = this.getEmptyForm();
-  currentYearDisplay: number = new Date().getFullYear();
-  annualTargets: AnnualTargetRow[] = [];
-  /** Client-side validation message shown inside the open modal */
-  formError = '';
+  hasActiveFilter = computed(() =>
+    !!this.store.filterPriorityArea() || !!this.store.filterDepartment() || !!this.searchText().trim()
+  );
 
-  aggregationOptions = Object.entries(AGGREGATION_LABELS) as [AnnualAggregation, string][];
-  directionOptions = Object.entries(DIRECTION_LABELS) as [PerformanceDirection, string][];
-
-  // Quarterly Report Modal State
-  showReportModal = false;
-  selectedPriorityId = '';
-  private reportPriority: StrategicDeliverable | null = null;
-  reportYearOptions: number[] = [];
-  readonly quarterOptions = ['Q1', 'Q2', 'Q3', 'Q4'];
-  /** Set when the selected year/quarter already has a saved report (the form then updates it) */
-  editingReportId: string | null = null;
-  loadingReport = false;
-  newReport: ReportForm = this.getEmptyReport(new Date().getFullYear());
-  /** Saved reports for the KPI being reported on */
-  private periodReports: QuarterlyReport[] = [];
-  /** Unsaved entries per "year-quarter", kept while switching periods in the open form */
-  private reportDrafts: Record<string, ReportForm> = {};
-  private reportPeriodKey = '';
-
-  showSuccessModal = false;
-  successMessage = '';
+  cards = computed<Card[]>(() => this.filtered().map(p => this.cardFor(p, this.year())));
 
   /** Report form to open once deliverables load (from the details page's Edit button) */
   private pendingReportEdit = signal<{ id: string; year: number; quarter: string } | null>(null);
@@ -119,96 +112,27 @@ export class DeliverablesList implements OnInit, OnDestroy {
   constructor() {
     effect(() => {
       const pending = this.pendingReportEdit();
-      const priority = pending && this.store.priorities().find(p => p.id === pending.id);
-      if (!pending || !priority) return;
+      const deliverable = pending && this.store.deliverables().find(p => p.id === pending.id);
+      if (!pending || !deliverable) return;
       untracked(() => {
         this.pendingReportEdit.set(null);
-        if (this.canEdit) this.openReportModal(priority, pending.year, pending.quarter);
+        if (this.canEdit) this.openReport(deliverable, pending.year, pending.quarter);
       });
     });
   }
 
-  /** In-page confirmation dialog (replaces window.confirm) */
-  confirmDialog: { title: string; message: string; action: () => void } | null = null;
-
-  showSuccess(message: string): void {
-    this.successMessage = message;
-    this.showSuccessModal = true;
-    setTimeout(() => {
-      this.showSuccessModal = false;
-    }, 5000);
-  }
-
-  /** Priorities active in the selected year (before department/area filters), sorted by serial number. */
-  yearPriorities = computed(() => {
-    const selectedYearNum = parseInt(this.globalYear(), 10);
-    return this.store.priorities()
-      .filter(p => this.isActiveInYear(p, selectedYearNum))
-      .sort((a, b) => (a.serialNumber ?? 0) - (b.serialNumber ?? 0));
-  });
-
-  /** Free-text search over deliverable, description and KPI */
-  searchText = signal('');
-
-  filteredPriorities = computed(() => {
-    const area = this.store.filterPriorityArea().toLowerCase();
-    const dept = this.store.filterDepartment().toLowerCase();
-    const text = this.searchText().trim().toLowerCase();
-
-    return this.yearPriorities().filter(p => {
-      const matchArea = !area || (p.priorityArea || '').toLowerCase() === area;
-      const matchDept = !dept || (p.responsibleDepartment || '').toLowerCase().includes(dept);
-      const matchText = !text || [p.outcome, p.deliverable, p.indicator]
-        .some(v => (v || '').toLowerCase().includes(text));
-      return matchArea && matchDept && matchText;
-    });
-  });
-
-  hasActiveFilter = computed(() =>
-    !!this.store.filterPriorityArea() || !!this.store.filterDepartment() || !!this.searchText().trim()
-  );
-
-  // Performance helpers (shared with the report details page)
-  getReportYear = KPI.getReportYear;
-  getActiveYears = KPI.getActiveYears;
-  getAnnualTarget = KPI.getAnnualTarget;
-  getAnnualTargets = KPI.getAnnualTargets;
-  getQuarters = KPI.getQuarters;
-  getAggregation = KPI.getAggregation;
-  getAggregationLabel = KPI.getAggregationLabel;
-  getYearSummary = KPI.getYearSummary;
-  getBaselineForYear = KPI.getBaselineForYear;
-  getCategoryLabel = KPI.getCategoryLabel;
-  isLowerBetter = KPI.isLowerBetter;
-  getDirectionLabel = KPI.getDirectionLabel;
-  assess = KPI.assess;
-  isActiveInYear = KPI.isActiveInYear;
-
-  /** Owner shown for a deliverable: a department, or "Organization-wide" where configured. */
-  getOwnerLabel(department: string | undefined): string {
-    const org = this.config.organizationWide;
-    if (org && department === org.value) return 'Organization-wide';
-    return department || '—';
-  }
-
-
   ngOnInit(): void {
-    this.store.loadPriorities();
-    this.store.loadPriorityAreas();
-    this.store.loadDepartments();
-
-    this.sub = this.globalState.selectedYear$.subscribe(year => {
-      this.globalYear.set(year.toString());
-    });
+    this.store.ensureLoaded();
 
     // Returning from a report's details page: restore its year and expand its deliverable
     const params = this.route.snapshot.queryParamMap;
     const year = Number(params.get('year'));
     if (year) this.globalState.setYear(year);
-    this.expandedId = params.get('expand') || this.expandedId;
+    const expand = params.get('expand');
+    if (expand) this.expandedId.set(expand);
     const editQuarter = params.get('editReport');
-    if (this.expandedId && year && editQuarter) {
-      this.pendingReportEdit.set({ id: this.expandedId, year, quarter: editQuarter.toUpperCase() });
+    if (expand && year && editQuarter) {
+      this.pendingReportEdit.set({ id: expand, year, quarter: editQuarter.toUpperCase() });
     }
     // Drop the one-off params so a refresh doesn't reopen the form
     if (params.keys.length) {
@@ -216,488 +140,148 @@ export class DeliverablesList implements OnInit, OnDestroy {
     }
   }
 
-  /** Opens the details page for one quarterly report. */
-  openReportDetails(p: StrategicDeliverable, year: string | number, quarterKey: string): void {
-    this.router.navigate([p.id, 'reports', year, quarterKey.toUpperCase()], { relativeTo: this.route });
+  private cardFor(p: StrategicDeliverable, year: number): Card {
+    const summary = KPI.getYearSummary(p, year);
+    return {
+      p,
+      title: KPI.deliverableTitle(p),
+      owner: this.ownerLabel(p.responsibleDepartment),
+      baseline: KPI.getBaselineForYear(p, year),
+      summary,
+      yearAssessment: summary ? KPI.assess(p, summary.actual, summary.target, year) : null,
+      quarters: KPI.getQuarters(p, year).map(q => ({
+        ...q, label: KPI.quarterLabel(q.key), assessment: KPI.assess(p, q.actual, q.target, year, true)
+      })),
+      targets: KPI.getAnnualTargets(p).map(t => {
+        const s = KPI.getYearSummary(p, t.targetYear);
+        return {
+          baselineYear: t.baselineYear, baselineValue: t.baselineValue ?? null, targetYear: t.targetYear, targetValue: t.targetValue,
+          summary: s, assessment: s ? KPI.assess(p, s.actual, t.targetValue, t.targetYear) : null, current: t.targetYear === year
+        };
+      }),
+      hasChart: Object.keys(p.yearlyPerformance || {}).length > 0,
+    };
   }
 
-  ngOnDestroy(): void {
-    if (this.sub) this.sub.unsubscribe();
+  /** Owner shown for a deliverable: a department, or "Organization-wide" where configured. */
+  ownerLabel(department: string | undefined): string {
+    const org = this.config.organizationWide;
+    if (org && department === org.value) return 'Organization-wide';
+    return department || '—';
   }
 
-  onGlobalYearChange(year: string): void {
-    this.globalState.setYear(parseInt(year, 10));
-  }
+  aggregationLabel = KPI.getAggregationLabel;
+  directionLabel = KPI.getDirectionLabel;
+  categoryLabel = KPI.getCategoryLabel;
 
-  onCurrentYearChange(year: number): void {
-    const previous = this.currentYearDisplay;
-    this.currentYearDisplay = year;
-    this.newPriority.baselineYear = year - 1;
-    // Keep the first annual target row in step with the current year if the user hasn't changed its years
-    const first = this.annualTargets[0];
-    if (first && first.targetYear === previous && first.baselineYear === previous - 1) {
-      first.targetYear = year;
-      first.baselineYear = year - 1;
-    }
-  }
-
-  private newTargetRow(targetYear: number, baselineValue: number | null = null): AnnualTargetRow {
-    return { baselineYear: targetYear - 1, baselineValue, targetYear, targetValue: null };
-  }
-
-  /** Adds the next year's target; its baseline year defaults to the previous row's target year. */
-  addAnnualTargetRow(): void {
-    const used = this.annualTargets.map(t => Number(t.targetYear)).filter(y => !isNaN(y) && y > 0);
-    const nextYear = used.length ? Math.max(...used) + 1 : this.currentYearDisplay;
-    this.annualTargets.push(this.newTargetRow(nextYear));
-  }
-
-  removeAnnualTargetRow(index: number): void {
-    this.annualTargets.splice(index, 1);
-  }
-
-  /** Rows the user has filled in (a row with neither a baseline nor a target value is ignored). */
-  private filledTargetRows(): AnnualTargetRow[] {
-    return this.annualTargets.filter(t => !isBlank(t.targetValue) || !isBlank(t.baselineValue));
-  }
-
-  private rowsToAnnualTargets(): AnnualTarget[] {
-    return this.filledTargetRows()
-      .map(t => ({
-        baselineYear: Number(t.baselineYear),
-        baselineValue: isBlank(t.baselineValue) ? null : Number(t.baselineValue),
-        targetYear: Number(t.targetYear),
-        targetValue: Number(t.targetValue)
-      }))
-      .sort((a, b) => a.targetYear - b.targetYear);
-  }
-
-  /** Returns an error message for the first invalid annual target row, or '' if all are valid. */
-  private validateTargetRows(currentYear: number): string {
-    const seen = new Set<number>();
-    for (const t of this.filledTargetRows()) {
-      const baselineYear = Number(t.baselineYear);
-      const targetYear = Number(t.targetYear);
-      if (isBlank(t.baselineYear) || isBlank(t.targetYear) || isBlank(t.targetValue)) {
-        return 'Each annual target needs a Baseline Year, Target Year and Target Value.';
-      }
-      if (targetYear < currentYear) {
-        return `Target year ${targetYear} must be ${currentYear} or later.`;
-      }
-      if (targetYear <= baselineYear) {
-        return `Target year ${targetYear} must be after its baseline year ${baselineYear}.`;
-      }
-      if (seen.has(targetYear)) {
-        return `Only one annual target is allowed for ${targetYear}.`;
-      }
-      seen.add(targetYear);
-    }
-    return '';
-  }
-
-  /** Switch the page to the given year if it isn't already showing it. */
-  private showYear(year: number | null): void {
-    if (year && year.toString() !== this.globalYear()) {
-      this.globalState.setYear(year);
-    }
-  }
-
-  onPriorityAreaChange(area: string): void {
-    this.searchPriorityArea = area;
-    this.store.setFilterPriorityArea(area);
-  }
-
-  onDepartmentChange(name: string): void {
-    this.searchDepartment = name;
-    this.store.setFilterDepartment(name);
-  }
+  // ── Filters and navigation ──
 
   clearFilters(): void {
     this.searchText.set('');
-    this.searchPriorityArea = '';
-    this.searchDepartment = '';
     this.store.setFilterPriorityArea('');
     this.store.setFilterDepartment('');
   }
 
   toggleExpand(id: string): void {
-    this.expandedId = this.expandedId === id ? null : id;
+    this.expandedId.update(current => (current === id ? null : id));
   }
 
-  getEmptyForm(): Partial<StrategicDeliverable> {
-    return {
-      ministry: this.config.defaultMinistry,
-      priorityArea: '',
-      outcome: '',
-      deliverable: '',
-      baselineType: 'Percentage',
-      indicator: '',
-      baselineYear: new Date().getFullYear() - 1, // Auto-fill Baseline from previous year
-      baseline2023: undefined,
-      responsibleDepartment: '',
-      supportingEvidence: '',
-      category: this.config.defaultCategory,
-      annualAggregation: 'sum',
-      performanceDirection: 'higher'
-    };
+  /** Opens the details page for one quarterly report. */
+  openReportDetails(p: StrategicDeliverable, quarterKey: string): void {
+    this.router.navigate([p.id, 'reports', this.year(), quarterKey.toUpperCase()], { relativeTo: this.route });
   }
 
-  openAddModal(): void {
-    this.newPriority = this.getEmptyForm();
-    this.currentYearDisplay = new Date().getFullYear();
-    this.annualTargets = [this.newTargetRow(this.currentYearDisplay)];
-    this.formError = '';
+  /** Switch the page to the given year if it isn't already showing it. */
+  private showYear(year: number): void {
+    if (year !== this.year()) this.globalState.setYear(year);
+  }
+
+  // ── Deliverable form ──
+
+  openNew(): void {
     this.store.clearError();
-    this.showAddModal = true;
+    this.editing.set(null);
   }
 
-  closeAddModal(): void {
-    this.showAddModal = false;
-    this.formError = '';
+  openEdit(p: StrategicDeliverable): void {
+    this.store.clearError();
+    this.editing.set(p);
+  }
+
+  closeForm(): void {
+    this.editing.set(undefined);
     this.store.clearError();
   }
 
-  /** Builds the request body from the form, sending only editable fields with the right types. */
-  private buildPriorityPayload(): Partial<StrategicDeliverable> {
-    const payload: Partial<StrategicDeliverable> = {};
-    for (const key of EDITABLE_FIELDS) {
-      const value = this.newPriority[key];
-      if (value !== undefined) (payload as any)[key] = value;
-    }
-    payload.baselineYear = Number(this.currentYearDisplay) - 1;
-    payload.annualTargets = this.rowsToAnnualTargets();
-    payload.projections = Object.fromEntries(payload.annualTargets.map(t => [t.targetYear.toString(), t.targetValue]));
-    // The KPI-level baseline is the one measured in the year before the report year (else the earliest given)
-    const baselineTarget = payload.annualTargets.find(t => t.baselineYear === payload.baselineYear)
-      ?? payload.annualTargets.find(t => t.baselineValue !== null);
-    if (baselineTarget && baselineTarget.baselineValue !== null && baselineTarget.baselineValue !== undefined) {
-      payload.baseline2023 = baselineTarget.baselineValue;
-    }
-    // Required strings on the backend; send empty strings rather than nulls
-    payload.outcome = payload.outcome ?? '';
-    payload.deliverable = payload.deliverable ?? '';
-    payload.supportingEvidence = payload.supportingEvidence ?? '';
-    return payload;
-  }
-
-  submitAdd(): void {
-    const year = Number(this.currentYearDisplay);
-    if (!this.newPriority.priorityArea || !this.newPriority.indicator || !this.newPriority.responsibleDepartment) {
-      this.formError = 'Please fill in all required fields (Strategic Priority Area, KPI/Indicator, Responsible Department).';
-      return;
-    }
-    if (!year || year < 2000 || year > 2100) {
-      this.formError = 'Please enter a valid Current Year.';
-      return;
-    }
-    const targetError = this.validateTargetRows(year);
-    if (targetError) {
-      this.formError = targetError;
-      return;
-    }
-    this.formError = '';
-
-    const payload = this.buildPriorityPayload();
+  saveDeliverable(payload: Partial<StrategicDeliverable>): void {
+    const existing = this.editing();
+    const year = (payload.baselineYear ?? this.year() - 1) + 1;
     const onSuccess = () => {
-      this.closeAddModal();
+      this.closeForm();
       // Show the KPI under the year it was registered for, not whatever year the page was on
-      if (year.toString() !== this.globalYear()) {
-        this.showYear(year);
-        this.showSuccess(`Deliverable saved successfully. Showing ${year}.`);
-      } else {
-        this.showSuccess('Deliverable saved successfully.');
-      }
+      const switching = year !== this.year();
+      this.showYear(year);
+      this.toast.success(switching ? `Deliverable saved. Showing ${year}.` : 'Deliverable saved.');
     };
-
-    if (this.newPriority.id) {
-      this.store.updatePriority({ id: this.newPriority.id, priority: payload, onSuccess });
-    } else {
-      this.store.createPriority({ priority: payload, onSuccess });
-    }
+    if (existing) this.store.updateDeliverable({ id: existing.id, deliverable: payload, onSuccess });
+    else this.store.createDeliverable({ deliverable: payload, onSuccess });
   }
 
-  openAddAreaModal(): void {
-    this.newAreaName = '';
-    this.isEditingArea = false;
-    this.editingAreaId = '';
-    this.formError = '';
-    this.store.clearError();
-    this.showAddAreaModal = true;
-  }
-
-  editArea(area: any): void {
-    this.newAreaName = area.name;
-    this.isEditingArea = true;
-    this.editingAreaId = area.id;
-    this.formError = '';
-    this.store.clearError();
-    this.showAddAreaModal = true;
-  }
-
-  deleteArea(area: { id: string; name: string }): void {
-    this.confirmDialog = {
-      title: 'Delete Priority Area',
-      message: `Are you sure you want to delete "${area.name}"?`,
-      action: () => this.store.deletePriorityArea({
-        id: area.id,
-        onSuccess: () => this.showSuccess('Priority Area deleted successfully.')
-      })
-    };
-  }
-
-  closeAddAreaModal(): void {
-    this.showAddAreaModal = false;
-    this.formError = '';
-    this.store.clearError();
-  }
-
-  submitAddArea(): void {
-    const name = this.newAreaName.trim();
-    if (!name) {
-      this.formError = 'Please enter a valid Priority Area name.';
-      return;
-    }
-    this.formError = '';
-
-    const editing = this.isEditingArea && !!this.editingAreaId;
-    const onSuccess = () => {
-      this.closeAddAreaModal();
-      this.showSuccess(editing ? 'Priority Area updated successfully.' : 'Priority Area created successfully.');
-    };
-    if (editing) {
-      this.store.updatePriorityArea({ id: this.editingAreaId, name, onSuccess });
-    } else {
-      this.store.createPriorityArea({ name, onSuccess });
-    }
-  }
-
-  private getEmptyReport(year: number, quarter = 'Q1'): ReportForm {
-    return {
-      year,
-      quarter,
-      targetValue: undefined,
-      actualValue: undefined,
-      progress: '',
-      keyIssues: '',
-      mdaEfforts: '',
-      comments: ''
-    };
-  }
-
-  /** Report years run from the KPI's report year to the latest target year (or next year). */
-  private buildReportYearOptions(p: StrategicDeliverable): number {
-    const reportYear = this.getReportYear(p) ?? parseInt(this.globalYear(), 10);
-    const lastYear = Math.max(new Date().getFullYear() + 1, ...this.getActiveYears(p));
-    const first = Math.min(reportYear, ...this.getActiveYears(p));
-    this.reportYearOptions = [];
-    for (let y = first; y <= lastYear; y++) this.reportYearOptions.push(y);
-    return reportYear;
-  }
-
-  /** First quarter not yet reported for the year, so the form doesn't default to a duplicate. */
-  private nextOpenQuarter(p: StrategicDeliverable, year: number): string {
-    const perf = p.yearlyPerformance?.[year.toString()] || {};
-    const open = QUARTER_KEYS.find(k => !perf[k]);
-    return (open || 'q1').toUpperCase();
-  }
-
-  /** Whether a report has been saved for this year and quarter of the KPI being reported on. */
-  hasReport(year: number, quarter: string): boolean {
-    return !!this.reportPriority?.yearlyPerformance?.[year.toString()]?.[quarter.toLowerCase()];
-  }
-
-  /**
-   * Opens the quarterly report form. The form follows the selected year and quarter: it shows the
-   * saved report for that period (and updates it on save) or a blank entry for a new one.
-   */
-  openReportModal(p: StrategicDeliverable, year?: number, quarter?: string): void {
-    this.reportPriority = p;
-    this.selectedPriorityId = p.id;
-    const reportYear = this.buildReportYearOptions(p);
-
-    // Default to the year being viewed when it applies to this KPI, otherwise the KPI's own report year
-    const viewed = parseInt(this.globalYear(), 10);
-    const startYear = year ?? (this.reportYearOptions.includes(viewed) ? viewed : reportYear);
-    if (!this.reportYearOptions.includes(startYear)) {
-      this.reportYearOptions = [...this.reportYearOptions, startYear].sort((a, b) => a - b);
-    }
-
-    this.periodReports = [];
-    this.reportDrafts = {};
-    this.newReport = this.getEmptyReport(startYear, quarter ?? this.nextOpenQuarter(p, startYear));
-    this.reportPeriodKey = this.periodKey(this.newReport);
-    this.loadReportPeriod();
-    this.formError = '';
-    this.store.clearError();
-    this.showReportModal = true;
-
-    // Load the saved reports so each period shows its full entry (comments, issues, etc.)
-    this.loadingReport = true;
-    this.service.getSubmissions(p.id).subscribe({
-      next: (reports) => {
-        this.loadingReport = false;
-        this.periodReports = reports || [];
-        this.loadReportPeriod();
-      },
-      error: (err) => {
-        this.loadingReport = false;
-        this.formError = err.error?.message || 'Could not load saved reports; showing summary figures only.';
-      }
+  deleteDeliverable(p: StrategicDeliverable): void {
+    this.confirmation.set({
+      title: 'Delete deliverable',
+      message: `Delete #${p.serialNumber} "${KPI.deliverableTitle(p)}" and all its quarterly reports? This cannot be undone.`,
+      action: () => this.store.deleteDeliverable({ id: p.id, onSuccess: () => this.toast.success('Deliverable deleted.') })
     });
   }
 
-  private periodKey(r: { year: number; quarter: string }): string {
-    return `${r.year}-${r.quarter}`;
+  // ── Quarterly report form ──
+
+  openReport(p: StrategicDeliverable, year?: number, quarter?: string): void {
+    this.store.clearError();
+    this.reporting.set({ deliverable: p, year, quarter });
   }
 
-  /** Called when the Year or Quarter changes: keep what was typed, then show the newly selected period. */
-  onReportPeriodChange(field: 'year' | 'quarter', value: number | string): void {
-    this.reportDrafts[this.reportPeriodKey] = { ...this.newReport };
-    this.newReport = { ...this.newReport, [field]: field === 'year' ? Number(value) : value };
-    this.reportPeriodKey = this.periodKey(this.newReport);
-    this.loadReportPeriod();
-  }
-
-  /** Fills the form for the selected period: unsaved draft, else saved report, else a new entry. */
-  private loadReportPeriod(): void {
-    const p = this.reportPriority;
-    if (!p) return;
-    const { year, quarter } = this.newReport;
-    const saved = this.periodReports.find(r => Number(r.year) === Number(year) && r.quarter === quarter);
-    this.editingReportId = saved?.id ?? null;
-
-    const draft = this.reportDrafts[this.periodKey(this.newReport)];
-    if (draft) {
-      this.newReport = { ...draft };
-      return;
-    }
-    if (saved) {
-      this.newReport = {
-        year,
-        quarter,
-        targetValue: saved.targetValue ?? undefined,
-        actualValue: saved.actualValue ?? undefined,
-        progress: saved.progress || '',
-        keyIssues: saved.keyIssues || '',
-        mdaEfforts: saved.mdaEfforts || '',
-        comments: saved.comments || ''
-      };
-      return;
-    }
-    // Figures recorded without a full report (older data): show them so they aren't re-entered blind
-    const summary = p.yearlyPerformance?.[year.toString()]?.[quarter.toLowerCase()];
-    this.newReport = {
-      ...this.getEmptyReport(year, quarter),
-      targetValue: summary?.target ?? this.suggestedQuarterTarget(p, year),
-      actualValue: summary?.actual ?? undefined
-    };
-  }
-
-  /** Suggests a quarterly target from the annual target: a quarter's share when summed, else the target itself. */
-  private suggestedQuarterTarget(p: StrategicDeliverable, year: number): number | undefined {
-    const annual = this.getAnnualTarget(p, year);
-    if (annual === null) return undefined;
-    return this.getAggregation(p) === 'sum' ? Math.round((annual / 4) * 100) / 100 : annual;
-  }
-
-  /** Opens the report form on an existing quarter. */
-  editReport(p: StrategicDeliverable, year: string, quarterKey: string): void {
-    this.openReportModal(p, Number(year), quarterKey.toUpperCase());
-  }
-
-  closeReportModal(): void {
-    this.showReportModal = false;
-    this.editingReportId = null;
-    this.reportPriority = null;
-    this.periodReports = [];
-    this.reportDrafts = {};
-    this.formError = '';
+  closeReport(): void {
+    this.reporting.set(null);
     this.store.clearError();
   }
 
-  submitReport(): void {
-    const target = this.newReport.targetValue as any;
-    const actual = this.newReport.actualValue as any;
-    if (isBlank(target) || isBlank(actual)) {
-      this.formError = 'Please fill in required Target and Actual values.';
-      return;
-    }
-    this.formError = '';
-
-    const payload = {
-      ...this.newReport,
-      year: Number(this.newReport.year),
-      targetValue: Number(target),
-      actualValue: Number(actual)
-    };
-    const priorityId = this.selectedPriorityId;
-    const editing = !!this.editingReportId;
+  saveReport(e: ReportSave): void {
+    const target = this.reporting();
+    if (!target) return;
+    const deliverableId = target.deliverable.id;
+    const label = `${e.report.quarter} ${e.report.year}`;
     const onSuccess = () => {
-      this.closeReportModal();
-      this.showYear(payload.year);
-      this.expandedId = priorityId;
-      this.showSuccess(`${payload.quarter} ${payload.year} report ${editing ? 'updated' : 'submitted'} successfully.`);
+      this.closeReport();
+      this.showYear(e.report.year);
+      this.expandedId.set(deliverableId);
+      this.toast.success(`${label} report ${e.reportId ? 'updated' : 'submitted'}.`);
     };
-
-    if (this.editingReportId) {
-      this.store.updateSubmission({ reportId: this.editingReportId, submission: payload, onSuccess });
-    } else {
-      this.store.createSubmission({ id: priorityId, submission: payload, onSuccess });
-    }
+    if (e.reportId) this.store.updateReport({ deliverableId, reportId: e.reportId, report: e.report, onSuccess });
+    else this.store.createReport({ deliverableId, report: e.report, onSuccess });
   }
 
-  deleteReport(): void {
-    const reportId = this.editingReportId;
-    if (!reportId) return;
-    const label = `${this.newReport.quarter} ${this.newReport.year}`;
-    this.confirmDialog = {
-      title: 'Delete Quarterly Report',
-      message: `Are you sure you want to delete the ${label} report? This cannot be undone.`,
-      action: () => this.store.deleteSubmission({
-        reportId,
+  deleteReport(e: { reportId: string; label: string }): void {
+    const target = this.reporting();
+    if (!target) return;
+    const deliverableId = target.deliverable.id;
+    this.confirmation.set({
+      title: 'Delete quarterly report',
+      message: `Delete the ${e.label} report? This cannot be undone.`,
+      action: () => this.store.deleteReport({
+        deliverableId, reportId: e.reportId,
         onSuccess: () => {
-          this.closeReportModal();
-          this.showSuccess(`${label} report deleted successfully.`);
+          this.closeReport();
+          this.toast.success(`${e.label} report deleted.`);
         }
       })
-    };
+    });
   }
 
-  editPriority(priority: StrategicDeliverable): void {
-    this.newPriority = {
-      ...priority,
-      annualAggregation: this.getAggregation(priority),
-      performanceDirection: this.isLowerBetter(priority) ? 'lower' : 'higher'
-    };
-    this.currentYearDisplay = priority.baselineYear ? priority.baselineYear + 1 : new Date().getFullYear();
-    this.annualTargets = this.getAnnualTargets(priority).map(t => ({
-      baselineYear: t.baselineYear,
-      baselineValue: t.baselineValue ?? null,
-      targetYear: t.targetYear,
-      targetValue: t.targetValue
-    }));
-    if (this.annualTargets.length === 0) {
-      this.annualTargets = [this.newTargetRow(this.currentYearDisplay, priority.baseline2023 ?? null)];
-    }
-    this.formError = '';
-    this.store.clearError();
-    this.showAddModal = true;
-  }
-
-  deletePriority(p: StrategicDeliverable): void {
-    this.confirmDialog = {
-      title: 'Delete Deliverable',
-      message: `Are you sure you want to delete #${p.serialNumber} "${p.outcome || p.indicator}" and all its quarterly reports?`,
-      action: () => this.store.deletePriority({
-        id: p.id,
-        onSuccess: () => this.showSuccess('Deliverable deleted successfully.')
-      })
-    };
-  }
-
-  confirmAction(): void {
-    const action = this.confirmDialog?.action;
-    this.confirmDialog = null;
+  confirm(): void {
+    const action = this.confirmation()?.action;
+    this.confirmation.set(null);
     action?.();
   }
 }

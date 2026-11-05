@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnDestroy, computed, effect, inject, input, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { NgFor, NgIf, DecimalPipe } from '@angular/common';
 import { StrategicDeliverable } from '../../services/strategic-deliverables.service';
 import { kpiTimeline, timelineGeometry, directionNote, TimelinePoint } from '../../utils/kpi-timeline';
@@ -14,6 +14,7 @@ import { assess } from '../../utils/kpi-performance';
   imports: [NgIf, NgFor, DecimalPipe],
   templateUrl: './kpi-quarter-chart.html',
   styleUrl: './kpi-quarter-chart.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KpiQuarterChart implements OnDestroy {
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -51,8 +52,9 @@ export class KpiQuarterChart implements OnDestroy {
       this.resizeObserver?.disconnect();
       // Without ResizeObserver (older browsers, test DOMs) the chart keeps its default width and scales
       if (!el || typeof ResizeObserver === 'undefined') return;
+      // Width is rounded to 16px steps so a resize only redraws when the layout really changed
       this.resizeObserver = new ResizeObserver(entries => {
-        const w = entries[0].contentRect.width;
+        const w = Math.round(entries[0].contentRect.width / 16) * 16;
         if (w > 0) this.width.set(w);
       });
       this.resizeObserver.observe(el);
@@ -61,6 +63,10 @@ export class KpiQuarterChart implements OnDestroy {
 
   ngOnDestroy(): void {
     this.resizeObserver?.disconnect();
+  }
+
+  trackIndex(index: number): number {
+    return index;
   }
 
   statusOf(p: TimelinePoint): string {
@@ -74,7 +80,7 @@ export class KpiQuarterChart implements OnDestroy {
     this.tip.set({
       x: rect.left + rect.width / 2 - box.left,
       y: rect.top - box.top,
-      value: `${fmt(p.actual)} against target ${fmt(p.target)}`,
+      value: `Actual ${fmt(p.actual)} · Target ${fmt(p.target)}`,
       label: p.label,
       detail: this.statusOf(p),
     });

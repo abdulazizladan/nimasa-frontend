@@ -10,7 +10,7 @@ const kpi = {
   responsibleDepartment: 'NIMASA', supportingEvidence: '', performanceDirection: 'lower', annualAggregation: 'average',
   annualTargets: [{ baselineYear: YEAR - 1, baselineValue: 7, targetYear: YEAR, targetValue: 4 }],
   yearlyPerformance: { [YEAR]: { q1: { target: 4, actual: 6 }, q2: { target: 4, actual: 3 } } },
-  monthlySubmissions: [
+  quarterlyReports: [
     { id: 'r1', year: YEAR, quarter: 'Q2', progress: 'New berthing windows', keyIssues: 'Dredging', mdaEfforts: 'Night shifts', comments: 'Needs funding' },
   ],
   createdAt: '', updatedAt: '',
@@ -37,10 +37,11 @@ describe('PdfReportService documents', () => {
     const text = textOf(doc.content);
     expect(doc.pageSize).toBe('A4');
     expect(text).toContain('Performance Report · Q2 2026');
-    expect(text).toContain('Latest results: Q2 2026');
+    expect(text).toContain('Latest actuals: Q2 2026');
     expect(text).toContain('Status by type');
     expect(text).toContain('KPIs by status');
-    expect(text).toContain('KPI results, worst first');
+    expect(text).toContain('Target vs actual, worst first');
+    expect(text).not.toMatch(/\bResult\b/);
     expect(text).toContain('#3 Safer ports');
     expect(text).toContain('Target Surpassed');   // 3 days against a target of 4, lower is better
   });

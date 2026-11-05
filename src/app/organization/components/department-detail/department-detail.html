@@ -1,131 +1,97 @@
 <div class="page-container">
 
-  <button class="back-link" (click)="back()">← Back to Organization</button>
+  <button type="button" class="back-link" (click)="back()"><app-icon name="arrow-left" /> Back to Organization</button>
 
-  <!-- Loading -->
-  <div *ngIf="loading()" class="loading-wrapper">
-    <div class="spinner"></div>
-    <p>Loading department...</p>
-  </div>
-
-  <!-- Error -->
-  <div *ngIf="!loading() && error()" class="alert-error">⚠️ {{ error() }}</div>
-
-  <!-- Unknown department -->
-  <div *ngIf="!loading() && !error() && !department()" class="empty-state">
-    <div class="empty-icon">🏢</div>
-    <h3>Department not found</h3>
-    <p>This department may have been renamed or removed.</p>
-  </div>
-
-  <ng-container *ngIf="!loading() && department() as dept">
-
-    <!-- Header -->
-    <div class="page-header">
-      <div class="header-left">
-        <div class="header-badge">Department</div>
-        <h2>{{ dept.name }} <span class="code-tag">{{ dept.code }}</span></h2>
-        <p class="subtitle">{{ dept.description || 'No description' }}</p>
-        <div class="contact-row">
-          <span>🧑‍💼 {{ dept.head || '—' }}</span>
-          <span *ngIf="dept.directorEmail">📧 {{ dept.directorEmail }}</span>
-          <span *ngIf="dept.contactPhone">📞 {{ dept.contactPhone }}</span>
-          <span class="agency-tag">{{ dept.organization?.name || 'NIMASA' }}</span>
+  @if (loading()) {
+    <div class="loading-wrapper"><div class="spinner"></div><p>Loading department…</p></div>
+  } @else if (!department()) {
+    <div class="empty-state boxed">
+      <div class="empty-icon"><app-icon name="building" /></div>
+      <h3>Department not found</h3>
+      <p>This department may have been renamed or removed.</p>
+    </div>
+  } @else {
+    @if (department(); as dept) {
+      <header class="page-header">
+        <div class="header-left">
+          <span class="header-badge">Department</span>
+          <h1 class="page-title">{{ dept.name }} <span class="tag code-tag">{{ dept.code }}</span></h1>
+          <p class="subtitle">{{ dept.description || 'No description' }}</p>
+          <ul class="contact-row">
+            <li><app-icon name="user" /> {{ dept.head || '—' }}</li>
+            @if (dept.directorEmail) { <li><app-icon name="envelope" /> <a [href]="'mailto:' + dept.directorEmail">{{ dept.directorEmail }}</a></li> }
+            @if (dept.contactPhone) { <li><app-icon name="phone" /> {{ dept.contactPhone }}</li> }
+            <li><span class="tag">{{ dept.organization?.name || 'NIMASA' }}</span></li>
+          </ul>
         </div>
-      </div>
-      <div class="year-filter">
-        <label for="dept-year">Year</label>
-        <select id="dept-year" [ngModel]="year()" (ngModelChange)="onYearChange($event)">
-          <option *ngFor="let y of years()" [value]="y">{{ y }}</option>
-        </select>
-      </div>
-    </div>
+        <div class="header-actions">
+          <app-year-select [extraYears]="dataYears()"></app-year-select>
+        </div>
+      </header>
 
-    <div class="alert-warning" *ngIf="failedSources().length">
-      Couldn't load {{ failedSources().join(', ') }}, so this list may be incomplete.
-    </div>
+      @if (failedSources().length) {
+        <div class="alert alert-warning" role="alert"><span>Couldn't load {{ failedSources().join(', ') }}, so this list may be incomplete.</span></div>
+      }
 
-    <!-- Summary -->
-    <div class="summary-row" *ngIf="linked().length">
-      <div class="stat-chip">
-        <span class="stat-value">{{ linked().length }}</span>
-        <span class="stat-label">Deliverables</span>
-      </div>
-      <div class="stat-chip" *ngFor="let t of typeCounts()">
-        <span class="stat-value">{{ t.count }}</span>
-        <span class="stat-label">{{ t.label }}</span>
-      </div>
-      <div class="stat-chip status-on-track">
-        <span class="stat-value">{{ statusCounts().good }}</span>
-        <span class="stat-label">Surpassed, met or on track ({{ year() }})</span>
-      </div>
-      <div class="stat-chip status-at-risk">
-        <span class="stat-value">{{ statusCounts().warning }}</span>
-        <span class="stat-label">At risk / minor miss</span>
-      </div>
-      <div class="stat-chip status-off-track">
-        <span class="stat-value">{{ statusCounts().bad }}</span>
-        <span class="stat-label">Off track / missed</span>
-      </div>
-      <div class="stat-chip">
-        <span class="stat-value">{{ statusCounts().none }}</span>
-        <span class="stat-label">No {{ year() }} data</span>
-      </div>
-    </div>
+      @if (rows().length) {
+        <div class="summary-row">
+          <div class="stat-chip"><span class="stat-value">{{ rows().length }}</span><span class="stat-label">Deliverables</span></div>
+          @for (t of typeCounts(); track t.label) {
+            <div class="stat-chip"><span class="stat-value">{{ t.count }}</span><span class="stat-label">{{ t.label }}</span></div>
+          }
+          <div class="stat-chip good"><span class="stat-value">{{ statusCounts().good }}</span><span class="stat-label">Surpassed, met or on track ({{ year() }})</span></div>
+          <div class="stat-chip warn"><span class="stat-value">{{ statusCounts().warning }}</span><span class="stat-label">At risk / minor miss</span></div>
+          <div class="stat-chip bad"><span class="stat-value">{{ statusCounts().critical }}</span><span class="stat-label">Off track / missed</span></div>
+          <div class="stat-chip"><span class="stat-value">{{ statusCounts().none }}</span><span class="stat-label">No {{ year() }} data</span></div>
+        </div>
+      }
 
-    <!-- Deliverables -->
-    <section class="panel">
-      <h3 class="section-title">Deliverables assigned to {{ dept.name }}</h3>
+      <section class="panel">
+        <h2 class="section-title">Deliverables assigned to {{ dept.name }}</h2>
 
-      <div *ngIf="linked().length === 0" class="empty-state compact">
-        <div class="empty-icon">📋</div>
-        <h3>No deliverables yet</h3>
-        <p>
-          Deliverables appear here when "{{ dept.name }}" is chosen as their Responsible Department
-          on the Presidential Priorities, Ministerial Deliverables or Agency Deliverables pages.
-        </p>
-      </div>
-
-      <div class="table-container" *ngIf="linked().length > 0">
-        <table class="modern-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Type</th>
-              <th>Deliverable / KPI</th>
-              <th>Priority Area</th>
-              <th>{{ year() }} Target</th>
-              <th>{{ year() }} Actual</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let row of linked()" class="clickable-row" role="link" tabindex="0"
-              [title]="'Open on ' + row.source.title"
-              (click)="openDeliverable(row)" (keydown.enter)="openDeliverable(row)">
-              <td class="bold-code">{{ row.deliverable.serialNumber }}</td>
-              <td><span class="type-tag">{{ row.typeLabel }}</span></td>
-              <td>
-                <div class="deliverable-title">
-                  {{ row.deliverable.outcome || row.deliverable.deliverable || row.deliverable.indicator }}
-                </div>
-                <div class="kpi-text">📊 {{ row.deliverable.indicator }}</div>
-              </td>
-              <td>{{ row.deliverable.priorityArea || '—' }}</td>
-              <td>{{ summary(row)?.target ?? '—' }}</td>
-              <td>
-                {{ summary(row)?.actual ?? '—' }}
-                <span class="muted-note" *ngIf="summary(row)?.quarters">({{ summary(row)!.quarters }})</span>
-              </td>
-              <td>
-                <span class="status-badge" [ngClass]="assessYear(row).cls" [title]="assessYear(row).deviation">
-                  {{ assessYear(row).label }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-  </ng-container>
+        @if (!rows().length) {
+          <div class="empty-state boxed">
+            <div class="empty-icon"><app-icon name="clipboard" /></div>
+            <h3>No deliverables yet</h3>
+            <p>Deliverables appear here when "{{ dept.name }}" is chosen as their responsible department on the Presidential Priorities, Ministerial Deliverables or Agency Deliverables pages.</p>
+          </div>
+        } @else {
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Deliverable / KPI</th>
+                  <th scope="col">Priority area</th>
+                  <th scope="col" class="num">{{ year() }} target</th>
+                  <th scope="col" class="num">{{ year() }} actual</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of rows(); track row.deliverable.id) {
+                  <tr class="clickable-row" (click)="openDeliverable(row)">
+                    <td class="code">{{ row.deliverable.serialNumber }}</td>
+                    <td><span class="tag">{{ row.typeLabel }}</span></td>
+                    <td>
+                      <button type="button" class="row-link" (click)="openDeliverable(row); $event.stopPropagation()" [title]="'Open on ' + row.source.title">{{ row.title }}</button>
+                      <div class="kpi-text">{{ row.deliverable.indicator }}</div>
+                    </td>
+                    <td>{{ row.deliverable.priorityArea || '—' }}</td>
+                    <td class="num">{{ row.summary?.target ?? '—' }}</td>
+                    <td class="num">{{ row.summary?.actual ?? '—' }}@if (row.summary?.quarters) { <span class="muted"> ({{ row.summary!.quarters }})</span> }</td>
+                    <td>
+                      <span class="badge" [class]="'badge ' + row.assessment.cls">{{ row.assessment.label }}</span>
+                      @if (row.assessment.deviation) { <div class="muted">{{ row.assessment.deviation }}</div> }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    }
+  }
 </div>

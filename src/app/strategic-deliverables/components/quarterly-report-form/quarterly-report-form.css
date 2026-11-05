@@ -1,0 +1,17 @@
+.form { display: contents; }
+
+.kpi-name { margin: 0; font-size: var(--fs-md); font-weight: 600; color: var(--text); display: flex; flex-direction: column; gap: 2px; max-width: none; }
+
+.period-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--r-md);
+  background: var(--info-bg);
+  color: var(--info-ink);
+  font-size: var(--fs-sm);
+  max-width: none;
+}
+.spinner-sm.dark { border-color: rgba(11, 94, 138, 0.3); border-top-color: var(--info-ink); }

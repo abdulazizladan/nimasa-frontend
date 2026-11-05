@@ -24,7 +24,7 @@ export function kpiTimeline(d: StrategicDeliverable): TimelinePoint[] {
   const reported: { index: number; actual: number | null; target: number | null }[] = [];
   for (const [year, perf] of Object.entries(d.yearlyPerformance || {})) {
     QUARTER_KEYS.forEach((key, q) => {
-      const entry = (perf as any)?.[key];
+      const entry = perf?.[key];
       if (!entry) return;
       const num = (v: unknown) => (v === null || v === undefined || v === '' ? null : Number(v));
       reported.push({ index: Number(year) * 4 + q, actual: num(entry.actual), target: num(entry.target) });

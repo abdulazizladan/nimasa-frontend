@@ -1,10 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { CommonModule } from '@angular/common';
-import { provideRouter, RouterModule } from '@angular/router';
+import { provideRouter } from '@angular/router';
 
 import { Layout } from './layout';
 import { AuthStore } from '../../../../auth/store/auth.store';
-import { ConfirmDialog } from '../../../../core/components/confirm-dialog/confirm-dialog';
+import { PortalLayout } from '../../../../core/components/portal-layout/portal-layout';
 
 describe('Layout', () => {
   let component: Layout;
@@ -15,7 +14,7 @@ describe('Layout', () => {
     logoutCalls = 0;
     await TestBed.configureTestingModule({
       declarations: [Layout],
-      imports: [CommonModule, RouterModule, ConfirmDialog],
+      imports: [PortalLayout],
       providers: [
         provideRouter([]),
         { provide: AuthStore, useValue: { logout: () => logoutCalls++ } }
@@ -37,8 +36,10 @@ describe('Layout', () => {
     await fixture.whenStable();
   }
 
-  it('should create', () => {
+  it('should create with the admin navigation', () => {
     expect(component).toBeTruthy();
+    const labels = Array.from(el().querySelectorAll('.sidenav-item .text')).map(e => e.textContent?.trim());
+    expect(labels).toEqual(['Dashboard', 'Users', 'Organization', 'Presidential Priorities', 'Ministerial Deliverables', 'Agency Deliverables', 'Settings', 'Logout']);
   });
 
   it('asks for confirmation before logging out', async () => {

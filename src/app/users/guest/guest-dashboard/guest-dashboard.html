@@ -1,17 +1,14 @@
-<div class="dashboard-container">
-  <div class="dashboard-header">
-    <div>
-      <h2>Performance Overview</h2>
-      <p class="text-muted">Welcome to the NIMASA Performance Management System (Guest View).</p>
+<div class="dashboard">
+  <header class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Performance overview</h1>
+      <p class="subtitle">How every KPI is doing against its target in {{ year() }}.</p>
     </div>
-    <div class="year-filter">
-      <label for="guest-year">Year</label>
-      <select id="guest-year" [ngModel]="year" (ngModelChange)="onYearChange($event)">
-        <option *ngFor="let y of years" [value]="y">{{ y }}</option>
-      </select>
+    <div class="header-actions">
+      <app-year-select label="Year"></app-year-select>
     </div>
-  </div>
+  </header>
 
-  <!-- Same data as the admin dashboard; guests can't open the admin pages, so nothing links out -->
-  <app-deliverables-overview [year]="year" audience="guest"></app-deliverables-overview>
+  <!-- Same data as the admin dashboard; links open the guest KPI pages -->
+  <app-deliverables-overview [year]="year().toString()" audience="guest"></app-deliverables-overview>
 </div>

@@ -1,0 +1,40 @@
+<div class="layout-wrapper">
+  <header class="top-navbar">
+    <div class="navbar-brand">
+      <img src="/logo.webp" alt="NIMASA" class="brand-logo" width="40" height="40" />
+      <span class="brand-text">{{ brand() }}</span>
+    </div>
+    @if (initial()) {
+      <div class="profile-icon" aria-hidden="true">{{ initial() }}</div>
+    }
+  </header>
+
+  <div class="layout-body">
+    <aside class="sidenav">
+      <nav class="sidenav-menu" aria-label="Main">
+        @for (item of navItems(); track item.path) {
+          <a [routerLink]="item.path" routerLinkActive="active" class="sidenav-item">
+            <app-icon [name]="item.icon" class="icon" />
+            <span class="text">{{ item.label }}</span>
+          </a>
+        }
+        <div class="sidenav-divider" role="separator"></div>
+        <button type="button" class="sidenav-item logout-btn" (click)="logout()" aria-haspopup="dialog">
+          <app-icon name="logout" class="icon" />
+          <span class="text">Logout</span>
+        </button>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>
+
+<app-toasts />
+
+@if (confirmingLogout()) {
+  <app-confirm-dialog title="Log out?" message="Are you sure you want to log out?" confirmLabel="Log out"
+    (confirmed)="confirmLogout()" (cancelled)="confirmingLogout.set(false)"></app-confirm-dialog>
+}

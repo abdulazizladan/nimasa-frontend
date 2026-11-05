@@ -1,5 +1,4 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { FormsModule } from '@angular/forms';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter, Router } from '@angular/router';
@@ -7,6 +6,7 @@ import { provideRouter, Router } from '@angular/router';
 import { GuestDashboard } from './guest-dashboard';
 import { DeliverablesOverview } from '../../../strategic-deliverables/components/deliverables-overview/deliverables-overview';
 import { GlobalStateService } from '../../../core/services/global-state.service';
+import { YearSelect } from '../../../core/components/year-select/year-select';
 
 const YEAR = new Date().getFullYear();
 
@@ -28,7 +28,7 @@ describe('GuestDashboard', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       declarations: [GuestDashboard],
-      imports: [FormsModule, DeliverablesOverview],
+      imports: [DeliverablesOverview, YearSelect],
       providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     }).compileComponents();
 
@@ -43,7 +43,7 @@ describe('GuestDashboard', () => {
 
   afterEach(() => httpMock.verify());
 
-  /** Answers the overview's three list requests (presidential, ministerial, agency). */
+  /** Answers the overview's three list requests (presidential, ministerial, agency) and departments. */
   async function respond(presidential: unknown[] = [], ministerial: unknown[] = [], agency: unknown[] = []) {
     httpMock.expectOne(r => r.url.endsWith('/presidential-priorities')).flush(presidential);
     httpMock.expectOne(r => r.url.endsWith('/ministerial-deliverables/deliverables')).flush(ministerial);
@@ -59,7 +59,7 @@ describe('GuestDashboard', () => {
     await respond();
   });
 
-  it('shows the deliverables overview from the uploaded data', async () => {
+  it('shows the KPI overview from the uploaded data', async () => {
     await respond([onTrack]);
     const text: string = fixture.nativeElement.textContent;
 
@@ -69,7 +69,7 @@ describe('GuestDashboard', () => {
     expect(text).toContain('Agency Deliverables');
     // The on-track presidential deliverable is counted
     expect(text).toContain('100%');
-    expect(text).toContain('1 of 1 with results');
+    expect(text).toContain('1 of 1 with actuals');
   });
 
   it('links guests to the guest KPI pages, not the admin pages', async () => {
@@ -90,7 +90,8 @@ describe('GuestDashboard', () => {
   it('lists every KPI with its status, result and target, and filters by status', async () => {
     await respond([onTrack]);
     const el: HTMLElement = fixture.nativeElement;
-    expect(el.textContent).toContain('KPI results');
+    expect(el.textContent).toContain('Target vs actual');
+    expect([...el.querySelectorAll('.kpi-table thead th')].map(th => th.textContent?.trim())).toEqual(['Status', 'KPI', 'Quarters', 'Type', 'Owner', 'Target', 'Actual']);
     expect(el.textContent).not.toContain('priorities are doing');
     const row = el.querySelector('.kpi-table tbody tr') as HTMLElement;
     expect(row.textContent).toContain('% of vessels inspected');
@@ -110,10 +111,11 @@ describe('GuestDashboard', () => {
     expect(fixture.nativeElement.querySelector('.readiness')).toBeNull();
   });
 
-  it('changes the shared year when a different year is selected', async () => {
+  it('follows the shared year', async () => {
     await respond();
-    component.onYearChange(String(YEAR - 1));
-    expect(globalState.getYear()).toBe(YEAR - 1);
-    expect(component.year).toBe(String(YEAR - 1));
+    globalState.setYear(YEAR - 1);
+    fixture.detectChanges();
+    expect(component.year()).toBe(YEAR - 1);
+    expect(fixture.nativeElement.textContent).toContain(`KPI overview · ${YEAR - 1}`);
   });
 });

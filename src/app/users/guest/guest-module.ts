@@ -12,13 +12,15 @@ import { DeliverablesOverview } from '../../strategic-deliverables/components/de
 import { QuarterSparkline } from '../../strategic-deliverables/components/quarter-sparkline/quarter-sparkline';
 import { KpiQuarterChart } from '../../strategic-deliverables/components/kpi-quarter-chart/kpi-quarter-chart';
 import { PeriodPicker } from '../../strategic-deliverables/components/period-picker/period-picker';
-import { ConfirmDialog } from '../../core/components/confirm-dialog/confirm-dialog';
+import { PortalLayout } from '../../core/components/portal-layout/portal-layout';
+import { Icon } from '../../core/components/icon/icon';
+import { YearSelect } from '../../core/components/year-select/year-select';
 
 @NgModule({
   declarations: [GuestLayout, GuestDashboard, GuestKpis, GuestKpi, GuestReports],
   imports: [
     CommonModule, FormsModule, GuestRoutingModule,
-    DeliverablesOverview, QuarterSparkline, KpiQuarterChart, PeriodPicker, ConfirmDialog
+    DeliverablesOverview, QuarterSparkline, KpiQuarterChart, PeriodPicker, PortalLayout, Icon, YearSelect
   ],
 })
 export class GuestModule {}

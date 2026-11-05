@@ -1,0 +1,58 @@
+@if (canEdit()) {
+  <div class="tab-actions">
+    <button type="button" class="btn btn-primary" (click)="openNew()"><app-icon name="plus" /> Add priority area</button>
+  </div>
+}
+
+@if (store.loadingMeta()) {
+  <div class="loading-wrapper"><div class="spinner"></div><p>Loading priority areas…</p></div>
+} @else if (!store.priorityAreas().length) {
+  <div class="empty-state boxed">
+    <div class="empty-icon"><app-icon name="folder" /></div>
+    <h3>No priority areas yet</h3>
+    <p>Priority areas group deliverables by theme. Add one, then choose it when creating a deliverable.</p>
+  </div>
+} @else {
+  <ul class="area-list">
+    @for (area of store.priorityAreas(); track area.id) {
+      <li class="area-card">
+        <h3>{{ area.name }}</h3>
+        @if (canEdit()) {
+          <div class="area-actions">
+            <button type="button" class="btn-icon" (click)="openEdit(area)" [attr.aria-label]="'Rename ' + area.name"><app-icon name="pencil" /></button>
+            <button type="button" class="btn-icon danger" (click)="deleting.set(area)" [attr.aria-label]="'Delete ' + area.name"><app-icon name="trash" /></button>
+          </div>
+        }
+      </li>
+    }
+  </ul>
+}
+
+@if (editing(); as e) {
+  <app-modal [title]="e.id ? 'Rename priority area' : 'Create priority area'" size="sm" [closeOnBackdrop]="!store.saving()" (closed)="close()">
+    <form (ngSubmit)="submit()" #areaForm="ngForm" class="form">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="area-name">Priority area name *</label>
+          <input id="area-name" type="text" [ngModel]="e.name" (ngModelChange)="setName($event)" name="areaName" required
+            placeholder="e.g. Blue Economy Development, Maritime Security" />
+        </div>
+      </div>
+      @if (formError() || store.error()) {
+        <div class="alert alert-error modal-error" role="alert"><span>{{ formError() || store.error() }}</span></div>
+      }
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="close()" [disabled]="store.saving()">Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="store.saving() || !areaForm.form.valid">
+          @if (store.saving()) { <span class="spinner-sm"></span> }
+          Save
+        </button>
+      </div>
+    </form>
+  </app-modal>
+}
+
+@if (deleting(); as area) {
+  <app-confirm-dialog title="Delete priority area" [message]="'Delete “' + area.name + '”? Deliverables that use it keep the name.'"
+    confirmLabel="Delete" (confirmed)="confirmDelete()" (cancelled)="deleting.set(null)"></app-confirm-dialog>
+}

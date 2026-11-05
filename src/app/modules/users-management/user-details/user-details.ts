@@ -1,6 +1,18 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UserStore } from '../store/user.store';
+import { User, UpdateUserDto } from '../services/user.service';
+import { ToastService } from '../../../core/services/toast.service';
+import { ROUTES } from '../../../core/routes';
+
+/** Editable copy of the user's details */
+interface UserEdit {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  role: User['role'];
+  status: NonNullable<User['status']>;
+}
 
 @Component({
   selector: 'app-user-details',
@@ -10,63 +22,62 @@ import { UserStore } from '../store/user.store';
 })
 export class UserDetails implements OnInit {
   userStore = inject(UserStore);
-  editMode = false;
-  emailParam = '';
-  editableUser: any = null;
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private toast = inject(ToastService);
 
-  constructor(
-    private route: ActivatedRoute,
-    private router: Router
-  ) {}
+  emailParam = '';
+  /** The edit form while editing, or null while viewing */
+  edit = signal<UserEdit | null>(null);
 
   ngOnInit(): void {
     this.emailParam = this.route.snapshot.paramMap.get('email') || '';
-    if (this.emailParam) {
-      this.userStore.loadUser(this.emailParam);
-    } else {
-      this.router.navigate(['/admin/users']);
-    }
+    if (this.emailParam) this.userStore.loadUser(this.emailParam);
+    else this.router.navigateByUrl(ROUTES.admin.users);
   }
 
-  get displayUser() {
-    return this.editMode ? this.editableUser : this.userStore.selectedUser();
+  startEdit(): void {
+    const user = this.userStore.selectedUser();
+    if (!user) return;
+    this.userStore.clearError();
+    this.edit.set({
+      firstName: user.info?.firstName || '',
+      lastName: user.info?.lastName || '',
+      phone: user.contact?.phone || '',
+      role: user.role,
+      status: user.status || 'active'
+    });
   }
 
-  toggleEditMode() {
-    this.editMode = !this.editMode;
-    if (this.editMode) {
-      const current = this.userStore.selectedUser();
-      if (current) {
-        this.editableUser = JSON.parse(JSON.stringify(current));
-      }
-    }
+  cancelEdit(): void {
+    this.edit.set(null);
+    this.userStore.clearError();
   }
 
-  saveChanges() {
-    if (!this.editableUser) return;
-
-    const updatePayload = {
-      role: this.editableUser.role,
-      status: this.editableUser.status,
-      info: {
-        firstName: this.editableUser.info?.firstName,
-        lastName: this.editableUser.info?.lastName
-      },
-      contact: {
-        phone: this.editableUser.contact?.phone
-      }
+  saveChanges(): void {
+    const e = this.edit();
+    if (!e) return;
+    const payload: UpdateUserDto = {
+      role: e.role,
+      status: e.status,
+      info: { firstName: e.firstName, lastName: e.lastName },
+      contact: { phone: e.phone }
     };
-
     this.userStore.updateUser({
       email: this.emailParam,
-      payload: updatePayload,
+      payload,
       onSuccess: () => {
-        this.editMode = false;
+        this.edit.set(null);
+        this.toast.success('User saved.');
       }
     });
   }
 
-  goBack() {
-    this.router.navigate(['/admin/users']);
+  initialOf(user: User): string {
+    return (user.info?.firstName?.charAt(0) || user.email.charAt(0) || 'U').toUpperCase();
+  }
+
+  goBack(): void {
+    this.router.navigateByUrl(ROUTES.admin.users);
   }
 }

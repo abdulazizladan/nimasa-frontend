@@ -1,7 +1,10 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { environment } from '../../../../environments/environment';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { environment } from '../../../../environments/environment';
+import { unwrapList } from '../../../core/api';
+import { Role } from '../../../auth/services/auth.service';
 
 export interface UserInfo {
   firstName: string;
@@ -13,44 +16,54 @@ export interface UserContact {
   phone: string;
 }
 
+export type UserStatus = 'active' | 'inactive';
+
 export interface User {
   id?: number;
   email: string;
-  role: string;
-  status?: string;
+  role: Role;
+  status?: UserStatus;
   info?: UserInfo;
   contact?: UserContact;
 }
 
-@Injectable({
-  providedIn: 'root'
-})
-export class UserService {
-  private apiUrl = `${environment.baseUrl}/users`;
+export interface CreateUserDto {
+  email: string;
+  password: string;
+  role: Role;
+  info: UserInfo;
+  contact: UserContact;
+}
 
-  constructor(private http: HttpClient) {}
+export interface UpdateUserDto {
+  role?: Role;
+  status?: UserStatus;
+  info?: Partial<UserInfo>;
+  contact?: Partial<UserContact>;
+}
+
+@Injectable({ providedIn: 'root' })
+export class UserService {
+  private http = inject(HttpClient);
+  private readonly apiUrl = `${environment.baseUrl}/users`;
 
   getUsers(): Observable<User[]> {
-    return this.http.get<User[]>(this.apiUrl);
+    return this.http.get<User[] | { data: User[] }>(this.apiUrl).pipe(map(unwrapList<User>));
   }
 
   getUser(email: string): Observable<User> {
     return this.http.get<User>(`${this.apiUrl}/${email}`);
   }
 
-  createUser(user: any): Observable<User> {
+  createUser(user: CreateUserDto): Observable<User> {
     return this.http.post<User>(this.apiUrl, user);
   }
 
-  updateUser(email: string, user: any): Observable<User> {
+  updateUser(email: string, user: UpdateUserDto): Observable<User> {
     return this.http.patch<User>(`${this.apiUrl}/${email}`, user);
   }
 
-  deleteUser(email: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${email}`);
-  }
-
-  getStats(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/stats`);
+  deleteUser(email: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${email}`);
   }
 }

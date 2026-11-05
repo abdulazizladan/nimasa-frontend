@@ -5,7 +5,7 @@ import {
   AssessedDeliverable, FamilySummary, Period, StatusClass, STATUS_CLASSES,
   periodLabel, ownerOf, assessForPeriod, worstFirst
 } from '../utils/portfolio-summary';
-import { getAggregationLabel, getBaselineForYear, getAnnualTarget, isLowerBetter, QUARTER_KEYS } from '../utils/kpi-performance';
+import { getAggregationLabel, getBaselineForYear, getAnnualTarget, isLowerBetter, quarterIndex } from '../utils/kpi-performance';
 import { kpiTimeline, timelineSvg } from '../utils/kpi-timeline';
 
 /** Inputs for the period summary report (the dashboard as a document). */
@@ -28,11 +28,12 @@ export interface KpiReportInput {
   includeSupportRequired: boolean;
 }
 
-const BRAND = '#008751';
+const BRAND = '#0a6f5e';
 const INK = '#17211c';
 const MUTED = '#5b6661';
 const LINE = '#dde4e0';
-const STATUS_FILL: Record<StatusClass, string> = { good: '#0ca30c', warning: '#fab219', critical: '#d03b3b', none: '#a3a29b' };
+/** Same values as the --status-* tokens in src/styles/tokens.css */
+const STATUS_FILL: Record<StatusClass, string> = { good: '#15803d', warning: '#d97706', critical: '#dc2626', none: '#94a3b8' };
 /** Light cell backgrounds for status labels in tables (the label text carries the meaning) */
 const STATUS_WASH: Record<StatusClass, string> = { good: '#dcfce7', warning: '#fef9c3', critical: '#fee2e2', none: '#f1f5f9' };
 
@@ -41,8 +42,9 @@ const fmt = (v: number | null | undefined) =>
 const today = () => new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
 /**
- * Builds PDF reports in the browser with pdfmake. The library (about 2 MB with fonts) is loaded
- * only the first time someone downloads a report, so pages don't get slower.
+ * Builds PDF reports in the browser with pdfmake. The library (about 1 MB) is loaded only the
+ * first time someone downloads a report, so pages don't get slower. Text is set in Helvetica,
+ * a standard PDF font, so no font files are downloaded.
  */
 @Injectable({ providedIn: 'root' })
 export class PdfReportService {
@@ -51,9 +53,9 @@ export class PdfReportService {
   private async lib(): Promise<any> {
     if (!this.pdfMake) {
       const pdfMakeModule: any = await import('pdfmake/build/pdfmake');
-      const fontsModule: any = await import('pdfmake/build/vfs_fonts');
+      const helvetica: any = await import('pdfmake/build/standard-fonts/Helvetica');
       const pdfMake = pdfMakeModule.default ?? pdfMakeModule;
-      pdfMake.addVirtualFileSystem(fontsModule.default ?? fontsModule);
+      pdfMake.addFontContainer(helvetica.default ?? helvetica);
       this.pdfMake = pdfMake;
     }
     return this.pdfMake;
@@ -85,11 +87,11 @@ export class PdfReportService {
 
     const content: any[] = [
       this.titleBlock(`Performance Report · ${label}`,
-        `${input.scope} · Generated ${today()}${input.latest ? ` · Latest results: ${periodLabel(input.latest)}` : ''}`),
+        `${input.scope} · Generated ${today()}${input.latest ? ` · Latest actuals: ${periodLabel(input.latest)}` : ''}`),
       {
         columns: [
           this.figure(share, 'surpassed, met or on track'),
-          this.figure(String(withData), `KPIs with results for ${label}`),
+          this.figure(String(withData), `KPIs with actuals for ${label}`),
           this.figure(String(counts.critical), 'off track or missed'),
         ],
         columnGap: 10,
@@ -122,14 +124,14 @@ export class PdfReportService {
       );
     }
 
-    content.push({ text: 'KPI results, worst first', style: 'h2', pageBreak: input.items.length > 6 ? 'before' : undefined });
+    content.push({ text: 'Target vs actual, worst first', style: 'h2', pageBreak: input.items.length > 6 ? 'before' : undefined });
     if (input.items.length) {
       content.push({
         table: {
           headerRows: 1,
           widths: [58, '*', 80, 42, 42, 74],
           body: [
-            ['Type', 'KPI', 'Owner', 'Target', 'Result', 'Status'].map(h => ({ text: h, style: ['Target', 'Result'].includes(h) ? 'thNum' : 'th' })),
+            ['Type', 'KPI', 'Owner', 'Target', 'Actual', 'Status'].map(h => ({ text: h, style: ['Target', 'Actual'].includes(h) ? 'thNum' : 'th' })),
             ...[...input.items]
               .sort(worstFirst)
               .map(i => [
@@ -141,7 +143,7 @@ export class PdfReportService {
                 { text: ownerOf(i.deliverable), style: 'td' },
                 { text: fmt(i.summary?.target), style: 'tdNum' },
                 { text: fmt(i.summary?.actual), style: 'tdNum' },
-                { text: i.status === 'none' ? 'No result' : i.assessment.label, style: 'td', fillColor: STATUS_WASH[i.status] },
+                { text: i.status === 'none' ? 'No actual' : i.assessment.label, style: 'td', fillColor: STATUS_WASH[i.status] },
               ]),
           ],
         },
@@ -168,14 +170,14 @@ export class PdfReportService {
         columns: [
           this.figure(fmt(baseline?.value ?? null), `Baseline${baseline ? ` (${baseline.label})` : ''}`),
           this.figure(fmt(getAnnualTarget(d, period.year)), `Target ${period.year}`),
-          this.figure(fmt(result.summary?.actual), `Result ${label}`),
-          this.figure(result.status === 'none' ? 'No result' : result.assessment.label, `Status ${label}`, true),
+          this.figure(fmt(result.summary?.actual), `Actual ${label}`),
+          this.figure(result.status === 'none' ? 'No actual' : result.assessment.label, `Status ${label}`, true),
         ],
         columnGap: 10,
         margin: [0, 0, 0, 6],
       },
       { text: `${isLowerBetter(d) ? 'Lower is better' : 'Higher is better'} · Annual figure: ${getAggregationLabel(d)}${result.assessment.deviation ? ` · ${result.assessment.deviation}` : ''}`, style: 'muted', margin: [0, 0, 0, 12] },
-      { text: 'Quarterly results against target', style: 'h2' },
+      { text: 'Target vs actual by quarter', style: 'h2' },
     ];
 
     if (chart) {
@@ -208,10 +210,10 @@ export class PdfReportService {
         margin: [0, 0, 0, 12],
       });
     } else {
-      content.push({ text: 'No quarterly results reported yet.', style: 'muted', margin: [0, 0, 0, 12] });
+      content.push({ text: 'No quarterly actuals reported yet.', style: 'muted', margin: [0, 0, 0, 12] });
     }
 
-    const notes = this.notesFor(d.monthlySubmissions ?? [], period, input.includeSupportRequired);
+    const notes = this.notesFor(d.quarterlyReports ?? [], period, input.includeSupportRequired);
     if (notes.length) {
       content.push({ text: `Report notes · ${period.year}`, style: 'h2' }, ...notes);
     }
@@ -228,7 +230,7 @@ export class PdfReportService {
     ];
     return reports
       .filter(r => Number(r.year) === period.year && (period.quarter === null || r.quarter === `Q${period.quarter + 1}`))
-      .sort((a, b) => QUARTER_KEYS.indexOf((a.quarter || '').toLowerCase()) - QUARTER_KEYS.indexOf((b.quarter || '').toLowerCase()))
+      .sort((a, b) => quarterIndex(a.quarter) - quarterIndex(b.quarter))
       .map(r => {
         const lines = fields.filter(([key]) => r[key]).map(([key, label]) => ({ text: [{ text: `${label}: `, bold: true }, String(r[key])], style: 'note' }));
         return lines.length ? { stack: [{ text: `${r.quarter} ${r.year}`, style: 'noteHead' }, ...lines], margin: [0, 0, 0, 8] } : null;
@@ -319,7 +321,7 @@ export class PdfReportService {
         ],
         margin: [40, 16, 40, 0],
       }),
-      defaultStyle: { fontSize: 9, color: INK, lineHeight: 1.2 },
+      defaultStyle: { font: 'Helvetica', fontSize: 9, color: INK, lineHeight: 1.2 },
       styles: {
         eyebrow: { fontSize: 7, bold: true, color: BRAND, characterSpacing: 1, margin: [0, 0, 0, 3] },
         h1: { fontSize: 18, bold: true, margin: [0, 0, 0, 3] },

@@ -1,0 +1,146 @@
+<app-modal [title]="(isEdit ? 'Edit ' : 'Create ') + config().singular" size="lg" [closeOnBackdrop]="!saving()" (closed)="cancel.emit()">
+  <form (ngSubmit)="submit()" #addForm="ngForm" class="form">
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="df-serial">Serial number</label>
+        <input id="df-serial" type="text" readonly tabindex="-1" class="readonly-input"
+          [value]="isEdit ? '#' + form.serialNumber : 'Assigned automatically'" />
+      </div>
+
+      <div class="form-group">
+        <label for="df-area">Strategic priority area *</label>
+        <select id="df-area" [(ngModel)]="form.priorityArea" name="priorityArea" required>
+          <option value="">Select a priority area</option>
+          @for (area of priorityAreas(); track area.id) {
+            <option [value]="area.name">{{ area.name }}</option>
+          }
+        </select>
+      </div>
+
+      @if (config().categoryOptions.length > 1) {
+        <div class="form-group">
+          <label for="df-category">{{ config().categoryQuestion }}</label>
+          <select id="df-category" [(ngModel)]="form.category" name="category" required>
+            @for (c of config().categoryOptions; track c.value) {
+              <option [value]="c.value">{{ c.label }}</option>
+            }
+          </select>
+        </div>
+      }
+
+      <div class="form-group">
+        <label for="df-outcome">Deliverable</label>
+        <input id="df-outcome" type="text" [(ngModel)]="form.outcome" name="outcome" />
+      </div>
+
+      <div class="form-group">
+        <label for="df-description">Description</label>
+        <textarea id="df-description" rows="3" [(ngModel)]="form.deliverable" name="deliverable"
+          placeholder="Describe the expected deliverable"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="df-indicator">Performance indicator / KPI *</label>
+        <input id="df-indicator" type="text" [(ngModel)]="form.indicator" name="indicator" required
+          placeholder="e.g. Number of piracy cases recorded, Percentage of safety compliance" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="df-baseline-type">Baseline type</label>
+          <input id="df-baseline-type" type="text" [(ngModel)]="form.baselineType" name="baselineType"
+            placeholder="e.g. Percentage, Number" />
+        </div>
+        <div class="form-group">
+          <label for="df-year">Current year *</label>
+          <input id="df-year" type="number" [ngModel]="currentYear" (ngModelChange)="onCurrentYearChange($event)" name="currentYear"
+            required min="2000" max="2100" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="df-aggregation">Annual figure *</label>
+          <select id="df-aggregation" [(ngModel)]="form.annualAggregation" name="annualAggregation" required
+            title="How quarterly actuals combine into the annual figure">
+            @for (o of aggregationOptions; track o[0]) {
+              <option [value]="o[0]">{{ o[1] }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="df-direction">Performance direction *</label>
+          <select id="df-direction" [(ngModel)]="form.performanceDirection" name="performanceDirection" required
+            title="Choose 'Lower is better' when the target is to reduce something, e.g. piracy incidents">
+            @for (o of directionOptions; track o[0]) {
+              <option [value]="o[0]">{{ o[1] }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <fieldset class="targets">
+        <legend class="label-caps">Annual targets</legend>
+        @if (rows.length) {
+          <div class="target-row target-row-head" aria-hidden="true">
+            <span>Baseline year</span><span>Baseline value</span><span>Target year</span><span>Target value</span><span></span>
+          </div>
+        }
+        @for (t of rows; track $index; let i = $index) {
+          <div class="target-row">
+            <input type="number" [(ngModel)]="t.baselineYear" [name]="'baselineYear' + i" placeholder="Baseline year"
+              aria-label="Baseline year" min="2000" max="2100" />
+            <input type="number" [(ngModel)]="t.baselineValue" [name]="'baselineValue' + i" placeholder="Baseline value"
+              aria-label="Baseline value" />
+            <input type="number" [(ngModel)]="t.targetYear" [name]="'targetYear' + i" placeholder="Target year"
+              aria-label="Target year" min="2000" max="2100" />
+            <input type="number" [(ngModel)]="t.targetValue" [name]="'targetValue' + i" placeholder="Target value"
+              aria-label="Target value" />
+            <button type="button" class="btn-icon danger" (click)="removeRow(i)" aria-label="Remove this annual target">
+              <app-icon name="close" />
+            </button>
+          </div>
+        }
+        <button type="button" class="btn btn-ghost btn-sm" (click)="addRow()"><app-icon name="plus" /> Add annual target</button>
+      </fieldset>
+
+      <div class="form-group">
+        <label for="df-dept">{{ config().departmentLabel }}</label>
+        <select id="df-dept" [(ngModel)]="form.responsibleDepartment" name="responsibleDepartment" required>
+          <option value="">Select a department</option>
+          @if (config().organizationWide; as org) {
+            <option [value]="org.value">{{ org.label }}</option>
+          }
+          @for (dept of departments(); track dept.id) {
+            <option [value]="dept.name">{{ dept.name }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="df-evidence">Supporting evidence / verification source</label>
+          <input id="df-evidence" type="text" [(ngModel)]="form.supportingEvidence" name="supportingEvidence"
+            placeholder="e.g. Activity report, certificate" />
+        </div>
+        <div class="form-group">
+          <label for="df-evidence-file">Evidence file / template link</label>
+          <input id="df-evidence-file" type="text" [(ngModel)]="form.evidenceFile" name="evidenceFile"
+            placeholder="e.g. policy_draft.pdf" />
+        </div>
+      </div>
+    </div>
+
+    @if (formError() || serverError()) {
+      <div class="alert alert-error modal-error" role="alert"><span>{{ formError() || serverError() }}</span></div>
+    }
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="cancel.emit()" [disabled]="saving()">Cancel</button>
+      <button type="submit" class="btn btn-primary" [disabled]="saving() || !addForm.form.valid">
+        @if (saving()) { <span class="spinner-sm"></span> }
+        Save deliverable
+      </button>
+    </div>
+  </form>
+</app-modal>

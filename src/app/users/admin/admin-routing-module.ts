@@ -24,15 +24,15 @@ const routes: Routes = [
       },
       {
         path: 'agency-deliverables',
-        loadChildren: () => import('../../agency-performance/agency-performance-module').then(m => m.AgencyPerformanceModule)
+        loadChildren: () => import('../../strategic-deliverables/strategic-deliverables-shared-module').then(m => m.AgencyDeliverablesModule)
       },
       {
         path: 'priorities',
-        loadChildren: () => import('../../presidential-priorities/presidential-priorities-module').then(m => m.PresidentialPrioritiesModule)
+        loadChildren: () => import('../../strategic-deliverables/strategic-deliverables-shared-module').then(m => m.PresidentialPrioritiesModule)
       },
       {
         path: 'deliverables',
-        loadChildren: () => import('../../ministerial-deliverables/ministerial-deliverables-module').then(m => m.MinisterialDeliverablesModule)
+        loadChildren: () => import('../../strategic-deliverables/strategic-deliverables-shared-module').then(m => m.MinisterialDeliverablesModule)
       },
       {
         path: 'organization',

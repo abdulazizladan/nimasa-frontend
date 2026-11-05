@@ -1,12 +1,15 @@
 <section class="overview" aria-labelledby="overview-title">
   <div class="overview-header">
-    <h2 id="overview-title">KPI overview · {{ periodName() }}</h2>
-    <p class="subtitle">
-      <ng-container *ngIf="quarter() === null; else quarterSubtitle">Status of each KPI for the year, from its quarterly reports against its annual target.</ng-container>
-      <ng-template #quarterSubtitle>Status of each KPI for {{ periodName() }}: that quarter's result against that quarter's target.</ng-template>
-      <span class="latest" *ngIf="latest() as l"> Latest results: {{ l.quarter === null ? l.year : 'Q' + (l.quarter + 1) + ' ' + l.year }}.</span>
-    </p>
+    <div>
+      <h2 id="overview-title">KPI overview · {{ periodName() }}</h2>
+    </div>
+    <span class="refreshing" *ngIf="refreshing()" role="status"><span class="spinner-sm dark"></span> Refreshing…</span>
   </div>
+  <p class="subtitle">
+      <ng-container *ngIf="quarter() === null; else quarterSubtitle">Status of each KPI for the year, from its quarterly reports against its annual target.</ng-container>
+      <ng-template #quarterSubtitle>Status of each KPI for {{ periodName() }}: that quarter's actual against that quarter's target.</ng-template>
+      <span class="latest" *ngIf="latest() as l"> Latest actuals: {{ l.quarter === null ? l.year : 'Q' + (l.quarter + 1) + ' ' + l.year }}.</span>
+  </p>
 
   <div *ngIf="loading()" class="loading-wrapper">
     <div class="spinner"></div>
@@ -39,19 +42,22 @@
       </div>
       <button type="button" class="link-btn" *ngIf="hasFilters()" (click)="clearFilters()">Clear filters</button>
       <span class="filter-spacer"></span>
-      <button type="button" class="btn-download btn-primary-download" (click)="downloadPdf()" [disabled]="downloadingPdf()"
-        title="A PDF report of this view: figures, status by type and every KPI">
-        {{ downloadingPdf() ? 'Preparing PDF…' : 'Download PDF report' }}
-      </button>
-      <button type="button" class="btn-download" (click)="downloadSummary()" [disabled]="!items().length"
-        title="Every KPI shown below, with each quarter's target and actual">
-        CSV
-      </button>
+      <div class="filter-actions">
+        <button type="button" class="btn btn-primary btn-sm" (click)="downloadPdf()" [disabled]="downloadingPdf()"
+          title="A PDF report of this view: figures, status by type and every KPI">
+          <app-icon name="download" /> {{ downloadingPdf() ? 'Preparing PDF…' : 'Download PDF report' }}
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="downloadSummary()" [disabled]="!items().length"
+          title="Every KPI shown below, with each quarter's target and actual">CSV</button>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="refresh()" [disabled]="refreshing()" title="Fetch the latest data">
+          <app-icon name="refresh" /> Refresh
+        </button>
+      </div>
     </div>
-    <div class="alert-warning" *ngIf="pdfError()">{{ pdfError() }}</div>
+    <div class="alert alert-error" *ngIf="pdfError()" role="alert"><span>{{ pdfError() }}</span></div>
 
-    <div class="alert-warning" *ngIf="failedSources().length">
-      Couldn't load {{ failedSources().join(', ') }}; the figures below leave them out.
+    <div class="alert alert-warning" *ngIf="failedSources().length" role="alert">
+      <span>Couldn't load {{ failedSources().join(', ') }}; the figures below leave them out.</span>
     </div>
 
     <!-- Data readiness (admins): what stops deliverables from being scored -->
@@ -93,7 +99,7 @@
 
     <!-- Headline tiles -->
     <div class="tiles">
-      <ng-container *ngFor="let f of families()">
+      <ng-container *ngFor="let f of families(); trackBy: trackFamily">
         <button type="button" class="tile tile-link" (click)="openPage(f.source)"
           [attr.title]="isAdmin() ? 'Open ' + f.source.title : 'See these KPIs'">
           <ng-container *ngTemplateOutlet="tileBody; context: { $implicit: f }"></ng-container>
@@ -106,15 +112,15 @@
       <span class="tile-value">{{ percent(f.onTrackShare) }}</span>
       <span class="tile-caption">
         <ng-container *ngIf="f.withData; else noResults">
-          surpassed, met or on track · {{ f.counts.good }} of {{ f.withData }} with results
+          surpassed, met or on track · {{ f.counts.good }} of {{ f.withData }} with actuals
         </ng-container>
         <ng-template #noResults>
           <ng-container *ngIf="f.reported; else nothingReported">
             {{ f.reported }} reported but not scored · check targets and direction
           </ng-container>
           <ng-template #nothingReported>
-            <ng-container *ngIf="isAdmin(); else guestEmpty">no results reported for {{ periodName() }} yet</ng-container>
-            <ng-template #guestEmpty>results for {{ periodName() }} haven't been published yet</ng-template>
+            <ng-container *ngIf="isAdmin(); else guestEmpty">no actuals reported for {{ periodName() }} yet</ng-container>
+            <ng-template #guestEmpty>actuals for {{ periodName() }} haven't been published yet</ng-template>
           </ng-template>
         </ng-template>
       </span>
@@ -127,7 +133,7 @@
           <ng-container *ngIf="c.points < 0"><span class="down" aria-hidden="true">▼</span> {{ -c.points }} points since {{ c.since }}</ng-container>
           <ng-container *ngIf="c.points === 0">No change since {{ c.since }}</ng-container>
         </ng-container>
-        <ng-template #noCompare><span class="muted">No results for {{ c.since }} to compare</span></ng-template>
+        <ng-template #noCompare><span class="muted">No actuals for {{ c.since }} to compare</span></ng-template>
       </span>
       <span class="tile-meta">
         <span>{{ f.total }} KPI{{ f.total === 1 ? '' : 's' }} in {{ year() }}</span>
@@ -137,12 +143,12 @@
       </span>
     </ng-template>
 
-    <!-- KPI results: the centrepiece, every KPI for the period worst first -->
+    <!-- Target vs actual: the centrepiece, every KPI for the period worst first -->
     <div class="card kpi-card">
       <div class="card-head">
         <div>
-          <h3>KPI results · {{ periodName() }}</h3>
-          <p class="card-sub">Every KPI's result against its target, worst first. Click a KPI to {{ isAdmin() ? 'open it on its page' : 'see its details' }}. The line shows each quarter's result (blue) against its target (grey).</p>
+          <h3>Target vs actual · {{ periodName() }}</h3>
+          <p class="card-sub">Every KPI's actual against its target, worst first. Click a KPI to {{ isAdmin() ? 'open it on its page' : 'see its details' }}. The line shows each quarter's actual (blue) against its target (grey).</p>
         </div>
         <label class="kpi-search">
           <span class="sr-only">Search KPIs</span>
@@ -151,7 +157,7 @@
       </div>
 
       <div class="chips" role="group" aria-label="Filter KPIs by status">
-        <button type="button" *ngFor="let chip of kpiChips()" class="chip" [class.on]="chip.key === kpiStatus()"
+        <button type="button" *ngFor="let chip of kpiChips(); trackBy: trackChip" class="chip" [class.on]="chip.key === kpiStatus()"
           [attr.aria-pressed]="chip.key === kpiStatus()" [disabled]="!chip.count && chip.key !== ''" (click)="setKpiStatus(chip.key)">
           <span *ngIf="chip.cls" class="swatch" [ngClass]="'fill-' + chip.cls" aria-hidden="true"></span>
           {{ chip.label }} <b>{{ chip.count }}</b>
@@ -164,8 +170,8 @@
         <ng-template #noneInStatus>No KPIs in this status for {{ periodName() }}.</ng-template>
       </p>
 
-      <div class="table-wrap" *ngIf="kpiRows().length">
-        <table class="data-table kpi-table">
+      <div class="table-wrap plain" *ngIf="kpiRows().length">
+        <table class="table table-compact kpi-table">
           <thead>
             <tr>
               <th scope="col">Status</th>
@@ -174,16 +180,16 @@
               <th scope="col">Type</th>
               <th scope="col">Owner</th>
               <th scope="col" class="num">Target</th>
-              <th scope="col" class="num">Result</th>
+              <th scope="col" class="num">Actual</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let item of kpiRows()" class="clickable-row" role="link" tabindex="0"
+            <tr *ngFor="let item of kpiRows(); trackBy: trackItem" class="clickable-row" tabindex="0"
               [attr.title]="isAdmin() ? 'Open on ' + item.source.title : 'Open this KPI'"
               (click)="openDeliverable(item)" (keydown.enter)="openDeliverable(item)">
               <td>
-                <span class="status-badge" [ngClass]="item.assessment.cls">
-                  <span aria-hidden="true">{{ statusIcon(item.status) }}</span> {{ item.status === 'none' ? 'No result' : item.assessment.label }}
+                <span class="badge" [ngClass]="item.assessment.cls">
+                  <span aria-hidden="true">{{ statusIcon(item.status) }}</span> {{ item.status === 'none' ? 'No actual' : item.assessment.label }}
                 </span>
                 <div class="muted" *ngIf="item.assessment.deviation">{{ item.assessment.deviation }}</div>
               </td>
@@ -236,8 +242,8 @@
         <app-status-bars *ngIf="!showStatusTable()" [rows]="typeRows()" [clickable]="true"
           [emptyText]="'No KPIs active in ' + year()" (rowSelect)="openTypeRow($event)"></app-status-bars>
 
-        <div *ngIf="showStatusTable()" class="table-wrap">
-          <table class="data-table status-table">
+        <div *ngIf="showStatusTable()" class="table-wrap plain">
+          <table class="table table-compact status-table">
             <thead>
               <tr>
                 <th scope="col">Type</th>
@@ -246,7 +252,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let f of families()">
+              <tr *ngFor="let f of families(); trackBy: trackFamily">
                 <th scope="row">{{ f.source.title }}</th>
                 <td *ngFor="let s of statusClasses" class="num">
                   {{ f.counts[s.key] }} <span class="muted">({{ percent(share(f.counts[s.key], f.total)) }})</span>
@@ -275,7 +281,7 @@
           <li><span class="swatch cell-not-due"></span>Not due yet</li>
         </ul>
 
-        <div class="table-wrap">
+        <div class="table-wrap plain">
           <table class="grid-table">
             <thead>
               <tr>

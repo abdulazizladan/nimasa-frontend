@@ -1,15 +1,14 @@
-import { Component, OnInit, OnDestroy, inject, computed, signal } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject, computed, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { switchMap, tap, catchError, of } from 'rxjs';
 import {
   StrategicDeliverable, StrategicDeliverablesService, QuarterlyReport
 } from '../../services/strategic-deliverables.service';
-import { Auth } from '../../../auth/services/auth';
+import { AuthService } from '../../../auth/services/auth.service';
 import * as KPI from '../../utils/kpi-performance';
 import { DELIVERABLES_CONFIG } from '../../deliverables-config';
-
-/** Roles allowed to edit reports (mirrors the backend @Roles guards). */
-const EDITOR_ROLES = ['admin'];
+import { apiErrorMessage } from '../../../core/api';
 
 /** Details page for one quarterly report of a deliverable: /:id/reports/:year/:quarter */
 @Component({
@@ -18,69 +17,70 @@ const EDITOR_ROLES = ['admin'];
   templateUrl: './quarterly-report-detail.html',
   styleUrl: './quarterly-report-detail.css',
 })
-export class QuarterlyReportDetail implements OnInit, OnDestroy {
+export class QuarterlyReportDetail implements OnInit {
   private service = inject(StrategicDeliverablesService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
-  private auth = inject(Auth);
-  private sub?: Subscription;
-  /** Labels for this page (presidential or ministerial) */
+  private destroyRef = inject(DestroyRef);
+  /** Labels for this page (presidential, ministerial or agency) */
   config = inject(DELIVERABLES_CONFIG);
 
-  canEdit = EDITOR_ROLES.includes(this.auth.getUser()?.role);
+  readonly canEdit = inject(AuthService).isAdmin();
   readonly quarterOptions = ['Q1', 'Q2', 'Q3', 'Q4'];
 
-  priority = signal<StrategicDeliverable | null>(null);
+  deliverable = signal<StrategicDeliverable | null>(null);
   loading = signal(true);
   error = signal<string | null>(null);
   year = signal(0);
   quarter = signal('Q1');
 
-  // Shared performance helpers
-  assess = KPI.assess;
   getAggregationLabel = KPI.getAggregationLabel;
   getDirectionLabel = KPI.getDirectionLabel;
   getCategoryLabel = KPI.getCategoryLabel;
+  title = computed(() => {
+    const p = this.deliverable();
+    return p ? KPI.deliverableTitle(p) : '';
+  });
 
   /** The full saved report for this period, if one exists. */
   report = computed<QuarterlyReport | null>(() => {
-    const p = this.priority();
-    return p?.monthlySubmissions?.find(r => Number(r.year) === this.year() && r.quarter === this.quarter()) ?? null;
+    const p = this.deliverable();
+    return p?.quarterlyReports?.find(r => Number(r.year) === this.year() && r.quarter === this.quarter()) ?? null;
   });
 
   /** Target/actual for this period: from the report, or from summary figures saved without a full report. */
   figures = computed<{ target: number | null; actual: number | null } | null>(() => {
     const report = this.report();
     if (report) return { target: report.targetValue ?? null, actual: report.actualValue ?? null };
-    const summary = this.priority()?.yearlyPerformance?.[this.year().toString()]?.[this.quarter().toLowerCase()];
+    const summary = this.deliverable()?.yearlyPerformance?.[this.year().toString()]?.[this.quarterKey()];
     return summary ? { target: summary.target ?? null, actual: summary.actual ?? null } : null;
   });
 
   quarterAssessment = computed(() => {
-    const p = this.priority();
+    const p = this.deliverable();
     const f = this.figures();
     return p && f ? KPI.assess(p, f.actual, f.target, this.year(), true) : null;
   });
 
   yearSummary = computed(() => {
-    const p = this.priority();
+    const p = this.deliverable();
     return p ? KPI.getYearSummary(p, this.year()) : null;
   });
 
   yearAssessment = computed(() => {
-    const p = this.priority();
+    const p = this.deliverable();
     const s = this.yearSummary();
     return p && s ? KPI.assess(p, s.actual, s.target, this.year()) : null;
   });
 
   baseline = computed(() => {
-    const p = this.priority();
+    const p = this.deliverable();
     return p ? KPI.getBaselineForYear(p, this.year()) : null;
   });
 
   /** All reported periods of this deliverable, oldest first, for previous/next navigation. */
   private reportedPeriods = computed(() => {
-    const p = this.priority();
+    const p = this.deliverable();
     if (!p) return [];
     const periods: { year: number; quarter: string }[] = [];
     for (const year of Object.keys(p.yearlyPerformance || {}).map(Number).sort((a, b) => a - b)) {
@@ -106,46 +106,47 @@ export class QuarterlyReportDetail implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // The same component instance is reused when moving between quarters, so follow the params
-    this.sub = this.route.paramMap.subscribe(params => {
-      const id = params.get('id') || '';
-      this.year.set(Number(params.get('year')));
-      this.quarter.set((params.get('quarter') || 'Q1').toUpperCase());
-      if (this.priority()?.id !== id) this.load(id);
-    });
+    this.route.paramMap.pipe(
+      tap(params => {
+        this.year.set(Number(params.get('year')));
+        this.quarter.set((params.get('quarter') || 'Q1').toUpperCase());
+      }),
+      switchMap(params => {
+        const id = params.get('id') || '';
+        if (this.deliverable()?.id === id) return of(null);
+        this.loading.set(true);
+        this.error.set(null);
+        return this.service.getOne(id).pipe(
+          tap(p => this.deliverable.set(p)),
+          catchError(err => {
+            this.error.set(apiErrorMessage(err, 'Failed to load this report.'));
+            return of(null);
+          }),
+          tap(() => this.loading.set(false))
+        );
+      }),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe();
   }
 
-  ngOnDestroy(): void {
-    this.sub?.unsubscribe();
-  }
-
-  private load(id: string): void {
-    this.loading.set(true);
-    this.error.set(null);
-    this.service.getOne(id).subscribe({
-      next: (p) => {
-        this.priority.set(p);
-        this.loading.set(false);
-      },
-      error: (err) => {
-        this.error.set(err.error?.message || 'Failed to load this report.');
-        this.loading.set(false);
-      }
-    });
+  private quarterKey() {
+    return this.quarter().toLowerCase() as (typeof KPI.QUARTER_KEYS)[number];
   }
 
   /** Owner shown for the deliverable: a department, or "Organization-wide" where configured. */
-  getOwnerLabel(department: string | undefined): string {
+  ownerLabel(department: string | undefined): string {
     const org = this.config.organizationWide;
     if (org && department === org.value) return 'Organization-wide';
     return department || '—';
   }
 
   hasPeriod(quarter: string): boolean {
-    return !!this.priority()?.yearlyPerformance?.[this.year().toString()]?.[quarter.toLowerCase()];
+    const key = quarter.toLowerCase() as (typeof KPI.QUARTER_KEYS)[number];
+    return !!this.deliverable()?.yearlyPerformance?.[this.year().toString()]?.[key];
   }
 
   goToPeriod(year: number, quarter: string): void {
-    const p = this.priority();
+    const p = this.deliverable();
     if (!p) return;
     this.router.navigate([p.id, 'reports', year, quarter], { relativeTo: this.route.parent });
   }
@@ -154,7 +155,7 @@ export class QuarterlyReportDetail implements OnInit, OnDestroy {
   backToList(): void {
     this.router.navigate(['./'], {
       relativeTo: this.route.parent,
-      queryParams: { year: this.year(), expand: this.priority()?.id }
+      queryParams: { year: this.year(), expand: this.deliverable()?.id }
     });
   }
 
@@ -162,7 +163,7 @@ export class QuarterlyReportDetail implements OnInit, OnDestroy {
   editReport(): void {
     this.router.navigate(['./'], {
       relativeTo: this.route.parent,
-      queryParams: { year: this.year(), expand: this.priority()?.id, editReport: this.quarter() }
+      queryParams: { year: this.year(), expand: this.deliverable()?.id, editReport: this.quarter() }
     });
   }
 }
